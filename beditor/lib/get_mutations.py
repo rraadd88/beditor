@@ -21,14 +21,15 @@ def get_codon_table(aa, host):
     dcodontable=dcodontable.reset_index()
     rows=[]
     if isinstance(aa,list):
-        for s in dcodontable['amino acid']:
+        for s in dcodontable['amino acid'].tolist():
             if s in aa:
                 rows.append(True)
             else:
                 rows.append(False)
     else:
         rows=dcodontable['amino acid']==aa
-    dcodontable=dcodontable[rows].set_index('codon').reset_index()
+#     print(sum(rows))
+    dcodontable=dcodontable.loc[rows,:].set_index('codon').reset_index()
     return dcodontable
 
 def get_codon_usage(cuspp):
