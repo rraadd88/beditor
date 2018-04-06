@@ -6,8 +6,19 @@ from os.path import exists
 from Bio import SeqIO, Alphabet, Data, Seq, SeqUtils
 from Bio import motifs,Seq,AlignIO
 
+#lib modules
+from global_vars import hosts
 
-def get_seq(dintseq,orfs_fastap,
+def translate(dnaseq,host='human',fmtout=str):
+    if isinstance(dnaseq,str): 
+        dnaseq=Seq.Seq(dnaseq,Alphabet.generic_dna)
+    prtseq=dnaseq.translate(table=hosts[host])
+    if fmtout is str:
+        return str(prtseq)
+    else:
+        return prtseq
+
+def get_seq_yeast(dintseq,orfs_fastap,
             host,
            test=False):
         
