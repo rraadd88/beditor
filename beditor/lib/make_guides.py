@@ -1,12 +1,16 @@
-def make_guides(dintseqflt01,
+def make_guides(dseq,dmutagenesis,
                test=False,
                dbug=False):
-    dintseqguides=dintseqflt01.copy()
+    dguides=dseq.copy()
     for strand in dmutagenesis.loc[:,'mutation on strand'].unique():
-        for subi,sub in zip(dintseqguides.index,dintseqguides['Substrate'].tolist()):
-            seq=dintseqguides.loc[subi,'30[P-codon]30']
-            pos_codon=int(dintseqguides.loc[subi,'30[P-codon]30: P-codon position'])
-            codon=dintseqguides.loc[subi,'P-codon']
+        for subi,sub in zip(dguides.index,dguides['gene: name'].tolist()):
+            seq=dguides.loc[subi,'transcript: sequence']
+            pos_codon=(int(dguides.loc[subi,'aminoacid: position'])-1)*3 # 0based index
+            codon=dguides.loc[subi,'codon: wild-type']
+            if test:
+                if codon!=seq[(pos_codon):pos_codon+3]:
+                    print('pos_codon is wrong')
+                    break
             if strand=='- strand':
                 seq=str(Seq.Seq(seq,Alphabet.generic_dna).reverse_complement())
                 codon=str(Seq.Seq(codon,Alphabet.generic_dna).reverse_complement())
@@ -16,7 +20,7 @@ def make_guides(dintseqflt01,
                 for posGGi,posGG in enumerate(posGGs):
                     seq_target=seq[posGG-21:posGG-1]
                     pos_codon_from_PAM=pos_codon-(posGG)+1
-                    for muti in dmutagenesis[(dmutagenesis['codon']==dintseqguides.loc[subi,'P-codon']) & (dmutagenesis['mutation on strand']==strand)].index:
+                    for muti in dmutagenesis[(dmutagenesis['codon']==codon) & (dmutagenesis['mutation on strand']==strand)].index:
                         method=dmutagenesis.loc[muti,'method']
                         seq_activity=seq_target[20+dmutagenesis.loc[muti,'Position of mutation from PAM: minimum']:20+1+dmutagenesis.loc[muti,'Position of mutation from PAM: maximum']]
                         if seq_activity.count(dmutagenesis.loc[muti,'nucleotide'])==1:
@@ -38,28 +42,15 @@ def make_guides(dintseqflt01,
                                     codon_mut=dmutagenesis.loc[muti,'codon mutation']
                                     if strand=='- strand':
                                         codon_mut=str(Seq.Seq(codon_mut,Alphabet.generic_dna).reverse_complement())
-    #                                 seq_mutated='{}{}{}'.format(seq_target[:(20+pos_codon_from_PAM)],codon_mut,seq_target[(20+pos_codon_from_PAM)+3:])
-    #                                 dintseqguides.loc[subi,'PAM sequence ({0}; PAM position #{1:02d})'.format(strand,posGGi+1)]=seq[posGG-1:posGG+2]
-    #                                 dintseqguides.loc[subi,'target codon ({0})'.format(strand)]=codon
-    #                                 dintseqguides.loc[subi,'mutated codon ({0}; PAM position #{1:02d})'.format(strategy,posGGi+1)]=codon_mut
-    #                                 dintseqguides.loc[subi,'target codon position from PAM ({0}; PAM position #{1:02d})'.format(strand,posGGi+1)]=pos_codon_from_PAM
-    #                                 dintseqguides.loc[subi,'mutation position from PAM ({0}; PAM position #{1:02d})'.format(strategy,posGGi+1)]=pos_mut_from_PAM
-    #                                 dintseqguides.loc[subi,'target sequence ({0}; PAM position #{1:02d})'.format(strand,posGGi+1)]=seq_target
-                                    dintseqguides.loc[subi,'guide sequence ({0})'.format(strategy)]=seq_target
-                                    dintseqguides.loc[subi,'guide sequence+PAM({0})'.format(strategy)]=seq_target+seq[posGG-1:posGG+2]
+#                                     dguides.loc[subi,'guide sequence ({0})'.format(strategy)]=seq_target
+                                    dguides.loc[subi,'guide sequence+PAM({0})'.format(strategy)]=seq_target+seq[posGG-1:posGG+2]
                                     if test:
                                         print('{}:pos_mut_from_PAM={};pos_codon_from_PAM={};seq_activity={};{}'.format(sub,pos_mut_from_PAM,pos_codon_from_PAM,seq_activity,strategy))
-    #                                 if sub=="YMR072W":
-    #                                 if pos_mut_from_PAM==-13:
-    #                                 if strand=='- strand':
-    #                                     dbug=True
-    #                     `
                                     if dbug:
                                         print(posGG)
                                         print(strand)
                                         print(codon)
                                         print(seq)
-                                        print(seq[30:33])
                                         print(seq_target)
                                         print(seq_activity)
                                         print(pos_codon_from_PAM)
@@ -73,4 +64,4 @@ def make_guides(dintseqflt01,
     #             break
     #         break
     #     break
-    return dintseqguides
+    return dguides

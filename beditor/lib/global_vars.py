@@ -1,4 +1,10 @@
 import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
+from os.path import exists
+
+from Bio import SeqIO, Alphabet, Data, Seq, SeqUtils
+from Bio import motifs,Seq,AlignIO
 
 hosts={"coli":11, # http://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi
 "yeast":12,

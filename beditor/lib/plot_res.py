@@ -1,3 +1,11 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
+from os.path import exists
+
+from Bio import SeqIO, Alphabet, Data, Seq, SeqUtils
+from Bio import motifs,Seq,AlignIO
+
 def plot_nt_composition(dintseqguidesflt,pos_min,pos_max,plotp=None):
     poss=np.arange(pos_min,pos_max+1)
     plt.figure(figsize=[8,2*len(poss)])
