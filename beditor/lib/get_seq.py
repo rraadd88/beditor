@@ -80,7 +80,10 @@ def get_codon_seq(dintseqflt01,test=False):
 
 def din2dseq(cfg):
     # get dna and protein sequences 
-    dseq=pd.read_csv(cfg['dinp'])    
+    din=pd.read_csv(cfg['dinp'])    
+    import pyensembl
+    #import ensembl object that would fetch genes 
+    ensembl = pyensembl.EnsemblRelease(release=cfg['release'])
     dseq=din.copy()
     dseq.index=range(len(dseq.index))
     for rowi in dseq.index:
@@ -92,3 +95,7 @@ def din2dseq(cfg):
         dseq.loc[rowi,'codon: wild-type']=dnaseq[(dseq.loc[rowi,'aminoacid: position']-1)*3:(dseq.loc[rowi,'aminoacid: position']-1)*3+3]
         dseq.loc[rowi,'transcript: sequence']=dnaseq
         dseq.loc[rowi,'protein: sequence']=prtseq
+
+    din.to_csv('{}/din.csv'.format(cfg['datad']))
+    dseq.to_csv('{}/dseq.csv'.format(cfg['datad']))
+    logging.info(dseq['aminoacid: wild-type'].value_counts())

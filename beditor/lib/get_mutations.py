@@ -96,3 +96,29 @@ def get_possible_mutagenesis(dcodontable,dcodonusage,
     dmutagenesis=dmutagenesis.set_index('method').join(pos_muts)
     dmutagenesis=dmutagenesis.reset_index()
     return dmutagenesis
+
+
+from global_vars import BEs,pos_muts
+def dseq2dmutagenesis(cfg):
+    dseq=pd.read_csv('{}/dseq.csv'.format(cfg['datad']))
+    aas=list(dseq['aminoacid: wild-type'].unique())#['S','T','Y']
+
+    dcodontable=get_codon_table(aa=aas, host=cfg['human'])
+
+    dcodonusage=get_codon_usage(cuspp='database/yeast/64_1_1_all_nuclear.cusp.txt')
+
+    dmutagenesis=get_possible_mutagenesis(dcodontable,dcodonusage,
+    #                          aa=aas,
+                                          BEs=BEs,pos_muts=pos_muts,
+                                 host=cfg['human'])
+    
+    dmutagenesis.to_csv('{}/dmutagenesis.csv'.format(cfg['datad']))
+
+    print('Possible 1 nucleotide mutations of the phospho-sites:')
+    print(dmutagenesis[['amino acid','amino acid mutation','method','codon','codon mutation',
+    #               'position of mutation in codon','mutation on strand',
+    #               'nucleotide','nucleotide mutation',
+                 ]])
+    for aa in aas:
+        print(aa+' can be mutated to:')
+        print(list(dmutagenesis.loc[dmutagenesis.loc[:,'amino acid']==aa,:].loc[:,'amino acid mutation'].unique()))
