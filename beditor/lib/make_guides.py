@@ -6,6 +6,8 @@ from os.path import exists
 from Bio import SeqIO, Alphabet, Data, Seq, SeqUtils
 from Bio import motifs,Seq,AlignIO
 
+import logging
+
 def make_guides(dseq,dmutagenesis,
                test=False,
                dbug=False):
@@ -74,28 +76,30 @@ def make_guides(dseq,dmutagenesis,
     #     break
     return dguides
 
-from global_vars import BEs,pos_muts
+from beditor.lib.global_vars import BEs,pos_muts
 def dseq2dguides(cfg):
-    dseq=pd.read_csv('{}/dseq.csv'.format(cfg['datad']))
-    dmutagenesis=pd.read_csv('{}/dmutagenesis.csv'.format(cfg['datad']))
+    dguidesp='{}/dguides.csv'.format(cfg['datad'])
+    if not exists(dguidesp) or cfg['force']:
+        dseq=pd.read_csv('{}/dseq.csv'.format(cfg['datad']))
+        dmutagenesis=pd.read_csv('{}/dmutagenesis.csv'.format(cfg['datad']))
 
-    dguides=make_guides(dseq,dmutagenesis)
+        dguides=make_guides(dseq,dmutagenesis)
 
-    genes_dguides=dguides.loc[:,[c for c in dguides if c.startswith('guide sequence+PAM')]].dropna(how='all')
-    dguidesflt=dguides.loc[genes_dguides.index,:]
-    print('Out of total {} sites, for {} sites,\nguides were designed.'.format(len(dseq),len(dguidesflt)))
+        genes_dguides=dguides.loc[:,[c for c in dguides if c.startswith('guide sequence+PAM')]].dropna(how='all')
+        dguidesflt=dguides.loc[genes_dguides.index,:]
+        print('Out of total {} sites, for {} sites,\nguides were designed.'.format(len(dseq),len(dguidesflt)))
 
-    genes_dguides=dguidesflt.loc[:,[c for c in dguides if (c.startswith('guide sequence+PAM')) \
-                                 and ((' to A' in c) or (' to L' in c) or (' to H' in c)) ]].dropna(how='all')
-    dguidesflt1=dguidesflt.loc[genes_dguides.index,:]
-    print('Out of total {} sites, for {} sites,\nguides were designed for mutations to A, L or H.'.format(len(dguidesflt),len(dguidesflt1)))
-    
+        genes_dguides=dguidesflt.loc[:,[c for c in dguides if (c.startswith('guide sequence+PAM')) \
+                                     and ((' to A' in c) or (' to L' in c) or (' to H' in c)) ]].dropna(how='all')
+        dguidesflt1=dguidesflt.loc[genes_dguides.index,:]
+        print('Out of total {} sites, for {} sites,\nguides were designed for mutations to A, L or H.'.format(len(dguidesflt),len(dguidesflt1)))
+        
 
-    dguides.to_csv('{}/dguides.csv'.format(cfg['datad']))
-    dguidesflt.to_csv('{}/dguidesflt.csv'.format(cfg['datad']))
-    dguidesflt1.to_csv('{}/dguidesflt1.csv'.format(cfg['datad']))
-    
-    from beditor.lib.plot_res import plot_nt_composition
-    plot_nt_composition(dguidesflt1,
-                    pos_muts,
-                    plotp='{}/nt_compositions_of_guides.png'.format(plotd))
+        dguides.to_csv(dguidesp)
+        dguidesflt.to_csv('{}/dguidesflt.csv'.format(cfg['datad']))
+        dguidesflt1.to_csv('{}/dguidesflt1.csv'.format(cfg['datad']))
+        
+        from beditor.lib.plot_res import plot_nt_composition
+        plot_nt_composition(dguidesflt1,
+                        pos_muts,
+                        plotp='{}/nt_compositions_of_guides.png'.format(cfg['plotd']))

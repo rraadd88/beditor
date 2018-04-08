@@ -4,12 +4,12 @@
 # This program is distributed under General Public License v. 3.  
 
 import sys
-from os.path import exists,splitext,dirname
+from os.path import exists,splitext,dirname,splitext,basename
 from os import makedirs
 import argparse
 import pkg_resources
-import logging
-logging.basicConfig(format='[%(asctime)s] %(levelname)s\tfrom %(filename)s in %(funcName)s(..): %(message)s',level=logging.DEBUG) # filename=cfg_dh+'.log'
+from beditor.lib.io_strs import get_logger
+logging=get_logger()
 
 # GET INPTS    
 def main():
@@ -40,10 +40,10 @@ def main():
 #                    help='Show this help message and exit. \n Version info: %s' % version_info)
     args = parser.parse_args()
     logging.info("start")
-    pipeline(args.cfg,step==args.step,
+    pipeline(args.cfg,step=args.step,
         test=args.test,force=args.force)
 
-def pipeline(cfgp,test=False,force=False):        
+def pipeline(cfgp,step=None,test=False,force=False):        
     from beditor.lib.get_seq import din2dseq
     from beditor.lib.get_mutations import dseq2dmutagenesis 
     from beditor.lib.make_guides import dseq2dguides
@@ -51,11 +51,11 @@ def pipeline(cfgp,test=False,force=False):
     with open(cfgp, 'r') as f:
         import json
         cfg = json.load(f)   
-    cfg['prj']=basename(cfgp)
+    cfg['prj']=splitext(basename(cfgp))[0]
     cfg['prjd']=dirname(cfgp)+cfg['prj']
     cfg['datad']=cfg['prjd']+'/data'
     cfg['plotd']=cfg['prjd']+'/plot'
-    if not exists(prjd) or force:
+    if not exists(cfg['prjd']):
         makedirs(cfg['prjd'])
         makedirs(cfg['datad'])
         makedirs(cfg['plotd'])
@@ -63,18 +63,15 @@ def pipeline(cfgp,test=False,force=False):
     cfg['force']=force
     cfg['cfgp']=cfgp
 
-    if exists(cfg):
-        if step==1 or step==None:
-            din2dseq(cfg)
-        if step==2 or step==None:
-            dseq2dmutagenesis(cfg)
-        if step==3 or step==None:
-            dseq2dguides(cfg)
-        if step==None:
-            logging.info("Location of output data: {}".format(cfg['datad']))
-            logging.info("Location of output plot: {}".format(cfg['datad']))
-    else:
-        logging.error('configuration file (cfg): {} not found'.format(cfg))                  
+    if step==1 or step==None:
+        din2dseq(cfg)
+    if step==2 or step==None:
+        dseq2dmutagenesis(cfg)
+    if step==3 or step==None:
+        dseq2dguides(cfg)
+    logging.info("Location of output data: {}".format(cfg['datad']))
+    logging.info("Location of output plot: {}".format(cfg['plotd']))
+    # logging.info("log file: {}".format(cfgp+'.log'))
     logging.shutdown()
 
 if __name__ == '__main__':

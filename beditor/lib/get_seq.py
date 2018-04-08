@@ -7,7 +7,8 @@ from Bio import SeqIO, Alphabet, Data, Seq, SeqUtils
 from Bio import motifs,Seq,AlignIO
 
 #lib modules
-from global_vars import hosts
+import logging
+from beditor.lib.global_vars import hosts
 
 def translate(dnaseq,host='human',fmtout=str):
     if isinstance(dnaseq,str): 
@@ -80,22 +81,24 @@ def get_codon_seq(dintseqflt01,test=False):
 
 def din2dseq(cfg):
     # get dna and protein sequences 
-    din=pd.read_csv(cfg['dinp'])    
-    import pyensembl
-    #import ensembl object that would fetch genes 
-    ensembl = pyensembl.EnsemblRelease(release=cfg['release'])
-    dseq=din.copy()
-    dseq.index=range(len(dseq.index))
-    for rowi in dseq.index:
-        gene_id=dseq.loc[rowi,'gene: id']
-        transcript=ensembl.transcript_by_id(dseq.loc[rowi,'transcript: id'])
-        dnaseq=transcript.coding_sequence
-        prtseq=transcript.protein_sequence
-        dseq.loc[rowi,'aminoacid: wild-type']=prtseq[dseq.loc[rowi,'aminoacid: position']-1]
-        dseq.loc[rowi,'codon: wild-type']=dnaseq[(dseq.loc[rowi,'aminoacid: position']-1)*3:(dseq.loc[rowi,'aminoacid: position']-1)*3+3]
-        dseq.loc[rowi,'transcript: sequence']=dnaseq
-        dseq.loc[rowi,'protein: sequence']=prtseq
+    dseqp='{}/dseq.csv'.format(cfg['datad'])
+    if not exists(dseqp) or cfg['force']:
+        din=pd.read_csv(cfg['dinp'])    
+        import pyensembl
+        #import ensembl object that would fetch genes 
+        ensembl = pyensembl.EnsemblRelease(release=cfg['release'])
+        dseq=din.copy()
+        dseq.index=range(len(dseq.index))
+        for rowi in dseq.index:
+            gene_id=dseq.loc[rowi,'gene: id']
+            transcript=ensembl.transcript_by_id(dseq.loc[rowi,'transcript: id'])
+            dnaseq=transcript.coding_sequence
+            prtseq=transcript.protein_sequence
+            dseq.loc[rowi,'aminoacid: wild-type']=prtseq[dseq.loc[rowi,'aminoacid: position']-1]
+            dseq.loc[rowi,'codon: wild-type']=dnaseq[(dseq.loc[rowi,'aminoacid: position']-1)*3:(dseq.loc[rowi,'aminoacid: position']-1)*3+3]
+            dseq.loc[rowi,'transcript: sequence']=dnaseq
+            dseq.loc[rowi,'protein: sequence']=prtseq
 
-    din.to_csv('{}/din.csv'.format(cfg['datad']))
-    dseq.to_csv('{}/dseq.csv'.format(cfg['datad']))
-    logging.info(dseq['aminoacid: wild-type'].value_counts())
+        din.to_csv('{}/din.csv'.format(cfg['datad']))
+        dseq.to_csv(dseqp)
+        logging.info(dseq['aminoacid: wild-type'].value_counts())

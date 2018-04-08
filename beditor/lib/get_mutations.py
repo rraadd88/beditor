@@ -1,13 +1,15 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
-from os.path import exists
+from os.path import exists,abspath,dirname
 
 from Bio import SeqIO, Alphabet, Data, Seq, SeqUtils
 from Bio import motifs,Seq,AlignIO
 
+import logging
+
 # local scripts
-from global_vars import hosts
+from beditor.lib.global_vars  import hosts
 
 def get_codon_table(aa, host):
     # get codon table
@@ -98,27 +100,29 @@ def get_possible_mutagenesis(dcodontable,dcodonusage,
     return dmutagenesis
 
 
-from global_vars import BEs,pos_muts
+from beditor.lib.global_vars import BEs,pos_muts
 def dseq2dmutagenesis(cfg):
-    dseq=pd.read_csv('{}/dseq.csv'.format(cfg['datad']))
-    aas=list(dseq['aminoacid: wild-type'].unique())#['S','T','Y']
+    dmutagenesisp='{}/dmutagenesis.csv'.format(cfg['datad'])
+    if not exists(dmutagenesisp) or cfg['force']:
+        dseq=pd.read_csv('{}/dseq.csv'.format(cfg['datad']))
+        aas=list(dseq['aminoacid: wild-type'].unique())#['S','T','Y']
 
-    dcodontable=get_codon_table(aa=aas, host=cfg['human'])
+        dcodontable=get_codon_table(aa=aas, host=cfg['host'])
 
-    dcodonusage=get_codon_usage(cuspp='database/yeast/64_1_1_all_nuclear.cusp.txt')
+        dcodonusage=get_codon_usage(cuspp='{}/../data/64_1_1_all_nuclear.cusp.txt'.format(abspath(dirname(__file__))))
 
-    dmutagenesis=get_possible_mutagenesis(dcodontable,dcodonusage,
-    #                          aa=aas,
-                                          BEs=BEs,pos_muts=pos_muts,
-                                 host=cfg['human'])
-    
-    dmutagenesis.to_csv('{}/dmutagenesis.csv'.format(cfg['datad']))
+        dmutagenesis=get_possible_mutagenesis(dcodontable,dcodonusage,
+        #                          aa=aas,
+                                              BEs=BEs,pos_muts=pos_muts,
+                                     host=cfg['host'])
+        
+        dmutagenesis.to_csv(dmutagenesisp)
 
-    print('Possible 1 nucleotide mutations of the phospho-sites:')
-    print(dmutagenesis[['amino acid','amino acid mutation','method','codon','codon mutation',
-    #               'position of mutation in codon','mutation on strand',
-    #               'nucleotide','nucleotide mutation',
-                 ]])
-    for aa in aas:
-        print(aa+' can be mutated to:')
-        print(list(dmutagenesis.loc[dmutagenesis.loc[:,'amino acid']==aa,:].loc[:,'amino acid mutation'].unique()))
+        print('Possible 1 nucleotide mutations of the phospho-sites:')
+        print(dmutagenesis.set_index('amino acid')[['amino acid mutation','method','codon','codon mutation',
+        #               'position of mutation in codon','mutation on strand',
+        #               'nucleotide','nucleotide mutation',
+                     ]])
+        for aa in aas:
+            print(aa+' can be mutated to:')
+            print(list(dmutagenesis.loc[dmutagenesis.loc[:,'amino acid']==aa,:].loc[:,'amino acid mutation'].unique()))
