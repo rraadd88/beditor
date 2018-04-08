@@ -78,3 +78,17 @@ def get_codon_seq(dintseqflt01,test=False):
             print('{}:{}'.format(dintseqflt01.loc[subi,'P'],dintseqflt01.loc[subi,'P-codon']))
     return dintseqflt01
 
+def din2dseq(cfg):
+    # get dna and protein sequences 
+    dseq=pd.read_csv(cfg['dinp'])    
+    dseq=din.copy()
+    dseq.index=range(len(dseq.index))
+    for rowi in dseq.index:
+        gene_id=dseq.loc[rowi,'gene: id']
+        transcript=ensembl.transcript_by_id(dseq.loc[rowi,'transcript: id'])
+        dnaseq=transcript.coding_sequence
+        prtseq=transcript.protein_sequence
+        dseq.loc[rowi,'aminoacid: wild-type']=prtseq[dseq.loc[rowi,'aminoacid: position']-1]
+        dseq.loc[rowi,'codon: wild-type']=dnaseq[(dseq.loc[rowi,'aminoacid: position']-1)*3:(dseq.loc[rowi,'aminoacid: position']-1)*3+3]
+        dseq.loc[rowi,'transcript: sequence']=dnaseq
+        dseq.loc[rowi,'protein: sequence']=prtseq
