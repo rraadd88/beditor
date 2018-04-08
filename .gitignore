@@ -2,6 +2,7 @@
 *.pyc
 *.ipynb_checkpoints
 
+build
 docs
 #docs/*.rst
 #docs/*.py
