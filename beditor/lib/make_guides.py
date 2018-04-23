@@ -100,6 +100,6 @@ def dseq2dguides(cfg):
         dguidesflt1.to_csv('{}/dguidesflt1.csv'.format(cfg['datad']))
         
         from beditor.lib.plot_res import plot_nt_composition
-        plot_nt_composition(dguidesflt1,
+        plot_nt_composition(dguidesflt,
                         pos_muts,
                         plotp='{}/nt_compositions_of_guides.png'.format(cfg['plotd']))

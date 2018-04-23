@@ -24,7 +24,7 @@ def get_seq_yeast(dseq,orfs_fastap,
            test=False):
         
     orfs=SeqIO.to_dict(SeqIO.parse(orfs_fastap,'fasta'))
-    for subi,sub in enumerate(dseq['Substrate'].tolist()):
+    for subi,sub in enumerate(dseq['gene: name'].tolist()):
         if sub in orfs:
             seq=orfs[sub]
             if test:
@@ -40,37 +40,37 @@ def get_seq_yeast(dseq,orfs_fastap,
         
         dseq.loc[subi,'DNA sequence']=dnaseq
         dseq.loc[subi,'Protein sequence']=prtseq
-        if not '|' in dseq.loc[subi,'Ysite']:
-            dseq.loc[subi,'gene: name']=sub
-            dseq.loc[subi,'aminoacid: position']=int(dseq.loc[subi,'Ysite'])
-            dseq.loc[subi,'aminoacid: wild-type']=prtseq[int(dseq.loc[subi,'aminoacid: position'])-1]
-            if dseq.loc[subi,'aminoacid: wild-type']=='Y':
-                dseq.loc[subi,'codon: wild-type']=dnaseq[(int(dseq.loc[subi,'aminoacid: position'])-1)*3:(int(dseq.loc[subi,'aminoacid: position'])-1)*3+3]
-                dseq.loc[subi,'transcript: sequence']=dnaseq
-                dseq.loc[subi,'protein: sequence']=prtseq
+#         if and (not '|' in dseq.loc[subi,'aminoacid: position']):
+        dseq.loc[subi,'gene: name']=sub
+#             dseq.loc[subi,'aminoacid: position']=int(dseq.loc[subi,'aminoacid: position'])
+        dseq.loc[subi,'aminoacid: wild-type']=prtseq[int(dseq.loc[subi,'aminoacid: position'])-1]
+        if dseq.loc[subi,'aminoacid: wild-type']=='Y':
+            dseq.loc[subi,'codon: wild-type']=dnaseq[(int(dseq.loc[subi,'aminoacid: position'])-1)*3:(int(dseq.loc[subi,'aminoacid: position'])-1)*3+3]
+            dseq.loc[subi,'transcript: sequence']=dnaseq
+            dseq.loc[subi,'protein: sequence']=prtseq
 
-                psites=[int(i) for i in dseq.iloc[subi,:]['Ysite'].split('|')]
-                for psitei,psite in enumerate(psites):
-                    if prtseq[int(psite)-1] == 'Y':
-                        dseq.loc[subi,'Psite{0:02d}'.format(psitei+1)]=psite                
-                    else:
-                        if test:
-                            print('{}: p site not found; found {}; seq-10+10: {}'.format(sub,prtseq[int(psite)-1],prtseq[int(dint.iloc[subi,:]['Ysite'])-10:int(dint.iloc[subi,:]['Ysite'])+10]))
-                        if prtseq[int(psite)] == 'Y':
-                            dseq.loc[subi,'Psite{0:02d}'.format(psitei+1)]=psite+1
-                            if test:
-                                print('{}: p site corrected'.format(sub))
-                        else:
-                            if test:
-                                print('{}: p site not found; found {}; seq-10+10: {}'.format(sub,prtseq[int(psite)-1],prtseq[int(dint.iloc[subi,:]['Ysite'])-10:int(dint.iloc[subi,:]['Ysite'])+10]))
-                            break
-    #         print(dseq.shape)
+#             psites=[int(i) for i in dseq.iloc[subi,:]['aminoacid: position'].split('|')]
+#             for psitei,psite in enumerate(psites):
+#                 if prtseq[int(psite)-1] == 'Y':
+#                     dseq.loc[subi,'Psite{0:02d}'.format(psitei+1)]=psite                
+#                 else:
+#                     if test:
+#                         print('{}: p site not found; found {}; seq-10+10: {}'.format(sub,prtseq[int(psite)-1],prtseq[int(dint.iloc[subi,:]['aminoacid: position'])-10:int(dint.iloc[subi,:]['aminoacid: position'])+10]))
+#                     if prtseq[int(psite)] == 'Y':
+#                         dseq.loc[subi,'Psite{0:02d}'.format(psitei+1)]=psite+1
+#                         if test:
+#                             print('{}: p site corrected'.format(sub))
+#                     else:
+#                         if test:
+#                             print('{}: p site not found; found {}; seq-10+10: {}'.format(sub,prtseq[int(psite)-1],prtseq[int(dint.iloc[subi,:]['aminoacid: position'])-10:int(dint.iloc[subi,:]['aminoacid: position'])+10]))
+#                         break
+#     #         print(dseq.shape)
     dseq=dseq.dropna(axis=0,how='any')
 #         print(dseq.shape)
     return dseq
 
 def get_codon_seq(dintseqflt01,test=False):
-    for subi,sub in zip(dintseqflt01.index,dintseqflt01['Substrate'].tolist()):
+    for subi,sub in zip(dintseqflt01.index,dintseqflt01['gene: name'].tolist()):
         psite=int(dintseqflt01.loc[subi,'Psite01'])
         dintseqflt01.loc[subi,'P']=dintseqflt01.loc[subi,'Protein sequence'][(psite-1)]
         dintseqflt01.loc[subi,'P-codon']=dintseqflt01.loc[subi,'DNA sequence'][(psite-1)*3:(psite-1)*3+3]    
