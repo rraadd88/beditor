@@ -1,7 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
-from os.path import exists
+from os.path import exists,abspath,dirname
 
 from Bio import SeqIO, Alphabet, Data, Seq, SeqUtils
 from Bio import motifs,Seq,AlignIO
@@ -19,12 +19,12 @@ def translate(dnaseq,host='human',fmtout=str):
     else:
         return prtseq
 
-def get_seq_yeast(dintseq,orfs_fastap,
+def get_seq_yeast(dseq,orfs_fastap,
             host,
            test=False):
         
     orfs=SeqIO.to_dict(SeqIO.parse(orfs_fastap,'fasta'))
-    for subi,sub in enumerate(dintseq['Substrate'].tolist()):
+    for subi,sub in enumerate(dseq['Substrate'].tolist()):
         if sub in orfs:
             seq=orfs[sub]
             if test:
@@ -34,25 +34,40 @@ def get_seq_yeast(dintseq,orfs_fastap,
             print('{}: not found in fasta'.format(sub))
             break
         dnaseq=str(seq.seq)
-        prtseq=str(seq.seq.translate(table=hosts[host]))
-        dintseq.loc[subi,'DNA sequence']=dnaseq
-        dintseq.loc[subi,'Protein sequence']=prtseq        
-        psites=[int(i) for i in dintseq.iloc[subi,:]['Ysite'].split('|')]
-        for psitei,psite in enumerate(psites):
-            if prtseq[int(psite)-1] == 'Y':
-                dintseq.loc[subi,'Psite{0:02d}'.format(psitei+1)]=psite
-            else:
-                if test:
-                    print('{}: p site not found; found {}; seq-10+10: {}'.format(sub,prtseq[int(psite)-1],prtseq[int(dint.iloc[subi,:]['Ysite'])-10:int(dint.iloc[subi,:]['Ysite'])+10]))
-                if prtseq[int(psite)] == 'Y':
-                    dintseq.loc[subi,'Psite{0:02d}'.format(psitei+1)]=psite+1
-                    if test:
-                        print('{}: p site corrected'.format(sub))
-                else:
-                    if test:
-                        print('{}: p site not found; found {}; seq-10+10: {}'.format(sub,prtseq[int(psite)-1],prtseq[int(dint.iloc[subi,:]['Ysite'])-10:int(dint.iloc[subi,:]['Ysite'])+10]))
-                    break
-    return dintseq
+#         print(host)
+        prtseq=translate(seq.seq,host=host,fmtout=str)
+#             prtseq=str(seq.seq.translate(table=hosts[host]))
+        
+        dseq.loc[subi,'DNA sequence']=dnaseq
+        dseq.loc[subi,'Protein sequence']=prtseq
+        if not '|' in dseq.loc[subi,'Ysite']:
+            dseq.loc[subi,'gene: name']=sub
+            dseq.loc[subi,'aminoacid: position']=int(dseq.loc[subi,'Ysite'])
+            dseq.loc[subi,'aminoacid: wild-type']=prtseq[int(dseq.loc[subi,'aminoacid: position'])-1]
+            if dseq.loc[subi,'aminoacid: wild-type']=='Y':
+                dseq.loc[subi,'codon: wild-type']=dnaseq[(int(dseq.loc[subi,'aminoacid: position'])-1)*3:(int(dseq.loc[subi,'aminoacid: position'])-1)*3+3]
+                dseq.loc[subi,'transcript: sequence']=dnaseq
+                dseq.loc[subi,'protein: sequence']=prtseq
+
+                psites=[int(i) for i in dseq.iloc[subi,:]['Ysite'].split('|')]
+                for psitei,psite in enumerate(psites):
+                    if prtseq[int(psite)-1] == 'Y':
+                        dseq.loc[subi,'Psite{0:02d}'.format(psitei+1)]=psite                
+                    else:
+                        if test:
+                            print('{}: p site not found; found {}; seq-10+10: {}'.format(sub,prtseq[int(psite)-1],prtseq[int(dint.iloc[subi,:]['Ysite'])-10:int(dint.iloc[subi,:]['Ysite'])+10]))
+                        if prtseq[int(psite)] == 'Y':
+                            dseq.loc[subi,'Psite{0:02d}'.format(psitei+1)]=psite+1
+                            if test:
+                                print('{}: p site corrected'.format(sub))
+                        else:
+                            if test:
+                                print('{}: p site not found; found {}; seq-10+10: {}'.format(sub,prtseq[int(psite)-1],prtseq[int(dint.iloc[subi,:]['Ysite'])-10:int(dint.iloc[subi,:]['Ysite'])+10]))
+                            break
+    #         print(dseq.shape)
+    dseq=dseq.dropna(axis=0,how='any')
+#         print(dseq.shape)
+    return dseq
 
 def get_codon_seq(dintseqflt01,test=False):
     for subi,sub in zip(dintseqflt01.index,dintseqflt01['Substrate'].tolist()):
@@ -84,21 +99,27 @@ def din2dseq(cfg):
     dseqp='{}/dseq.csv'.format(cfg['datad'])
     if not exists(dseqp) or cfg['force']:
         din=pd.read_csv(cfg['dinp'])    
-        import pyensembl
-        #import ensembl object that would fetch genes 
-        ensembl = pyensembl.EnsemblRelease(release=cfg['release'])
-        dseq=din.copy()
-        dseq.index=range(len(dseq.index))
-        for rowi in dseq.index:
-            gene_id=dseq.loc[rowi,'gene: id']
-            transcript=ensembl.transcript_by_id(dseq.loc[rowi,'transcript: id'])
-            dnaseq=transcript.coding_sequence
-            prtseq=transcript.protein_sequence
-            dseq.loc[rowi,'aminoacid: wild-type']=prtseq[dseq.loc[rowi,'aminoacid: position']-1]
-            dseq.loc[rowi,'codon: wild-type']=dnaseq[(dseq.loc[rowi,'aminoacid: position']-1)*3:(dseq.loc[rowi,'aminoacid: position']-1)*3+3]
-            dseq.loc[rowi,'transcript: sequence']=dnaseq
-            dseq.loc[rowi,'protein: sequence']=prtseq
-
+        if cfg['host']=='human':
+            import pyensembl
+            #import ensembl object that would fetch genes 
+            ensembl = pyensembl.EnsemblRelease(release=cfg['release'])
+            dseq=din.copy()
+            dseq.index=range(len(dseq.index))
+            for rowi in dseq.index:
+                gene_id=dseq.loc[rowi,'gene: id']
+                transcript=ensembl.transcript_by_id(dseq.loc[rowi,'transcript: id'])
+                dnaseq=transcript.coding_sequence
+                prtseq=transcript.protein_sequence
+                dseq.loc[rowi,'aminoacid: wild-type']=prtseq[dseq.loc[rowi,'aminoacid: position']-1]
+                dseq.loc[rowi,'codon: wild-type']=dnaseq[(dseq.loc[rowi,'aminoacid: position']-1)*3:(dseq.loc[rowi,'aminoacid: position']-1)*3+3]
+                dseq.loc[rowi,'transcript: sequence']=dnaseq
+                dseq.loc[rowi,'protein: sequence']=prtseq
+        else:
+            dseq=get_seq_yeast(din,
+                          orfs_fastap='{}/../data/yeast/orf_coding_all.fasta'.format(abspath(dirname(__file__))),
+                          host=cfg['host'],
+                          test=cfg['test'])
         din.to_csv('{}/din.csv'.format(cfg['datad']))
         dseq.to_csv(dseqp)
+        logging.info('Counts of amino acids to mutate:')
         logging.info(dseq['aminoacid: wild-type'].value_counts())
