@@ -36,44 +36,32 @@ def get_seq_yeast(dseq,orfs_fastap,
         dnaseq=str(seq.seq)
 #         print(host)
         prtseq=translate(seq.seq,host=host,fmtout=str)
-#             prtseq=str(seq.seq.translate(table=hosts[host]))
-        
-        dseq.loc[subi,'DNA sequence']=dnaseq
+#       prtseq=str(seq.seq.translate(table=hosts[host]))
+#       if not isinstance(dseq.loc[subi,'aminoacid: position'],str):
+        dseq.loc[subi,'transcript: sequence']=dnaseq
         dseq.loc[subi,'Protein sequence']=prtseq
-#         if and (not '|' in dseq.loc[subi,'aminoacid: position']):
         dseq.loc[subi,'gene: name']=sub
-#             dseq.loc[subi,'aminoacid: position']=int(dseq.loc[subi,'aminoacid: position'])
-        dseq.loc[subi,'aminoacid: wild-type']=prtseq[int(dseq.loc[subi,'aminoacid: position'])-1]
-        if dseq.loc[subi,'aminoacid: wild-type']=='Y':
+    #   dseq.loc[subi,'aminoacid: position']=int(dseq.loc[subi,'aminoacid: position 
+        try:
+            dseq.loc[subi,'aminoacid: position']=int(float(dseq.loc[subi,'aminoacid: position']))
+            dseq.loc[subi,'aminoacid: wild-type']=prtseq[int(dseq.loc[subi,'aminoacid: position'])-1]
+        #   if dseq.loc[subi,'aminoacid: wild-type']=='Y':
             dseq.loc[subi,'codon: wild-type']=dnaseq[(int(dseq.loc[subi,'aminoacid: position'])-1)*3:(int(dseq.loc[subi,'aminoacid: position'])-1)*3+3]
             dseq.loc[subi,'transcript: sequence']=dnaseq
             dseq.loc[subi,'protein: sequence']=prtseq
-
-#             psites=[int(i) for i in dseq.iloc[subi,:]['aminoacid: position'].split('|')]
-#             for psitei,psite in enumerate(psites):
-#                 if prtseq[int(psite)-1] == 'Y':
-#                     dseq.loc[subi,'Psite{0:02d}'.format(psitei+1)]=psite                
-#                 else:
-#                     if test:
-#                         print('{}: p site not found; found {}; seq-10+10: {}'.format(sub,prtseq[int(psite)-1],prtseq[int(dint.iloc[subi,:]['aminoacid: position'])-10:int(dint.iloc[subi,:]['aminoacid: position'])+10]))
-#                     if prtseq[int(psite)] == 'Y':
-#                         dseq.loc[subi,'Psite{0:02d}'.format(psitei+1)]=psite+1
-#                         if test:
-#                             print('{}: p site corrected'.format(sub))
-#                     else:
-#                         if test:
-#                             print('{}: p site not found; found {}; seq-10+10: {}'.format(sub,prtseq[int(psite)-1],prtseq[int(dint.iloc[subi,:]['aminoacid: position'])-10:int(dint.iloc[subi,:]['aminoacid: position'])+10]))
-#                         break
-#     #         print(dseq.shape)
+        except:
+            dseq.loc[subi,'aminoacid: position']=dseq.loc[subi,'aminoacid: position']
+            if test:
+                print(print(seq.id,dseq.loc[subi,'aminoacid: position']))                        
     dseq=dseq.dropna(axis=0,how='any')
-#         print(dseq.shape)
+#   print(dseq.shape)
     return dseq
 
 def get_codon_seq(dintseqflt01,test=False):
     for subi,sub in zip(dintseqflt01.index,dintseqflt01['gene: name'].tolist()):
         psite=int(dintseqflt01.loc[subi,'Psite01'])
         dintseqflt01.loc[subi,'P']=dintseqflt01.loc[subi,'Protein sequence'][(psite-1)]
-        dintseqflt01.loc[subi,'P-codon']=dintseqflt01.loc[subi,'DNA sequence'][(psite-1)*3:(psite-1)*3+3]    
+        dintseqflt01.loc[subi,'P-codon']=dintseqflt01.loc[subi,'transcript: sequence'][(psite-1)*3:(psite-1)*3+3]    
         ini=(psite-1)-10
         end=(psite-1)+10+1
         if ini<0:
@@ -86,9 +74,9 @@ def get_codon_seq(dintseqflt01,test=False):
         end=(psite-1)*3+((10+1)*3)
         if ini<0:
             ini=0
-        if end>len(dintseqflt01.loc[subi,'DNA sequence']):
-            end=len(dintseqflt01.loc[subi,'DNA sequence'])        
-        dintseqflt01.loc[subi,'30[P-codon]30']=dintseqflt01.loc[subi,'DNA sequence'][ini:end]
+        if end>len(dintseqflt01.loc[subi,'transcript: sequence']):
+            end=len(dintseqflt01.loc[subi,'transcript: sequence'])        
+        dintseqflt01.loc[subi,'30[P-codon]30']=dintseqflt01.loc[subi,'transcript: sequence'][ini:end]
         dintseqflt01.loc[subi,'30[P-codon]30: P-codon position']=(psite-1)*3-ini
         if test:
             print('{}:{}'.format(dintseqflt01.loc[subi,'P'],dintseqflt01.loc[subi,'P-codon']))
