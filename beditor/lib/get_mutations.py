@@ -2,6 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 from os.path import exists,abspath,dirname
+import itertools
 
 from Bio import SeqIO, Alphabet, Data, Seq, SeqUtils
 from Bio import motifs,Seq,AlignIO
@@ -53,8 +54,26 @@ def get_possible_mutagenesis(dcodontable,dcodonusage,
                              BEs,pos_muts,
                              host,
                             ): 
+    def write_dmutagenesis(cdni,posi,codon,codonmut,ntwt,ntmut,aa,aamut,method):
+        dmutagenesis.loc[cdni,'codon']=codon
+        dmutagenesis.loc[cdni,'position of mutation in codon']=int(posi)
+        dmutagenesis.loc[cdni,'codon mutation']=codonmut
+        dmutagenesis.loc[cdni,'nucleotide']=ntwt
+        dmutagenesis.loc[cdni,'nucleotide mutation']=ntmut
+        dmutagenesis.loc[cdni,'amino acid']=aa
+        dmutagenesis.loc[cdni,'amino acid mutation']=aamut
+        dmutagenesis.loc[cdni,'mutation on strand']=method.split(' on ')[1]
+        dmutagenesis.loc[cdni,'method']=method.split(' on ')[0]                        
+        dmutagenesis.loc[cdni,'codon mutation usage Fraction']=dcodonusage.loc[codonmut,'Fraction']
+        dmutagenesis.loc[cdni,'codon mutation usage Frequency']=dcodonusage.loc[codonmut,'Frequency']
+        return dmutagenesis
 
     positions={0:'@1st position',1:'@2nd position',2:'@3rd position'}
+    #double nucleotide mutations
+    positions_dm=[(i,j)  for i in positions.keys() for j in positions.keys() if i<j]
+    #double nucleotide mutations
+    positions_tm=[[0,1,2]]
+
     dmutagenesis=dcodontable.copy()
     # test=True
     test=False
@@ -64,6 +83,7 @@ def get_possible_mutagenesis(dcodontable,dcodonusage,
         muti=0
         if test:
             print(codon)
+        #single nucleuotide mutations
         for method in BEs:
             for posi in positions: 
                 if BEs[method][0]==codon[posi]:
@@ -85,17 +105,76 @@ def get_possible_mutagenesis(dcodontable,dcodonusage,
                         if '-' in method.split(' on ')[1]:
                             ntwt=str(Seq.Seq(ntwt,Alphabet.generic_dna).reverse_complement())
                             ntmut=str(Seq.Seq(ntmut,Alphabet.generic_dna).reverse_complement())
-                        dmutagenesis.loc[cdni,'codon']=codon
-                        dmutagenesis.loc[cdni,'position of mutation in codon']=posi+1
-                        dmutagenesis.loc[cdni,'codon mutation']=codonmut
-                        dmutagenesis.loc[cdni,'nucleotide']=ntwt
-                        dmutagenesis.loc[cdni,'nucleotide mutation']=ntmut
-                        dmutagenesis.loc[cdni,'amino acid']=aa
-                        dmutagenesis.loc[cdni,'amino acid mutation']=aamut
-                        dmutagenesis.loc[cdni,'mutation on strand']=method.split(' on ')[1]
-                        dmutagenesis.loc[cdni,'method']=method.split(' on ')[0]                        
-                        dmutagenesis.loc[cdni,'codon mutation usage Fraction']=dcodonusage.loc[codonmut,'Fraction']
-                        dmutagenesis.loc[cdni,'codon mutation usage Frequency']=dcodonusage.loc[codonmut,'Frequency']
+                        dmutagenesis=write_dmutagenesis(**{'cdni':cdni,
+                        'posi':posi+1,
+                        'codon':codon,
+                        'codonmut':codonmut,
+                        'ntwt':ntwt,
+                        'ntmut':ntmut,
+                        'aa':aa,
+                        'aamut':aamut,
+                        'method':method})
+        #double nucleotide mutations
+        for method in BEs:
+            for posi1,posi2 in positions_dm: 
+                if (BEs[method][0]==codon[posi1]) and (BEs[method][0]==codon[posi2]):
+                    for ntmut1,ntmut2 in itertools.product(''.join(BEs[method][1]), repeat=2):
+                        if (posi1==0) and (posi2==1):
+                            codonmut='{}{}{}'.format(ntmut1,ntmut2,codon[2])
+                        elif (posi1==1) and (posi2==2):
+                            codonmut='{}{}{}'.format(codon[0],ntmut1,ntmut2)
+                        elif (posi1==0) and (posi2==2):
+                            codonmut='{}{}{}'.format(ntmut1,codon[1],ntmut2)
+                        aamut=str(Seq.Seq(codonmut,Alphabet.generic_dna).translate(table=hosts[host]))
+                        # if (aamut!='*') and (aamut!=aa): #  nonsence and synonymous
+                        if muti==0:
+                            cdni=cdni
+                        else:
+                            cdni=len(dmutagenesis)+1
+                        muti+=1
+                        ntwt=BEs[method][0]
+                        ntmut='{}{}'.format(ntmut1,ntmut2)
+                        if '-' in method.split(' on ')[1]:
+                            ntwt=str(Seq.Seq(ntwt,Alphabet.generic_dna).reverse_complement())
+                            ntmut=str(Seq.Seq(ntmut,Alphabet.generic_dna).reverse_complement())
+                        dmutagenesis=write_dmutagenesis(
+                        **{'cdni':cdni,
+                        'posi':'{}{}'.format(posi1,posi2),
+                        'codon':codon,
+                        'codonmut':codonmut,
+                        'ntwt':ntwt,
+                        'ntmut':ntmut,
+                        'aa':aa,
+                        'aamut':aamut,
+                        'method':method})
+        #triple nucleotide mutations
+        for method in BEs:
+            for posi1,posi2,posi3 in positions_tm:
+                if (BEs[method][0]==codon[posi1]) and (BEs[method][0]==codon[posi2]) and (BEs[method][0]==codon[posi3]):
+                    for ntmut1,ntmut2,ntmut3 in itertools.product(''.join(BEs[method][1]), repeat=3):
+                        codonmut='{}{}{}'.format(ntmut1,ntmut2,ntmut3)
+                        aamut=str(Seq.Seq(codonmut,Alphabet.generic_dna).translate(table=hosts[host]))
+                        # if (aamut!='*') and (aamut!=aa): #  nonsence and synonymous
+                        if muti==0:
+                            cdni=cdni
+                        else:
+                            cdni=len(dmutagenesis)+1
+                        muti+=1
+                        ntwt=BEs[method][0]
+                        ntmut='{}{}{}'.format(ntmut1,ntmut2,ntmut3)
+                        if '-' in method.split(' on ')[1]:
+                            ntwt=str(Seq.Seq(ntwt,Alphabet.generic_dna).reverse_complement())
+                            ntmut=str(Seq.Seq(ntmut,Alphabet.generic_dna).reverse_complement())
+                        dmutagenesis=write_dmutagenesis(
+                        **{'cdni':cdni,
+                        'posi':'123',
+                        'codon':codon,
+                        'codonmut':codonmut,
+                        'ntwt':ntwt,
+                        'ntmut':ntmut,
+                        'aa':aa,
+                        'aamut':aamut,
+                        'method':method})
     dmutagenesis=dmutagenesis.sort_values('codon')  
     # Adding information of Allowed activity window
     dmutagenesis=dmutagenesis.set_index('method').join(pos_muts)
