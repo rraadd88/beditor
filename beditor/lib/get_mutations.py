@@ -20,6 +20,9 @@ def get_codon_table(aa, host):
     dcodontable.index.name='codon'
     dcodontable.columns=['amino acid']
 
+    for cdn in codontable.stop_codons:
+        dcodontable.loc[cdn,'amino acid']='*'        
+
     dcodontable=dcodontable.reset_index()
     rows=[]
     if isinstance(aa,list):
@@ -72,27 +75,27 @@ def get_possible_mutagenesis(dcodontable,dcodonusage,
                         elif posi==2:
                             codonmut='{}{}{}'.format(codon[0],codon[1],ntmut)
                         aamut=str(Seq.Seq(codonmut,Alphabet.generic_dna).translate(table=hosts[host]))
-                        if (aamut!='*') and (aamut!=aa):
-                            if muti==0:
-                                cdni=cdni
-                            else:
-                                cdni=len(dmutagenesis)+1
-                            muti+=1
-                            ntwt=BEs[method][0]
-                            if '-' in method.split(' on ')[1]:
-                                ntwt=str(Seq.Seq(ntwt,Alphabet.generic_dna).reverse_complement())
-                                ntmut=str(Seq.Seq(ntmut,Alphabet.generic_dna).reverse_complement())
-                            dmutagenesis.loc[cdni,'codon']=codon
-                            dmutagenesis.loc[cdni,'position of mutation in codon']=posi+1
-                            dmutagenesis.loc[cdni,'codon mutation']=codonmut
-                            dmutagenesis.loc[cdni,'nucleotide']=ntwt
-                            dmutagenesis.loc[cdni,'nucleotide mutation']=ntmut
-                            dmutagenesis.loc[cdni,'amino acid']=aa
-                            dmutagenesis.loc[cdni,'amino acid mutation']=aamut
-                            dmutagenesis.loc[cdni,'mutation on strand']=method.split(' on ')[1]
-                            dmutagenesis.loc[cdni,'method']=method.split(' on ')[0]                        
-                            dmutagenesis.loc[cdni,'codon mutation usage Fraction']=dcodonusage.loc[codonmut,'Fraction']
-                            dmutagenesis.loc[cdni,'codon mutation usage Frequency']=dcodonusage.loc[codonmut,'Frequency']
+                        # if (aamut!='*') and (aamut!=aa): #  nonsence and synonymous
+                        if muti==0:
+                            cdni=cdni
+                        else:
+                            cdni=len(dmutagenesis)+1
+                        muti+=1
+                        ntwt=BEs[method][0]
+                        if '-' in method.split(' on ')[1]:
+                            ntwt=str(Seq.Seq(ntwt,Alphabet.generic_dna).reverse_complement())
+                            ntmut=str(Seq.Seq(ntmut,Alphabet.generic_dna).reverse_complement())
+                        dmutagenesis.loc[cdni,'codon']=codon
+                        dmutagenesis.loc[cdni,'position of mutation in codon']=posi+1
+                        dmutagenesis.loc[cdni,'codon mutation']=codonmut
+                        dmutagenesis.loc[cdni,'nucleotide']=ntwt
+                        dmutagenesis.loc[cdni,'nucleotide mutation']=ntmut
+                        dmutagenesis.loc[cdni,'amino acid']=aa
+                        dmutagenesis.loc[cdni,'amino acid mutation']=aamut
+                        dmutagenesis.loc[cdni,'mutation on strand']=method.split(' on ')[1]
+                        dmutagenesis.loc[cdni,'method']=method.split(' on ')[0]                        
+                        dmutagenesis.loc[cdni,'codon mutation usage Fraction']=dcodonusage.loc[codonmut,'Fraction']
+                        dmutagenesis.loc[cdni,'codon mutation usage Frequency']=dcodonusage.loc[codonmut,'Frequency']
     dmutagenesis=dmutagenesis.sort_values('codon')  
     # Adding information of Allowed activity window
     dmutagenesis=dmutagenesis.set_index('method').join(pos_muts)
