@@ -175,6 +175,8 @@ def get_possible_mutagenesis(dcodontable,dcodonusage,
                         'aa':aa,
                         'aamut':aamut,
                         'method':method})
+                        
+    dmutagenesis['nucleotide mutation: count']=[len(s) for s in dmutagenesis['nucleotide mutation']]
     dmutagenesis=dmutagenesis.sort_values('codon')  
     # Adding information of Allowed activity window
     dmutagenesis=dmutagenesis.set_index('method').join(pos_muts)
