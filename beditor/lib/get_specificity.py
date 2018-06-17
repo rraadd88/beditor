@@ -169,32 +169,27 @@ def annotateBedWithPos(inBed, outBed):
         ofh.write(desc)
         ofh.write("\n")
     ofh.close()
-# def findOfftargetsBwa(queue, batchId, batchBase, faFname, genome, pam, bedFname,maxMMs,genomep,
-#         GUIDELEN,
-#         MFAC,
-#         MAXOCC,
-#         offtargetPams,
-#         ALTPAMMINSCORE,
-#         DEBUG):    
-#     " align faFname to genome and create matchedBedFname "
-#     print('queue')
-#     print(queue)
-#     print('batchId')
-#     print(batchId)
-#     print('batchBase')
-#     print(batchBase)
-#     print('faFname')
-#     print(faFname)
-#     print('genome')
-#     print(genome)
-#     print('pam')
-#     print(pam)
-#     print('bedFname')
-#     print(bedFname)
 
+# def getOfftargets(seq, org, pam, batchId, startDict, queue,TEMPDIR,GUIDELEN,pamPlusLen,maxMMs,genomep,
+#                 MFAC,
+#                 MAXOCC,
+#                 offtargetPams,
+#                 ALTPAMMINSCORE,
+#                 DEBUG):
+#     """ write guides to fasta and run bwa or use cached results.
+#     Return name of the BED file with the matches.
+#     Write progress status updates to queue object.
+#     """
+# #     print(params_findofftargetbwa)
+#     batchBase = join(TEMPDIR, batchId)
+#     otBedFname = batchBase+".bed"
+#     bedFname=otBedFname
+#     print(otBedFname)
+#     faFname = batchBase+".fa"
 
 #     matchesBedFname = batchBase+".matches.bed"
 #     saFname = batchBase+".sa"
+#     samp = batchBase+".sam"
 #     pamLen = len(pam)
 #     genomeDir = dirname(genomep) # make var local, see below
 
@@ -208,172 +203,19 @@ def annotateBedWithPos(inBed, outBed):
 #     seqLen = GUIDELEN
 
 #     bwaM = MFAC*MAXOCC # -m is queue size in bwa
-#     print(maxDiff)
-#     print(seqLen)
-#     print('ssssssssssssssss')
 #     cmd = "$BIN/bwa aln -o 0 -m %(bwaM)s -n %(maxDiff)d -k %(maxDiff)d -N -l %(seqLen)d %(genomep)s %(faFname)s > %(saFname)s" % locals()
 #     runCmd(cmd)
 
 #     queue.startStep(batchId, "saiToBed", convertMsg)
 #     maxOcc = MAXOCC # create local var from global
-#     # EXTRACTION OF POSITIONS + CONVERSION + SORT/CLIP
-#     # the sorting should improve the twoBitToFa runtime
-    
-#     cmd = "$BIN/bwa samse -n %(maxOcc)d %(genomep)s %(saFname)s %(faFname)s | $SCRIPT/xa2multi.pl | $SCRIPT/samToBed %(pam)s %(seqLen)d | sort -k1,1 -k2,2n | $BIN/bedClip stdin %(genomep)s.sizes stdout >> %(matchesBedFname)s " % locals()
+# #     cmd = "$BIN/bwa samse -n %(maxOcc)d %(genomep)s %(saFname)s %(faFname)s | $SCRIPT/xa2multi.pl | $SCRIPT/samToBed %(pam)s %(seqLen)d | sort -k1,1 -k2,2n | $BIN/bedClip stdin %(genomep)s.sizes stdout >> %(matchesBedFname)s " % locals()
+#     cmd = "$BIN/bwa samse -n %(maxOcc)d %(genomep)s %(saFname)s %(faFname)s > %(samp)" % locals()
 #     runCmd(cmd)
+# #     cmd = "bedtools getfasta -name -s -fi {} -bed {} -fo {}.fasta".format(genomep,matchesBedFname,matchesBedFname)
+# #     runCmd(cmd)
 
-#     # arguments: guideSeq, mainPat, altPats, altScore, passX1Score
-#     filtMatchesBedFname = batchBase+".filtMatches.bed"
-#     queue.startStep(batchId, "filter", "Removing matches without a PAM motif")
-#     altPats = ",".join(offtargetPams.get(pam, ["na"]))
-#     bedFnameTmp = bedFname+".tmp"
-#     altPamMinScore = str(ALTPAMMINSCORE)
-#     cmd = "bedtools getfasta -name -s -fi {} -bed {} -fo {}.fasta".format(genomep,matchesBedFname,matchesBedFname)
-#     runCmd(cmd)
-#     cmd = "python3 $SCRIPT/filterFaToBed %(faFname)s %(pam)s %(altPats)s %(altPamMinScore)s %(maxOcc)d %(matchesBedFname)s.fasta > %(filtMatchesBedFname)s" % locals()
-#     runCmd(cmd)
-
-#     segFname = "%(genomeDir)s/%(genome)s/%(genome)s.segments.bed" % locals()
-
-#     # if we have gene model segments, annotate them, otherwise just use the chrom position
-#     if isfile(segFname):
-#         queue.startStep(batchId, "genes", "Annotating matches with genes")
-#         cmd = "cat %(filtMatchesBedFname)s | $BIN/overlapSelect %(segFname)s stdin stdout -mergeOutput -selectFmt=bed -inFmt=bed | cut -f1,2,3,4,8 > %(bedFnameTmp)s " % locals()
-#         runCmd(cmd)
-#     else:
-#         queue.startStep(batchId, "chromPos", "Annotating matches with chromosome position")
-#         annotateBedWithPos(filtMatchesBedFname, bedFnameTmp)
-
-#     # make sure the final bed file is never in a half-written state, 
-#     # as it is our signal that the job is complete
-#     shutil.move(bedFnameTmp, bedFname)
-#     queue.startStep(batchId, "done", "Job completed")
-
-#     # remove the temporary files
-#     tempFnames = [saFname, matchesBedFname, filtMatchesBedFname]
-#     for tfn in tempFnames:
-#         if isfile(tfn) and not DEBUG:
-#             os.remove(tfn)
-#     return bedFname
-
-# def processSubmission(faFname, genome, pam, bedFname, batchBase, batchId, queue,maxMMs,genomep,params_findofftargetbwa,doEffScoring=False, cpf1Mode=False):
-#     """ search fasta file against genome, filter for pam matches and write to bedFName 
-#     optionally write status updates to work queue. Remove faFname.
-#     """
-#     if doEffScoring and not cpf1Mode:
-#         queue.startStep(batchId, "effScores", "Calculating guide efficiency scores")
-#         createBatchEffScoreTable(batchId)
-        
-# #     if useBowtie:
-# #         findOfftargetsBowtie(queue, batchId, batchBase, faFname, genome, pam, bedFname)
-# #     else:
-#     findOfftargetsBwa(queue, batchId, batchBase, faFname, genome, pam, bedFname,maxMMs,genomep=genomep,**params_findofftargetbwa)
-#     print(faFname)
-#     return bedFname
-
-def getOfftargets(seq, org, pam, batchId, startDict, queue,TEMPDIR,GUIDELEN,pamPlusLen,maxMMs,genomep,
-                MFAC,
-                MAXOCC,
-                offtargetPams,
-                ALTPAMMINSCORE,
-                DEBUG):
-    """ write guides to fasta and run bwa or use cached results.
-    Return name of the BED file with the matches.
-    Write progress status updates to queue object.
-    """
-#     print(params_findofftargetbwa)
-    batchBase = join(TEMPDIR, batchId)
-    otBedFname = batchBase+".bed"
-    bedFname=otBedFname
-    print(otBedFname)
-    faFname = batchBase+".fa"
-
-#     if not isfile(otBedFname):
-#     # write potential PAM sites to file 
-#         faFname = batchBase+".fa"
-#         writePamFlank(seq, startDict, pam, faFname,GUIDELEN,pamPlusLen)
-#         processSubmission(faFname, org, pam, otBedFname, batchBase, batchId, queue,maxMMs,genomep,params_findofftargetbwa)
-#         if doEffScoring and not cpf1Mode:
-#             queue.startStep(batchId, "effScores", "Calculating guide efficiency scores")
-#             createBatchEffScoreTable(batchId)
-
-#         findOfftargetsBwa(queue, batchId, batchBase, faFname, genome, pam, bedFname,maxMMs,genomep=genomep,**params_findofftargetbwa)
-#     print(faFname)
-# def findOfftargetsBwa(queue, batchId, batchBase, faFname, genome, pam, bedFname,maxMMs,genomep,
-#         GUIDELEN,
-#         MFAC,
-#         MAXOCC,
-#         offtargetPams,
-#         ALTPAMMINSCORE,
-#         DEBUG):    
-#     " align faFname to genome and create matchedBedFname "
-
-    matchesBedFname = batchBase+".matches.bed"
-    saFname = batchBase+".sa"
-    pamLen = len(pam)
-    genomeDir = dirname(genomep) # make var local, see below
-
-    open(matchesBedFname, "w") # truncate to 0 size
-
-    # increase MAXOCC if there is only a single query, but only in CGI mode
-
-    maxDiff = maxMMs
-    queue.startStep(batchId, "bwa", "Alignment of potential guides, mismatches <= %d" % maxDiff)
-    convertMsg = "Converting alignments"
-    seqLen = GUIDELEN
-
-    bwaM = MFAC*MAXOCC # -m is queue size in bwa
-#     print(maxDiff)
-#     print(seqLen)
-    print('ssssssssssssssss')
-    cmd = "$BIN/bwa aln -o 0 -m %(bwaM)s -n %(maxDiff)d -k %(maxDiff)d -N -l %(seqLen)d %(genomep)s %(faFname)s > %(saFname)s" % locals()
-    runCmd(cmd)
-
-    queue.startStep(batchId, "saiToBed", convertMsg)
-    maxOcc = MAXOCC # create local var from global
-    # EXTRACTION OF POSITIONS + CONVERSION + SORT/CLIP
-    # the sorting should improve the twoBitToFa runtime
-    
-    cmd = "$BIN/bwa samse -n %(maxOcc)d %(genomep)s %(saFname)s %(faFname)s | $SCRIPT/xa2multi.pl | $SCRIPT/samToBed %(pam)s %(seqLen)d | sort -k1,1 -k2,2n | $BIN/bedClip stdin %(genomep)s.sizes stdout >> %(matchesBedFname)s " % locals()
-    runCmd(cmd)
-
-    # arguments: guideSeq, mainPat, altPats, altScore, passX1Score
-#     filtMatchesBedFname = batchBase+".filtMatches.bed"
-#     queue.startStep(batchId, "filter", "Removing matches without a PAM motif")
-#     altPats = ",".join(offtargetPams.get(pam, ["na"]))
-#     bedFnameTmp = bedFname+".tmp"
-#     altPamMinScore = str(ALTPAMMINSCORE)
-    cmd = "bedtools getfasta -name -s -fi {} -bed {} -fo {}.fasta".format(genomep,matchesBedFname,matchesBedFname)
-    runCmd(cmd)
-#     cmd = "python3 $SCRIPT/filterFaToBed %(faFname)s %(pam)s %(altPats)s %(altPamMinScore)s %(maxOcc)d %(matchesBedFname)s.fasta > %(filtMatchesBedFname)s" % locals()
-#     runCmd(cmd)
-
-#     genome=org #FIXME
-#     segFname = "%(genomeDir)s/%(genome)s/%(genome)s.segments.bed" % locals()
-
-#     # if we have gene model segments, annotate them, otherwise just use the chrom position
-#     if isfile(segFname):
-#         queue.startStep(batchId, "genes", "Annotating matches with genes")
-#         cmd = "cat %(filtMatchesBedFname)s | $BIN/overlapSelect %(segFname)s stdin stdout -mergeOutput -selectFmt=bed -inFmt=bed | cut -f1,2,3,4,8 > %(bedFnameTmp)s " % locals()
-#         runCmd(cmd)
-#     else:
-#         queue.startStep(batchId, "chromPos", "Annotating matches with chromosome position")
-#         annotateBedWithPos(filtMatchesBedFname, bedFnameTmp)
-
-#     # make sure the final bed file is never in a half-written state, 
-#     # as it is our signal that the job is complete
-#     shutil.move(bedFnameTmp, bedFname)
-#     queue.startStep(batchId, "done", "Job completed")
-
-#     # remove the temporary files
-#     tempFnames = [saFname, matchesBedFname, filtMatchesBedFname]
-#     for tfn in tempFnames:
-#         if isfile(tfn) and not DEBUG:
-#             os.remove(tfn)
-# #     return bedFname
-
-    return matchesBedFname
-#--
+#     return matchesBedFname
+# #--
 
 def intToExtPamId(pamId,pamIdRe):
     " convert the internal pam Id like s20+ to the external one, like 21Forw "
@@ -847,19 +689,70 @@ def iterOfftargetRows(guideData, offtargetHeaders,pamIdRe,addHeaders=False, skip
         otRows.insert(0, newRow)
 
     return otRows
+#-new code-----------
+import pysam
+import numpy as np
+
+def str2num(x):
+    """
+    This extracts numbers from strings. eg. 114 from M114R.
+    :param x: string
+    """
+    return int(''.join(ele for ele in x if ele.isdigit()))
+
+def hamming_distance(s1, s2):
+    """Return the Hamming distance between equal-length sequences"""
+#     print(s1,s2)
+    if len(s1) != len(s2):
+        raise ValueError("Undefined for sequences of unequal length")
+    return sum(el1 != el2 for el1, el2 in zip(s1, s2))
+def align(s1,s2):
+    from Bio import pairwise2
+    alignments = pairwise2.align.localxx(s1, s2)
+#     if len(alignments)==0:
+#     print(len(alignments))
+    alignsymb=np.nan
+    score=np.nan
+    for a in alignments:
+        if len(a[0])==GUIDELEN and len(a[1])==GUIDELEN:
+            alignstr=pairwise2.format_alignment(*a)
+            alignsymb=alignstr.split('\n')[1]
+            score=a[2]
+            break
+    return alignsymb,score
+
 #--------------------------------------------
-def main(inSeqFname,genomeDir,org,outGuideFname,offtargetFname,genomefn):
-    
-#     inSeqFname='../../../04_offtarget/data/04_specificity/in/sample.sacCer3.fa',
-#     # faFname='tmp/in/x50sPGMoTvUagv3zWjGg.fa'
-#     # genomeDir='tmp/in/genomes/'
-#     genomeDir='../../../04_offtarget/pub/release-92/fasta',
-#     org='saccharomyces_cerevisiae',
-#     outGuideFname='../../../04_offtarget/data/04_specificity/out/sample.sacCer3.mine.out.tsv',
-#     offtargetFname='../../../04_offtarget/data/04_specificity/out/sample.sacCer3.mine.offs.tsv',
-#     genomefn='dna/Saccharomyces_cerevisiae.R64-1-1.dna_sm.chromosome.I.fa'
-    
-# def dguide2fltofftarget(cfg):
+# def main(inSeqFname,genomeDir,org,outGuideFname,offtargetFname,genomefn):
+def main():
+    force=True
+    dguidesp='data_test_human_dguides.tsv'
+
+    # inSeqFname='../../../04_offtarget/data/04_specificity/in/sample.sacCer3.fa',
+    # faFname='tmp/in/x50sPGMoTvUagv3zWjGg.fa'
+    # genomeDir='tmp/in/genomes/'
+    datad='data_test_human'
+    dataind='{}/04_specificity/in'.format(datad)
+    datatmpd='{}/04_specificity/tmp'.format(datad)
+    dataoutd='{}/04_specificity/out'.format(datad)
+    for dp in [dataind,datatmpd,dataoutd]: 
+        if not exists(dp) or force:
+            makedirs(dp,exist_ok=force)
+
+    dguides=pd.read_csv(dguidesp,sep='\t')
+    dguides.to_csv('{}/{}'.format(dataind,basename(dguidesp)),sep='\t')
+    dguides=dguides.set_index('guideId')
+    with open('{}/batchId.fa'.format(datatmpd),'w') as f:
+        for gi in dguides.index:
+            f.write('>{}\n{}\n'.format(gi,dguides.loc[gi,'targetSeq']))
+
+    genomeDir='pub/release-92/fasta/'
+    org='saccharomyces_cerevisiae'
+    outGuideFname='{}/04_specificity/out/sample.sacCer3.mine.out.tsv'.format(datad)
+    offtargetFname='{}/04_specificity/out/sample.sacCer3.mine.offs.tsv'.format(datad)
+    genomefn='dna/Saccharomyces_cerevisiae.R64-1-1.dna_sm.chromosome.I.fa'
+    genomegffp='pub/release-92/gff3/saccharomyces_cerevisiae/Saccharomyces_cerevisiae.R64-1-1.92.gff3.gz'
+
+    # def dguide2fltofftarget(cfg):
     # get dna and protein sequences 
     #--
     # junk
@@ -870,9 +763,9 @@ def main(inSeqFname,genomeDir,org,outGuideFname,offtargetFname,genomefn):
     doEffScoring = True
 
     # system-wide temporary directory
-    TEMPDIR = dirname(dirname(offtargetFname))+'/tmp'
-    if not exists(TEMPDIR):
-        makedirs(TEMPDIR)
+    # datatmpd = dirname(dirname(offtargetFname))+'/tmp'
+    # if not exists(datatmpd):
+    #     makedirs(datatmpd)
 
     # filename of this script, usually crispor.py
     # myName = basename(__file__)
@@ -962,10 +855,10 @@ def main(inSeqFname,genomeDir,org,outGuideFname,offtargetFname,genomefn):
     offtargetHeaders = ["guideId", "guideSeq", "offtargetSeq", "mismatchPos", "mismatchCount", "mitOfftargetScore", "cfdOfftargetScore", "chrom", "start", "end", "strand", "locusDesc"]
 
     # a file crispor.conf in the directory of the script allows to override any global variable
-    myDir = dirname(__file__)
-#     confPath =myDir+"crispor.conf"
-#     if isfile(confPath):
-#         exec(open(confPath))
+    # myDir = dirname(__file__)
+    #     confPath =myDir+"crispor.conf"
+    #     if isfile(confPath):
+    #         exec(open(confPath))
 
     # cgiParams = None
 
@@ -992,10 +885,6 @@ def main(inSeqFname,genomeDir,org,outGuideFname,offtargetFname,genomefn):
             self.debug=DEBUG
 
     options=options(pam=pam)
-    class ConsQueue:
-        """ a pseudo job queue that does nothing but report progress to the console """
-        def startStep(self, batchId, desc, label):
-            logging.info("Progress %s - %s - %s" % (batchId, desc, label))
 
     effScores='na'
     GUIDELEN,cpf1Mode,addGenePlasmids,PAMLEN,scoreNames=setupPamInfo(pam,setupPamInfo,scoreNames)
@@ -1015,81 +904,122 @@ def main(inSeqFname,genomeDir,org,outGuideFname,offtargetFname,genomefn):
                     'DEBUG':DEBUG}
 
     # get sequence
-    seqs = parseFasta(open(inSeqFname))
+    # seqs = parseFasta(open(inSeqFname))
     guideFh = None
     offtargetFh = None
     batchId='batchId'
-    for seqId, seq in seqs.items():
-        seq = seq.upper()
-#         print(seqId, GUIDELEN, len(seq))
-        logging.info(" * running on sequence '%s', guideLen=%d, seqLen=%d" % (seqId, GUIDELEN, len(seq)))
-        # get the other parameters and write to a new batch
-        seq = seq.upper()
-#         pamPat = options.pam
-#         batchId, position, extSeq = newBatch(seqId, seq, org, pamPat, genome,TEMPDIR,skipAlign,
-#                                              flank=FLANKLEN,genomep=genomep)
-#         logging.debug("Temporary output directory: %s/%s" % (TEMPDIR, batchId))
+    batchBase = join(datatmpd, batchId)
+    otBedFname = batchBase+".bed"
+    bedFname=otBedFname
+    print(otBedFname)
+    faFname = batchBase+".fa"
 
-#         if position=="?":
-#             logging.error("no match found for sequence %s in genome %s" % (inSeqFname, org))
+    matchesBedFname = batchBase+".matches.bed"
+    saFname = batchBase+".sa"
+    samp = batchBase+".sam"
+    pamLen = len(pam)
+    genomeDir = dirname(genomep) # make var local, see below
 
-#         startDict, endSet = findAllPams(seq, pamPat,GUIDELEN,multiPams)
-#        position=get_position(genome, seq, batchId,TEMPDIR=TEMPDIR,genomep=genomep)
-        position='chr:1:10' #FIXME
-        startDict={33: '+', 40: '+', 57: '+', 103: '+', 136: '+', 79: '-', 139: '-'}
-        endSet={36, 106, 43, 139, 142, 82, 60}
-#         print('>>>>>')
-#         print(position)
-#         print(endSet)
-#         print('>>>>>')
-        otBedFname = getOfftargets(seq, org, options.pam, batchId, startDict,
-                                   ConsQueue(),TEMPDIR,GUIDELEN,pamPlusLen,maxMMs,genomep,
-#                                   GUIDELEN,
-                                    MFAC,
-                                    MAXOCC,
-                                    offtargetPams,
-                                    ALTPAMMINSCORE,
-                                    DEBUG)
-        otMatches = parseOfftargets(otBedFname)
-        guideData, guideScores, hasNotFound, pamIdToSeq = \
-            mergeGuideInfo(seq, startDict, options.pam, otMatches, position, GUIDELEN, pamPlusLen, maxMMs,cpf1Mode,params_findofftargetbwa,effScores)
+    open(matchesBedFname, "w") # truncate to 0 size
 
-        # write guide headers
-        if guideFh is None:
-            guideFh = open(join(TEMPDIR, "guideInfo.tab"), "w")
-            guideHeaders, _ = makeGuideHeaders(guideHeaders,scoreNames,
-                     cpf1Mode,scoreDescs)
-            guideHeaders.insert(0, "#seqId")
-            guideFh.write("\t".join(guideHeaders)+"\n")
+    # increase MAXOCC if there is only a single query, but only in CGI mode
+    maxDiff = maxMMs
+    convertMsg = "Converting alignments"
+    seqLen = GUIDELEN
 
-    #     write offtarget headers
-        if options.offtargetFname and (offtargetFh is None):
-            print('# write offtarget headers')
-            offtargetFh = open(join(TEMPDIR, "offtargetInfo.tab"), "w")
-            offtargetHeaders.insert(0, "seqId")
-            offtargetFh.write("\t".join(offtargetHeaders)+"\n")
-        print(offtargetHeaders)
-        for row in iterGuideRows(guideData, guideHeaders,scoreNames,
-                     cpf1Mode,scoreDescs,pamIdRe,seqId=seqId):
-            guideFh.write("\t".join(row))
-            guideFh.write("\n")
+    bwaM = MFAC*MAXOCC # -m is queue size in bwa
+    cmd = "$BIN/bwa aln -o 0 -m %(bwaM)s -n %(maxDiff)d -k %(maxDiff)d -N -l %(seqLen)d %(genomep)s %(faFname)s > %(saFname)s" % locals()
+    runCmd(cmd)
 
-        if options.offtargetFname:
-            for row in iterOfftargetRows(guideData,offtargetHeaders,pamIdRe, seqId=seqId, skipRepetitive=False):
-                offtargetFh.write("\t".join(row))
-                offtargetFh.write("\n")
+    cmd = "$BIN/bwa samse -n %(MAXOCC)d %(genomep)s %(saFname)s %(faFname)s > %(samp)s" % locals()
+    runCmd(cmd)
+    #----make tables-----------
+    gff_colns = ['chromosome', 'source', 'type', 'start', 'end', 'score', 'strand', 'phase', 'attributes']
+    bed_colns = ['chromosome','start','end','id','NM','strand']
 
-    guideFh.close()
-    shutil.move(guideFh.name, outGuideFname)
-    logging.info("guide info written to %s" % outGuideFname)
+    samfile=pysam.AlignmentFile(samp, "rb")
+    # with pysam.AlignmentFile(samp, "rb") as samfile:
+    #     print(samfile.contigs)
+    # cols=['chromosome','start','end','id','NM','strand']
+    dalignbed=pd.DataFrame(columns=bed_colns)
+    # rowi=1
+    for read in samfile.fetch():
+    #     print(read) 
+    #     print(read.reference_name)
+    #     algnid='{}|{}{}|{}|{}'.format(dalignbed.loc[rowi,'chromosome'],
+    #              dalignbed.loc[rowi,'strand'],dalignbed.loc[rowi,'start'],read.cigarstring,dalignbed.loc[rowi,'NM'])
+        algnids=[]
+        algnids.append('{}|{}{}|{}|{}'.format(read.reference_name,
+                 '-' if read.is_reverse else '+',read.positions[0],read.cigarstring,read.get_tag('NM')))
+        algnids+=['|'.join(s.split(',')) for s in read.get_tag('XA').split(';') if len(s.split(','))>1]
+        chroms=[]
+        starts=[]
+        ends=[]
+        ids=algnids
+        NMs=[]
+        strands=[]    
+        for a in algnids:
+            chroms.append(a.split('|')[0])
+            starts.append(int(a.split('|')[1][1:]))
+            ends.append(int(a.split('|')[1][1:])+str2num(a.split('|')[2]))
+            NMs.append(a.split('|')[3])
+            strands.append(a.split('|')[1][0])
+        col2dalignbed={'chromosome':chroms,
+                       'start':starts,
+                       'end':ends,
+                       'id':ids,
+                       'NM':NMs,
+                       'strand':strands}
+    #     col2dalignbed=dict(zip(cols,[a.split('|')[0],a.split('|')[1],a.split('|')[2],a,a.split('|')[3],a.split('|')[4] for a in algnids]))
+        dalignbed_=pd.DataFrame(col2dalignbed)
+        dalignbed_['grnaId']=read.qname
+        dalignbed = dalignbed.append(dalignbed_,ignore_index=True)
+    #     break
+    samfile.close()
 
-    if options.offtargetFname:
-        offtargetFh.close()
-        shutil.move(offtargetFh.name, options.offtargetFname)
-        logging.info("off-target info written to %s" % options.offtargetFname)
+    alignmentbedp='{}/alignment.bed'.format(datatmpd)
+    dalignbed.loc[:,bed_colns].to_csv(alignmentbedp,sep='\t',
+                    header=False,index=False)
+    # loc[:,cols].to
 
-    if not options.debug and not options.tempDir:
-        shutil.rmtree(TEMPDIR)
 
-# if __name__ == '__main__':
-#     main()
+    # bedtools sort -i data_test_human/04_specificity/tmp/alignment.bed > data_test_human/04_specificity/tmp/alignment.sorted.bed
+    # bedtools sort -i pub/release-92/gff3/saccharomyces_cerevisiae/Saccharomyces_cerevisiae.R64-1-1.92.gff3.gz > pub/release-92/gff3/saccharomyces_cerevisiae/Saccharomyces_cerevisiae.R64-1-1.92.sorted.gff3.gz
+    # bedtools intersect -wa -wb -loj -a data_test_human/04_specificity/tmp/alignment.sorted.bed -b pub/release-92/gff3/saccharomyces_cerevisiae/Saccharomyces_cerevisiae.R64-1-1.92.sorted.gff3.gz > data_test_human/04_specificity/tmp/annotations.bed
+    alignmentbedsortedp=alignmentbedp+'.sorted.bed'
+    cmd='bedtools sort -i {} > {}'.format(alignmentbedp,alignmentbedsortedp)
+    runCmd()
+    genomegffsortedp=genomegffp+'.sorted.gff3.gz'
+    cmd='bedtools sort -i {} > {}'.format(genomegffp,genomegffsortedp)
+    runCmd()
+    annotationsbedp='{}/annotations.bed'.format(datatmpd)
+    cmd='bedtools intersect -wa -wb -loj -a {} -b {} > {}'.format(alignmentbedsortedp,genomegffsortedp,annotationsbedp)
+    runCmd()
+
+    # bedtools annotate -i pub/release-92/gff3/saccharomyces_cerevisiae/Saccharomyces_cerevisiae.R64-1-1.92.gff3.gz -files data_test_human/04_specificity/tmp/alignment.bed
+    # [OPTIONS] -i <BED/GFF/VCF> -files FILE1 FILE2 FILE3 ... FILEn
+
+    dannots=pd.read_csv('data_test_human/04_specificity/tmp/annotations.bed',sep='\t',
+               names=bed_colns+gff_colns)
+
+    dalignbed=dalignbed.set_index('grnaId').join(dguides)
+
+    dalignbed=dalignbed.reset_index().set_index('id')
+
+    # dalignid2seq=pd.DataFrame(columns=['sequence'])
+    # dalignid2seq.index.name='id'
+    alignedfastap='{}/alignment.fa'.format(datatmpd)
+    for seq in SeqIO.parse(alignedfastap,"fasta"):
+        dalignbed.loc[seq.id,'aligned sequence']=str(seq.seq)
+    #     break
+
+    dalignbed.loc[:,'Hamming distance']=[hamming_distance(dalignbed.loc[i,'targetSeq'], dalignbed.loc[i,'aligned sequence']) for i in dalignbed.index]
+
+    for i in dalignbed.index:
+        dalignbed.loc[i,'alignment'],dalignbed.loc[i,'alignment: score']=align(dalignbed.loc[i,'targetSeq'],dalignbed.loc[i,'aligned sequence'])
+
+    dcombo=dalignbed.join(dannots.set_index('id'),rsuffix='.2').head()
+
+    dcombo.to_csv('{}/dcombo.tsv'.fomar(dataoutd),sep='\t')
+if __name__ == '__main__':
+    main()
