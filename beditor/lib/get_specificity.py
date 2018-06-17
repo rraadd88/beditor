@@ -256,6 +256,15 @@ def newBatch(batchName, seq, org, pam,genome, TEMPDIR,skipAlign=False,flank=100,
     # fixes a run condition
     os.rename(batchJsonTmpName, batchJsonName)
     return batchId, posStr, extSeq
+
+def get_position(genome, seq, batchId,TEMPDIR,genomep):
+    """ obtain a batch ID and write seq/org/pam to their files.
+    Return batchId, position string and a 100bp-extended seq, if possible.
+    """
+    chrom, start, end, strand = findBestMatch(genome, seq, batchId,TEMPDIR=TEMPDIR,bwaIndexPath=genomep)
+    posStr = coordsToPosStr(chrom, start, end, strand)
+    return posStr
+
 #---
 revTbl = {'A' : 'T', 'C' : 'G', 'G' : 'C', 'T' : 'A', 'N' : 'N' , 'M' : 'K', 'K' : 'M',
     "R" : "Y" , "Y":"R" , "g":"c", "a":"t", "c":"g","t":"a", "n":"n", "V" : "B", "v":"b", 
@@ -469,12 +478,12 @@ def annotateBedWithPos(inBed, outBed):
         ofh.write("\n")
     ofh.close()
 def findOfftargetsBwa(queue, batchId, batchBase, faFname, genome, pam, bedFname,maxMMs,genomep,
-GUIDELEN,
-MFAC,
-MAXOCC,
-offtargetPams,
-ALTPAMMINSCORE,
-DEBUG):    
+        GUIDELEN,
+        MFAC,
+        MAXOCC,
+        offtargetPams,
+        ALTPAMMINSCORE,
+        DEBUG):    
     " align faFname to genome and create matchedBedFname "
     print('queue')
     print(queue)
@@ -507,6 +516,9 @@ DEBUG):
     seqLen = GUIDELEN
 
     bwaM = MFAC*MAXOCC # -m is queue size in bwa
+    print(maxDiff)
+    print(seqLen)
+    print('ssssssssssssssss')
     cmd = "$BIN/bwa aln -o 0 -m %(bwaM)s -n %(maxDiff)d -k %(maxDiff)d -N -l %(seqLen)d %(genomep)s %(faFname)s > %(saFname)s" % locals()
     runCmd(cmd)
 
@@ -514,6 +526,7 @@ DEBUG):
     maxOcc = MAXOCC # create local var from global
     # EXTRACTION OF POSITIONS + CONVERSION + SORT/CLIP
     # the sorting should improve the twoBitToFa runtime
+    
     cmd = "$BIN/bwa samse -n %(maxOcc)d %(genomep)s %(saFname)s %(faFname)s | $SCRIPT/xa2multi.pl | $SCRIPT/samToBed %(pam)s %(seqLen)d | sort -k1,1 -k2,2n | $BIN/bedClip stdin %(genomep)s.sizes stdout >> %(matchesBedFname)s " % locals()
     runCmd(cmd)
 
@@ -571,6 +584,7 @@ def getOfftargets(seq, org, pam, batchId, startDict, queue,TEMPDIR,GUIDELEN,pamP
     Return name of the BED file with the matches.
     Write progress status updates to queue object.
     """
+#     print(params_findofftargetbwa)
     batchBase = join(TEMPDIR, batchId)
     otBedFname = batchBase+".bed"
     flagFile = batchBase+".running"
@@ -1213,12 +1227,6 @@ def main():
             self.debug=DEBUG
 
     options=options(pam=pam)
-    params_offtargetbwa={'GUIDELEN':GUIDELEN,
-                    'MFAC':MFAC,
-                    'MAXOCC':MAXOCC,
-                    'offtargetPams':offtargetPams,
-                    'ALTPAMMINSCORE':ALTPAMMINSCORE,
-                    'DEBUG':DEBUG}
     class ConsQueue:
         """ a pseudo job queue that does nothing but report progress to the console """
         def startStep(self, batchId, desc, label):
@@ -1234,37 +1242,45 @@ def main():
     if options.genomeDir != None:
         genomesDir = options.genomeDir
 
-    # get sequence
+    params_findofftargetbwa={'GUIDELEN':GUIDELEN,
+                    'MFAC':MFAC,
+                    'MAXOCC':MAXOCC,
+                    'offtargetPams':offtargetPams,
+                    'ALTPAMMINSCORE':ALTPAMMINSCORE,
+                    'DEBUG':DEBUG}
 
+    # get sequence
     seqs = parseFasta(open(inSeqFname))
     guideFh = None
     offtargetFh = None
+    batchId='batchId'
     for seqId, seq in seqs.items():
         seq = seq.upper()
-        print(seqId, GUIDELEN, len(seq))
+#         print(seqId, GUIDELEN, len(seq))
         logging.info(" * running on sequence '%s', guideLen=%d, seqLen=%d" % (seqId, GUIDELEN, len(seq)))
         # get the other parameters and write to a new batch
         seq = seq.upper()
-        pamPat = options.pam
-        batchId, position, extSeq = newBatch(seqId, seq, org, pamPat, genome,TEMPDIR,skipAlign,
-                                             flank=FLANKLEN,genomep=genomep)
-        logging.debug("Temporary output directory: %s/%s" % (TEMPDIR, batchId))
+#         pamPat = options.pam
+#         batchId, position, extSeq = newBatch(seqId, seq, org, pamPat, genome,TEMPDIR,skipAlign,
+#                                              flank=FLANKLEN,genomep=genomep)
+#         logging.debug("Temporary output directory: %s/%s" % (TEMPDIR, batchId))
 
-        if position=="?":
-            logging.error("no match found for sequence %s in genome %s" % (inSeqFname, org))
+#         if position=="?":
+#             logging.error("no match found for sequence %s in genome %s" % (inSeqFname, org))
 
-        startDict, endSet = findAllPams(seq, pamPat,GUIDELEN,multiPams)
-#         startDict={33: '+', 40: '+', 57: '+', 103: '+', 136: '+', 79: '-', 139: '-'}
-#         endSet={36, 106, 43, 139, 142, 82, 60}
+#         startDict, endSet = findAllPams(seq, pamPat,GUIDELEN,multiPams)
+        position=get_position(genome, seq, batchId,TEMPDIR=TEMPDIR,genomep=genomep)
+        startDict={33: '+', 40: '+', 57: '+', 103: '+', 136: '+', 79: '-', 139: '-'}
+        endSet={36, 106, 43, 139, 142, 82, 60}
 #         print('>>>>>')
-#         print(startDict)
+#         print(position)
 #         print(endSet)
 #         print('>>>>>')
-        otBedFname = getOfftargets(seq, org, pamPat, batchId, startDict,
-                                   ConsQueue(),TEMPDIR,GUIDELEN,pamPlusLen,maxMMs,genomep,params_offtargetbwa)
+        otBedFname = getOfftargets(seq, org, options.pam, batchId, startDict,
+                                   ConsQueue(),TEMPDIR,GUIDELEN,pamPlusLen,maxMMs,genomep,params_findofftargetbwa)
         otMatches = parseOfftargets(otBedFname)
         guideData, guideScores, hasNotFound, pamIdToSeq = \
-            mergeGuideInfo(seq, startDict, pamPat, otMatches, position, GUIDELEN, pamPlusLen, effScores)
+            mergeGuideInfo(seq, startDict, options.pam, otMatches, position, GUIDELEN, pamPlusLen, effScores)
 
         # write guide headers
         if guideFh is None:
