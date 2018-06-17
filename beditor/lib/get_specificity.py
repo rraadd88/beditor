@@ -5,6 +5,7 @@ import subprocess
 import logging
 import shutil
 import re
+import sys
 import os
 import logging, operator
 
@@ -72,10 +73,11 @@ def runCmd(cmd):
     cmd = cmd.replace("$BIN", dirs2ps['binDir'])
     cmd = cmd.replace("$PYTHON", dirs2ps['pyp'])
     cmd = cmd.replace("$SCRIPT", dirs2ps['scriptDir'])
-    print(cmd)
+#     print(cmd)
     err=subprocess.call(cmd,shell=True)
     if err!=0:
         print('bash command error: {}\n{}\n'.format(err,cmd))
+        sys.exit(1)
            
 
 #---
@@ -145,6 +147,7 @@ def writePamFlank(seq, startDict, pam, faFname,GUIDELEN,pamPlusLen):
     for pamId, pamStart, guideStart, strand, flankSeq, pamSeq, pamPlusSeq in flankSeqIter(seq, startDict, len(pam), True,GUIDELEN,pamPlusLen):
         faFh.write(">%s\n%s\n" % (pamId, flankSeq))
     faFh.close()
+    
 def annotateBedWithPos(inBed, outBed):
     """
     given an input bed4 and an output bed filename, add an additional column 5 to the bed file
@@ -166,29 +169,144 @@ def annotateBedWithPos(inBed, outBed):
         ofh.write(desc)
         ofh.write("\n")
     ofh.close()
-def findOfftargetsBwa(queue, batchId, batchBase, faFname, genome, pam, bedFname,maxMMs,genomep,
-        GUIDELEN,
-        MFAC,
-        MAXOCC,
-        offtargetPams,
-        ALTPAMMINSCORE,
-        DEBUG):    
-    " align faFname to genome and create matchedBedFname "
-    print('queue')
-    print(queue)
-    print('batchId')
-    print(batchId)
-    print('batchBase')
-    print(batchBase)
-    print('faFname')
-    print(faFname)
-    print('genome')
-    print(genome)
-    print('pam')
-    print(pam)
-    print('bedFname')
-    print(bedFname)
+# def findOfftargetsBwa(queue, batchId, batchBase, faFname, genome, pam, bedFname,maxMMs,genomep,
+#         GUIDELEN,
+#         MFAC,
+#         MAXOCC,
+#         offtargetPams,
+#         ALTPAMMINSCORE,
+#         DEBUG):    
+#     " align faFname to genome and create matchedBedFname "
+#     print('queue')
+#     print(queue)
+#     print('batchId')
+#     print(batchId)
+#     print('batchBase')
+#     print(batchBase)
+#     print('faFname')
+#     print(faFname)
+#     print('genome')
+#     print(genome)
+#     print('pam')
+#     print(pam)
+#     print('bedFname')
+#     print(bedFname)
 
+
+#     matchesBedFname = batchBase+".matches.bed"
+#     saFname = batchBase+".sa"
+#     pamLen = len(pam)
+#     genomeDir = dirname(genomep) # make var local, see below
+
+#     open(matchesBedFname, "w") # truncate to 0 size
+
+#     # increase MAXOCC if there is only a single query, but only in CGI mode
+
+#     maxDiff = maxMMs
+#     queue.startStep(batchId, "bwa", "Alignment of potential guides, mismatches <= %d" % maxDiff)
+#     convertMsg = "Converting alignments"
+#     seqLen = GUIDELEN
+
+#     bwaM = MFAC*MAXOCC # -m is queue size in bwa
+#     print(maxDiff)
+#     print(seqLen)
+#     print('ssssssssssssssss')
+#     cmd = "$BIN/bwa aln -o 0 -m %(bwaM)s -n %(maxDiff)d -k %(maxDiff)d -N -l %(seqLen)d %(genomep)s %(faFname)s > %(saFname)s" % locals()
+#     runCmd(cmd)
+
+#     queue.startStep(batchId, "saiToBed", convertMsg)
+#     maxOcc = MAXOCC # create local var from global
+#     # EXTRACTION OF POSITIONS + CONVERSION + SORT/CLIP
+#     # the sorting should improve the twoBitToFa runtime
+    
+#     cmd = "$BIN/bwa samse -n %(maxOcc)d %(genomep)s %(saFname)s %(faFname)s | $SCRIPT/xa2multi.pl | $SCRIPT/samToBed %(pam)s %(seqLen)d | sort -k1,1 -k2,2n | $BIN/bedClip stdin %(genomep)s.sizes stdout >> %(matchesBedFname)s " % locals()
+#     runCmd(cmd)
+
+#     # arguments: guideSeq, mainPat, altPats, altScore, passX1Score
+#     filtMatchesBedFname = batchBase+".filtMatches.bed"
+#     queue.startStep(batchId, "filter", "Removing matches without a PAM motif")
+#     altPats = ",".join(offtargetPams.get(pam, ["na"]))
+#     bedFnameTmp = bedFname+".tmp"
+#     altPamMinScore = str(ALTPAMMINSCORE)
+#     cmd = "bedtools getfasta -name -s -fi {} -bed {} -fo {}.fasta".format(genomep,matchesBedFname,matchesBedFname)
+#     runCmd(cmd)
+#     cmd = "python3 $SCRIPT/filterFaToBed %(faFname)s %(pam)s %(altPats)s %(altPamMinScore)s %(maxOcc)d %(matchesBedFname)s.fasta > %(filtMatchesBedFname)s" % locals()
+#     runCmd(cmd)
+
+#     segFname = "%(genomeDir)s/%(genome)s/%(genome)s.segments.bed" % locals()
+
+#     # if we have gene model segments, annotate them, otherwise just use the chrom position
+#     if isfile(segFname):
+#         queue.startStep(batchId, "genes", "Annotating matches with genes")
+#         cmd = "cat %(filtMatchesBedFname)s | $BIN/overlapSelect %(segFname)s stdin stdout -mergeOutput -selectFmt=bed -inFmt=bed | cut -f1,2,3,4,8 > %(bedFnameTmp)s " % locals()
+#         runCmd(cmd)
+#     else:
+#         queue.startStep(batchId, "chromPos", "Annotating matches with chromosome position")
+#         annotateBedWithPos(filtMatchesBedFname, bedFnameTmp)
+
+#     # make sure the final bed file is never in a half-written state, 
+#     # as it is our signal that the job is complete
+#     shutil.move(bedFnameTmp, bedFname)
+#     queue.startStep(batchId, "done", "Job completed")
+
+#     # remove the temporary files
+#     tempFnames = [saFname, matchesBedFname, filtMatchesBedFname]
+#     for tfn in tempFnames:
+#         if isfile(tfn) and not DEBUG:
+#             os.remove(tfn)
+#     return bedFname
+
+# def processSubmission(faFname, genome, pam, bedFname, batchBase, batchId, queue,maxMMs,genomep,params_findofftargetbwa,doEffScoring=False, cpf1Mode=False):
+#     """ search fasta file against genome, filter for pam matches and write to bedFName 
+#     optionally write status updates to work queue. Remove faFname.
+#     """
+#     if doEffScoring and not cpf1Mode:
+#         queue.startStep(batchId, "effScores", "Calculating guide efficiency scores")
+#         createBatchEffScoreTable(batchId)
+        
+# #     if useBowtie:
+# #         findOfftargetsBowtie(queue, batchId, batchBase, faFname, genome, pam, bedFname)
+# #     else:
+#     findOfftargetsBwa(queue, batchId, batchBase, faFname, genome, pam, bedFname,maxMMs,genomep=genomep,**params_findofftargetbwa)
+#     print(faFname)
+#     return bedFname
+
+def getOfftargets(seq, org, pam, batchId, startDict, queue,TEMPDIR,GUIDELEN,pamPlusLen,maxMMs,genomep,
+                MFAC,
+                MAXOCC,
+                offtargetPams,
+                ALTPAMMINSCORE,
+                DEBUG):
+    """ write guides to fasta and run bwa or use cached results.
+    Return name of the BED file with the matches.
+    Write progress status updates to queue object.
+    """
+#     print(params_findofftargetbwa)
+    batchBase = join(TEMPDIR, batchId)
+    otBedFname = batchBase+".bed"
+    bedFname=otBedFname
+    print(otBedFname)
+    faFname = batchBase+".fa"
+
+#     if not isfile(otBedFname):
+#     # write potential PAM sites to file 
+#         faFname = batchBase+".fa"
+#         writePamFlank(seq, startDict, pam, faFname,GUIDELEN,pamPlusLen)
+#         processSubmission(faFname, org, pam, otBedFname, batchBase, batchId, queue,maxMMs,genomep,params_findofftargetbwa)
+#         if doEffScoring and not cpf1Mode:
+#             queue.startStep(batchId, "effScores", "Calculating guide efficiency scores")
+#             createBatchEffScoreTable(batchId)
+
+#         findOfftargetsBwa(queue, batchId, batchBase, faFname, genome, pam, bedFname,maxMMs,genomep=genomep,**params_findofftargetbwa)
+#     print(faFname)
+# def findOfftargetsBwa(queue, batchId, batchBase, faFname, genome, pam, bedFname,maxMMs,genomep,
+#         GUIDELEN,
+#         MFAC,
+#         MAXOCC,
+#         offtargetPams,
+#         ALTPAMMINSCORE,
+#         DEBUG):    
+#     " align faFname to genome and create matchedBedFname "
 
     matchesBedFname = batchBase+".matches.bed"
     saFname = batchBase+".sa"
@@ -205,8 +323,8 @@ def findOfftargetsBwa(queue, batchId, batchBase, faFname, genome, pam, bedFname,
     seqLen = GUIDELEN
 
     bwaM = MFAC*MAXOCC # -m is queue size in bwa
-    print(maxDiff)
-    print(seqLen)
+#     print(maxDiff)
+#     print(seqLen)
     print('ssssssssssssssss')
     cmd = "$BIN/bwa aln -o 0 -m %(bwaM)s -n %(maxDiff)d -k %(maxDiff)d -N -l %(seqLen)d %(genomep)s %(faFname)s > %(saFname)s" % locals()
     runCmd(cmd)
@@ -220,75 +338,41 @@ def findOfftargetsBwa(queue, batchId, batchBase, faFname, genome, pam, bedFname,
     runCmd(cmd)
 
     # arguments: guideSeq, mainPat, altPats, altScore, passX1Score
-    filtMatchesBedFname = batchBase+".filtMatches.bed"
-    queue.startStep(batchId, "filter", "Removing matches without a PAM motif")
-    altPats = ",".join(offtargetPams.get(pam, ["na"]))
-    bedFnameTmp = bedFname+".tmp"
-    altPamMinScore = str(ALTPAMMINSCORE)
+#     filtMatchesBedFname = batchBase+".filtMatches.bed"
+#     queue.startStep(batchId, "filter", "Removing matches without a PAM motif")
+#     altPats = ",".join(offtargetPams.get(pam, ["na"]))
+#     bedFnameTmp = bedFname+".tmp"
+#     altPamMinScore = str(ALTPAMMINSCORE)
     cmd = "bedtools getfasta -name -s -fi {} -bed {} -fo {}.fasta".format(genomep,matchesBedFname,matchesBedFname)
     runCmd(cmd)
-    cmd = "python3 $SCRIPT/filterFaToBed %(faFname)s %(pam)s %(altPats)s %(altPamMinScore)s %(maxOcc)d %(matchesBedFname)s.fasta > %(filtMatchesBedFname)s" % locals()
-    runCmd(cmd)
+#     cmd = "python3 $SCRIPT/filterFaToBed %(faFname)s %(pam)s %(altPats)s %(altPamMinScore)s %(maxOcc)d %(matchesBedFname)s.fasta > %(filtMatchesBedFname)s" % locals()
+#     runCmd(cmd)
 
-    segFname = "%(genomeDir)s/%(genome)s/%(genome)s.segments.bed" % locals()
+#     genome=org #FIXME
+#     segFname = "%(genomeDir)s/%(genome)s/%(genome)s.segments.bed" % locals()
 
-    # if we have gene model segments, annotate them, otherwise just use the chrom position
-    if isfile(segFname):
-        queue.startStep(batchId, "genes", "Annotating matches with genes")
-        cmd = "cat %(filtMatchesBedFname)s | $BIN/overlapSelect %(segFname)s stdin stdout -mergeOutput -selectFmt=bed -inFmt=bed | cut -f1,2,3,4,8 > %(bedFnameTmp)s " % locals()
-        runCmd(cmd)
-    else:
-        queue.startStep(batchId, "chromPos", "Annotating matches with chromosome position")
-        annotateBedWithPos(filtMatchesBedFname, bedFnameTmp)
-
-    # make sure the final bed file is never in a half-written state, 
-    # as it is our signal that the job is complete
-    shutil.move(bedFnameTmp, bedFname)
-    queue.startStep(batchId, "done", "Job completed")
-
-    # remove the temporary files
-    tempFnames = [saFname, matchesBedFname, filtMatchesBedFname]
-    for tfn in tempFnames:
-        if isfile(tfn) and not DEBUG:
-            os.remove(tfn)
-    return bedFname
-
-def processSubmission(faFname, genome, pam, bedFname, batchBase, batchId, queue,maxMMs,genomep,params_findofftargetbwa,doEffScoring=False, cpf1Mode=False):
-    """ search fasta file against genome, filter for pam matches and write to bedFName 
-    optionally write status updates to work queue. Remove faFname.
-    """
-    if doEffScoring and not cpf1Mode:
-        queue.startStep(batchId, "effScores", "Calculating guide efficiency scores")
-        createBatchEffScoreTable(batchId)
-        
-#     if useBowtie:
-#         findOfftargetsBowtie(queue, batchId, batchBase, faFname, genome, pam, bedFname)
+#     # if we have gene model segments, annotate them, otherwise just use the chrom position
+#     if isfile(segFname):
+#         queue.startStep(batchId, "genes", "Annotating matches with genes")
+#         cmd = "cat %(filtMatchesBedFname)s | $BIN/overlapSelect %(segFname)s stdin stdout -mergeOutput -selectFmt=bed -inFmt=bed | cut -f1,2,3,4,8 > %(bedFnameTmp)s " % locals()
+#         runCmd(cmd)
 #     else:
-    findOfftargetsBwa(queue, batchId, batchBase, faFname, genome, pam, bedFname,maxMMs,genomep=genomep,**params_findofftargetbwa)
-    print(faFname)
-    return bedFname
+#         queue.startStep(batchId, "chromPos", "Annotating matches with chromosome position")
+#         annotateBedWithPos(filtMatchesBedFname, bedFnameTmp)
 
-def getOfftargets(seq, org, pam, batchId, startDict, queue,TEMPDIR,GUIDELEN,pamPlusLen,maxMMs,genomep,params_findofftargetbwa):
-    """ write guides to fasta and run bwa or use cached results.
-    Return name of the BED file with the matches.
-    Write progress status updates to queue object.
-    """
-#     print(params_findofftargetbwa)
-    batchBase = join(TEMPDIR, batchId)
-    otBedFname = batchBase+".bed"
-    flagFile = batchBase+".running"
+#     # make sure the final bed file is never in a half-written state, 
+#     # as it is our signal that the job is complete
+#     shutil.move(bedFnameTmp, bedFname)
+#     queue.startStep(batchId, "done", "Job completed")
 
-    if isfile(flagFile):
-        errAbort("This sequence is still being processed. Please wait for ~20 seconds "
-           "and try again, e.g. by reloading this page. If you see this message for "
-           "more than 2-3 minutes, please send an email %s.net. Thanks!" % contactEmail)
-    print(otBedFname)
-    if not isfile(otBedFname):
-    # write potential PAM sites to file 
-        faFname = batchBase+".fa"
-        writePamFlank(seq, startDict, pam, faFname,GUIDELEN,pamPlusLen)
-        processSubmission(faFname, org, pam, otBedFname, batchBase, batchId, queue,maxMMs,genomep,params_findofftargetbwa)
-    return otBedFname
+#     # remove the temporary files
+#     tempFnames = [saFname, matchesBedFname, filtMatchesBedFname]
+#     for tfn in tempFnames:
+#         if isfile(tfn) and not DEBUG:
+#             os.remove(tfn)
+# #     return bedFname
+
+    return matchesBedFname
 #--
 
 def intToExtPamId(pamId,pamIdRe):
@@ -764,7 +848,17 @@ def iterOfftargetRows(guideData, offtargetHeaders,pamIdRe,addHeaders=False, skip
 
     return otRows
 #--------------------------------------------
-def main():
+def main(inSeqFname,genomeDir,org,outGuideFname,offtargetFname,genomefn):
+    
+#     inSeqFname='../../../04_offtarget/data/04_specificity/in/sample.sacCer3.fa',
+#     # faFname='tmp/in/x50sPGMoTvUagv3zWjGg.fa'
+#     # genomeDir='tmp/in/genomes/'
+#     genomeDir='../../../04_offtarget/pub/release-92/fasta',
+#     org='saccharomyces_cerevisiae',
+#     outGuideFname='../../../04_offtarget/data/04_specificity/out/sample.sacCer3.mine.out.tsv',
+#     offtargetFname='../../../04_offtarget/data/04_specificity/out/sample.sacCer3.mine.offs.tsv',
+#     genomefn='dna/Saccharomyces_cerevisiae.R64-1-1.dna_sm.chromosome.I.fa'
+    
 # def dguide2fltofftarget(cfg):
     # get dna and protein sequences 
     #--
@@ -776,7 +870,7 @@ def main():
     doEffScoring = True
 
     # system-wide temporary directory
-    TEMPDIR = "tmp"
+    TEMPDIR = dirname(dirname(offtargetFname))+'/tmp'
     if not exists(TEMPDIR):
         makedirs(TEMPDIR)
 
@@ -884,15 +978,6 @@ def main():
     #
     DEBUG=True
     doEffScoring=False
-
-    inSeqFname='../../../04_offtarget/data/04_specificity/in/sample.sacCer3.fa'
-    # faFname='tmp/in/x50sPGMoTvUagv3zWjGg.fa'
-    # genomeDir='tmp/in/genomes/'
-    genomeDir='../../../04_offtarget/pub/release-92/fasta'
-    org='saccharomyces_cerevisiae'
-    outGuideFname='../../../04_offtarget/data/04_specificity/out/sample.sacCer3.mine.out.tsv'
-    offtargetFname='../../../04_offtarget/data/04_specificity/out/sample.sacCer3.mine.offs.tsv'
-    genomefn='dna/Saccharomyces_cerevisiae.R64-1-1.dna_sm.chromosome.I.fa'
     genome=org
     pam='NGG'
     genomep='{}/{}/{}'.format(genomeDir,org,genomefn)
@@ -958,7 +1043,13 @@ def main():
 #         print(endSet)
 #         print('>>>>>')
         otBedFname = getOfftargets(seq, org, options.pam, batchId, startDict,
-                                   ConsQueue(),TEMPDIR,GUIDELEN,pamPlusLen,maxMMs,genomep,params_findofftargetbwa)
+                                   ConsQueue(),TEMPDIR,GUIDELEN,pamPlusLen,maxMMs,genomep,
+#                                   GUIDELEN,
+                                    MFAC,
+                                    MAXOCC,
+                                    offtargetPams,
+                                    ALTPAMMINSCORE,
+                                    DEBUG)
         otMatches = parseOfftargets(otBedFname)
         guideData, guideScores, hasNotFound, pamIdToSeq = \
             mergeGuideInfo(seq, startDict, options.pam, otMatches, position, GUIDELEN, pamPlusLen, maxMMs,cpf1Mode,params_findofftargetbwa,effScores)
@@ -1000,5 +1091,5 @@ def main():
     if not options.debug and not options.tempDir:
         shutil.rmtree(TEMPDIR)
 
-if __name__ == '__main__':
-    main()
+# if __name__ == '__main__':
+#     main()
