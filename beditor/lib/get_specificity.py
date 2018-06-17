@@ -1,6 +1,14 @@
+#!usr/bin/python
+
 import logging
-import subprocess, tempfile, logging, shutil
-import time, re, random, os
+import subprocess
+import tempfile
+import logging
+import shutil
+import time
+import re
+import random
+import os
 import logging, operator, sqlite3, time
 import json
 
@@ -9,6 +17,24 @@ from os.path import join, isfile, basename, dirname, isdir, abspath, exists
 from os import makedirs
 
 from Bio import SeqIO
+
+def parseFasta(fileObj): #FIXME replace with biopython
+    " parse a fasta file, where each seq is on a single line, return dict id -> seq "
+    seqs = {}
+    parts = []
+    seqId = None
+    for line in fileObj:
+        line = line.rstrip("\n").rstrip("\r")
+        if line.startswith(">"):
+            if seqId!=None:
+                seqs[seqId]  = "".join(parts)
+            seqId = line.lstrip(">")
+            parts = []
+        else:
+            parts.append(line)
+    if len(parts)!=0:
+        seqs[seqId]  = "".join(parts)
+    return seqs
 
 def pamIsCpf1(pam):
     " if you change this, also change bin/filterFaToBed! "
@@ -28,11 +54,6 @@ def pamIsSpCas9(pam):
 
 def setupPamInfo(pam,addGenePlasmids,scoreNames):
     " modify a few globals based on the current pam "
-#     global GUIDELEN
-#     global cpf1Mode
-#     global addGenePlasmids
-#     global PAMLEN
-#     global scoreNames
     PAMLEN = len(pam)
     if pamIsCpf1(pam):
         logging.debug("switching on Cpf1 mode, guide length is 23bp")
@@ -48,17 +69,13 @@ def setupPamInfo(pam,addGenePlasmids,scoreNames):
     else:
         GUIDELEN = 20
         cpf1Mode = False
-    vn2v={'GUIDELEN':GUIDELEN,
-    'cpf1Mode':cpf1Mode,
-    'addGenePlasmids':addGenePlasmids,
-    'PAMLEN':PAMLEN,
-    'scoreNames':scoreNames
-    }
-    return vn2v
+    return GUIDELEN,cpf1Mode,addGenePlasmids,PAMLEN,scoreNames
+
 def runCmd(cmd):
-    cmd = cmd.replace("$BIN", binDir)
-    cmd = cmd.replace("$PYTHON", pyp)
-    cmd = cmd.replace("$SCRIPT", scriptDir)
+    from beditor.lib.global_vars import dirs2ps 
+    cmd = cmd.replace("$BIN", dirs2ps['binDir'])
+    cmd = cmd.replace("$PYTHON", dirs2ps['pyp'])
+    cmd = cmd.replace("$SCRIPT", dirs2ps['scriptDir'])
     err=subprocess.call(cmd,shell=True)
     if err!=0:
         print('bash command error: {}\n{}\n'.format(err,cmd))
@@ -70,11 +87,11 @@ def coordsToPosStr(chrom, start, end, strand):
     locStr = "%s:%d-%d:%s" % (chrom, start, end, strand)
     return locStr
 
-def findBestMatch(genome, seq, batchId,bwaIndexPath=None):
+def findBestMatch(genome, seq, batchId,TEMPDIR,bwaIndexPath=None):
     """ find best match for input sequence from batchId in genome and return as
     a string "chrom:start-end:strand or None if not found "
     """
-    if genome=="noGenome" or clusterJob:
+    if genome=="noGenome":
         return None, None, None, None
 
     # write seq to tmp file
@@ -124,16 +141,14 @@ def findBestMatch(genome, seq, batchId,bwaIndexPath=None):
     # delete the temp files
     tmpSamFh.close()
     tmpFaFh.close()
+    print(chrom, start, end)
     logging.debug("Found best match at %s:%d-%d:%s" % (chrom, start, end, strand))
     return chrom, start, end, strand
 
-def getSizeFname(genome,genomep=None):
+def getSizeFname(genome,genomep):
     " return name of chrom.sizes file "
-    genomeDir = genomesDir # make local
-    if genomep is None:
-        sizeFname = "%(genomeDir)s/%(genome)s/%(genome)s.sizes" % locals()
-    else:
-        sizeFname = genomep+'.sizes'
+    genomeDir = dirname(genomep) # make local
+    sizeFname = genomep+'.sizes'
     return sizeFname
 
 def parseChromSizes(genome,genomep=None):
@@ -146,7 +161,7 @@ def parseChromSizes(genome,genomep=None):
         ret[chrom] = int(size)
     return ret
 
-def extendAndGetSeq(db, chrom, start, end, strand, oldSeq, flank=FLANKLEN,genomep=None):
+def extendAndGetSeq(db, chrom, start, end, strand, oldSeq, flank=100,genomep=None):
     """ extend (start, end) by flank and get sequence for it using twoBitTwoFa.
     Return None if not possible to extend.
     #>>> extendAndGetSeq("hg19", "chr21", 10000000, 10000005, "+", flank=3)
@@ -202,7 +217,7 @@ def extendAndGetSeq(db, chrom, start, end, strand, oldSeq, flank=FLANKLEN,genome
     print(seq)
     return str(seq)
 
-def newBatch(batchName, seq, org, pam, skipAlign=False,genomep=None):
+def newBatch(batchName, seq, org, pam,genome, TEMPDIR,skipAlign=False,flank=100,genomep=None):
     """ obtain a batch ID and write seq/org/pam to their files.
     Return batchId, position string and a 100bp-extended seq, if possible.
     """
@@ -211,9 +226,9 @@ def newBatch(batchName, seq, org, pam, skipAlign=False,genomep=None):
     if skipAlign:
         chrom, start, end, strand = None, None, None, None
     else:
-        chrom, start, end, strand = findBestMatch(genome, seq, batchId,bwaIndexPath=genomep)
+        chrom, start, end, strand = findBestMatch(genome, seq, batchId,TEMPDIR=TEMPDIR,bwaIndexPath=genomep)
     # define temp file names
-    batchBase = join(batchDir, batchId)
+    batchBase = join(TEMPDIR, batchId)
     # save input seq, pamSeq, genome, position for primer design later
     batchJsonName = batchBase+".json"
     posStr = coordsToPosStr(chrom, start, end, strand)
@@ -231,7 +246,7 @@ def newBatch(batchName, seq, org, pam, skipAlign=False,genomep=None):
     # try to get a 100bp-extended version of the input seq
     extSeq = None
     if chrom!=None:
-        extSeq = extendAndGetSeq(org, chrom, start, end, strand, seq,genomep=genomep)
+        extSeq = extendAndGetSeq(org, chrom, start, end, strand, seq,flank=flank, genomep=genomep)
         #if extSeq!=None:
             #ofh.write(">extSeq\n%s\n" % (extSeq))
     batchData["extSeq"] = extSeq
@@ -242,12 +257,17 @@ def newBatch(batchName, seq, org, pam, skipAlign=False,genomep=None):
     os.rename(batchJsonTmpName, batchJsonName)
     return batchId, posStr, extSeq
 #---
+revTbl = {'A' : 'T', 'C' : 'G', 'G' : 'C', 'T' : 'A', 'N' : 'N' , 'M' : 'K', 'K' : 'M',
+    "R" : "Y" , "Y":"R" , "g":"c", "a":"t", "c":"g","t":"a", "n":"n", "V" : "B", "v":"b", 
+    "B" : "V", "b": "v", "W" : "W", "w" : "w"}
+
 def revComp(seq):
     " rev-comp a dna sequence with UIPAC characters "
     newSeq = []
     for c in reversed(seq):
         newSeq.append(revTbl[c])
     return "".join(newSeq)
+
 def matchNuc(pat, nuc):
     " returns true if pat (single char) matches nuc (single char) "
     if pat in ["A", "C", "T", "G"] and pat==nuc:
@@ -298,7 +318,7 @@ def findPat(seq, pat):
             #print "yielding", i, "<br>"
             yield i
 
-def findPams (seq, pam, strand, startDict, endSet):
+def findPams (seq, pam, strand, startDict, endSet,GUIDELEN,cpf1Mode=False):
     """ return two values: dict with pos -> strand of PAM and set of end positions of PAMs
     Makes sure to return only values with at least GUIDELEN bp left (if strand "+") or to the
     right of the match (if strand "-")
@@ -358,22 +378,22 @@ def findPams (seq, pam, strand, startDict, endSet):
         endSet.add(end)
     return startDict, endSet
 
-def findAllPams(seq, pam):
+def findAllPams(seq, pam,GUIDELEN,multiPams):
     """ find all matches for PAM and return as dict startPos -> strand and a set
     of end positions
     """
     seq = seq.upper()
-    startDict, endSet = findPams(seq, pam, "+", {}, set())
-    startDict, endSet = findPams(seq, revComp(pam), "-", startDict, endSet)
+    startDict, endSet = findPams(seq, pam, "+", {}, set(),GUIDELEN=GUIDELEN)
+    startDict, endSet = findPams(seq, revComp(pam), "-", startDict, endSet,GUIDELEN=GUIDELEN)
 
     if pam in multiPams:
         for pam2 in multiPams[pam]:
-            startDict, endSet = findPams(seq, pam2, "+", startDict, endSet)
-            startDict, endSet = findPams(seq, revComp(pam2), "-", startDict, endSet)
+            startDict, endSet = findPams(seq, pam2, "+", startDict, endSet,GUIDELEN=GUIDELEN)
+            startDict, endSet = findPams(seq, revComp(pam2), "-", startDict, endSet,GUIDELEN=GUIDELEN)
 
     return startDict, endSet
 #--
-def flankSeqIter(seq, startDict, pamLen, doFilterNs):
+def flankSeqIter(seq, startDict, pamLen, doFilterNs,GUIDELEN,pamPlusLen,cpf1Mode=False):
     """ given a seq and dictionary of pamPos -> strand and the length of the pamSite
     yield tuples of (name, pamStart, guideStart, strand, flankSeq, pamSeq)
 
@@ -419,11 +439,12 @@ def flankSeqIter(seq, startDict, pamLen, doFilterNs):
             continue
 
         yield "s%d%s" % (pamStart, strand), pamStart, guideStart, strand, flankSeq, pamSeq, pamPlusSeq
-def writePamFlank(seq, startDict, pam, faFname):
+        
+def writePamFlank(seq, startDict, pam, faFname,GUIDELEN,pamPlusLen):
     " write pam flanking sequences to fasta file, optionally with versions where each nucl is removed "
     #print "writing pams to %s<br>" % faFname
     faFh = open(faFname, "w")
-    for pamId, pamStart, guideStart, strand, flankSeq, pamSeq, pamPlusSeq in flankSeqIter(seq, startDict, len(pam), True):
+    for pamId, pamStart, guideStart, strand, flankSeq, pamSeq, pamPlusSeq in flankSeqIter(seq, startDict, len(pam), True,GUIDELEN,pamPlusLen):
         faFh.write(">%s\n%s\n" % (pamId, flankSeq))
     faFh.close()
 def annotateBedWithPos(inBed, outBed):
@@ -447,7 +468,13 @@ def annotateBedWithPos(inBed, outBed):
         ofh.write(desc)
         ofh.write("\n")
     ofh.close()
-def findOfftargetsBwa(queue, batchId, batchBase, faFname, genome, pam, bedFname,genomep=None):
+def findOfftargetsBwa(queue, batchId, batchBase, faFname, genome, pam, bedFname,maxMMs,genomep,
+GUIDELEN,
+MFAC,
+MAXOCC,
+offtargetPams,
+ALTPAMMINSCORE,
+DEBUG):    
     " align faFname to genome and create matchedBedFname "
     print('queue')
     print(queue)
@@ -468,16 +495,11 @@ def findOfftargetsBwa(queue, batchId, batchBase, faFname, genome, pam, bedFname,
     matchesBedFname = batchBase+".matches.bed"
     saFname = batchBase+".sa"
     pamLen = len(pam)
-    genomeDir = genomesDir # make var local, see below
+    genomeDir = dirname(genomep) # make var local, see below
 
     open(matchesBedFname, "w") # truncate to 0 size
 
     # increase MAXOCC if there is only a single query, but only in CGI mode
-    #if len(parseFasta(open(faFname)))==1 and not commandLineMode:
-        #global MAXOCC
-        #global maxMMs
-        #MAXOCC=max(HIGH_MAXOCC, MAXOCC)
-        #maxMMs=HIGH_maxMMs
 
     maxDiff = maxMMs
     queue.startStep(batchId, "bwa", "Alignment of potential guides, mismatches <= %d" % maxDiff)
@@ -485,8 +507,6 @@ def findOfftargetsBwa(queue, batchId, batchBase, faFname, genome, pam, bedFname,
     seqLen = GUIDELEN
 
     bwaM = MFAC*MAXOCC # -m is queue size in bwa
-    if genomep is None:
-        genomep='%(genomeDir)s/%(genome)s/%(genome)s.fa' % locals()
     cmd = "$BIN/bwa aln -o 0 -m %(bwaM)s -n %(maxDiff)d -k %(maxDiff)d -N -l %(seqLen)d %(genomep)s %(faFname)s > %(saFname)s" % locals()
     runCmd(cmd)
 
@@ -503,25 +523,9 @@ def findOfftargetsBwa(queue, batchId, batchBase, faFname, genome, pam, bedFname,
     altPats = ",".join(offtargetPams.get(pam, ["na"]))
     bedFnameTmp = bedFname+".tmp"
     altPamMinScore = str(ALTPAMMINSCORE)
-    # EXTRACTION OF SEQUENCES + ANNOTATION
-    # twoBitToFa was 15x slower than python's twobitreader, after markd's fix it should be OK
-    # Hiram says this is faster:
-    # bedtools getfasta -s -name -fi %(genome)s.fa -bed %(matchesBedFname)s -fo /dev/stdout  | xxx
-#     cmd = "$BIN/twoBitToFa %(genomeDir)s/%(genome)s/%(genome)s.2bit stdout -bed=%(matchesBedFname)s > test_file" % locals()
-
-#     cmd = "$BIN/twoBitToFa %(genomeDir)s/%(genome)s/%(genome)s.2bit stdout -bed=%(matchesBedFname)s | $SCRIPT/filterFaToBed %(faFname)s %(pam)s %(altPats)s %(altPamMinScore)s %(maxOcc)d > %(filtMatchesBedFname)s" % locals()
-#     cmd = "$BIN/twoBitToFa %(genomeDir)s/%(genome)s/%(genome)s.2bit stdout -bed=%(matchesBedFname)s | $SCRIPT/filterFaToBed %(faFname)s %(pam)s %(altPats)s %(altPamMinScore)s %(maxOcc)d > %(filtMatchesBedFname)s" % locals()
-
     cmd = "bedtools getfasta -name -s -fi {} -bed {} -fo {}.fasta".format(genomep,matchesBedFname,matchesBedFname)
     runCmd(cmd)
     cmd = "python3 $SCRIPT/filterFaToBed %(faFname)s %(pam)s %(altPats)s %(altPamMinScore)s %(maxOcc)d %(matchesBedFname)s.fasta > %(filtMatchesBedFname)s" % locals()
-#     python3 bin/filterFaToBed /media/rohan/tnetennba/Documents/propropro/writ/prjs/03beditor/code/04_offtarget/tmp/test_batchId.fa NGG NAG,NGA 1.0 60000 /media/rohan/tnetennba/Documents/propropro/writ/prjs/03beditor/code/04_offtarget/tmp/test_batchId.matches.bed.fasta > /media/rohan/tnetennba/Documents/propropro/writ/prjs/03beditor/code/04_offtarget/tmp/test_batchId.filtMatches.bed
-    
-    print('\n')
-    print('\n')
-    print(cmd)
-    print('\n')
-    print('\n')
     runCmd(cmd)
 
     segFname = "%(genomeDir)s/%(genome)s/%(genome)s.segments.bed" % locals()
@@ -547,36 +551,27 @@ def findOfftargetsBwa(queue, batchId, batchBase, faFname, genome, pam, bedFname,
             os.remove(tfn)
     return bedFname
 
-def processSubmission(faFname, genome, pam, bedFname, batchBase, batchId, queue,genomep=None):
+def processSubmission(faFname, genome, pam, bedFname, batchBase, batchId, queue,maxMMs,genomep,params_findofftargetbwa,doEffScoring=False, cpf1Mode=False):
     """ search fasta file against genome, filter for pam matches and write to bedFName 
     optionally write status updates to work queue. Remove faFname.
     """
     if doEffScoring and not cpf1Mode:
         queue.startStep(batchId, "effScores", "Calculating guide efficiency scores")
         createBatchEffScoreTable(batchId)
-
-    if genome=="noGenome":
-        # skip off-target search
-        if cpf1Mode:
-            errAbort("Sorry, no efficiency score has been published yet for Cpf1.")
-        open(bedFname, "w") # create a 0-byte file to signal job completion
-        queue.startStep(batchId, "done", "Job completed")
-        return
-
+        
 #     if useBowtie:
 #         findOfftargetsBowtie(queue, batchId, batchBase, faFname, genome, pam, bedFname)
 #     else:
-    findOfftargetsBwa(queue, batchId, batchBase, faFname, genome, pam, bedFname,genomep=genomep)
-
+    findOfftargetsBwa(queue, batchId, batchBase, faFname, genome, pam, bedFname,maxMMs,genomep=genomep,**params_findofftargetbwa)
     print(faFname)
-
     return bedFname
-def getOfftargets(seq, org, pam, batchId, startDict, queue,genomep=None):
+
+def getOfftargets(seq, org, pam, batchId, startDict, queue,TEMPDIR,GUIDELEN,pamPlusLen,maxMMs,genomep,params_findofftargetbwa):
     """ write guides to fasta and run bwa or use cached results.
     Return name of the BED file with the matches.
     Write progress status updates to queue object.
     """
-    batchBase = join(batchDir, batchId)
+    batchBase = join(TEMPDIR, batchId)
     otBedFname = batchBase+".bed"
     flagFile = batchBase+".running"
 
@@ -585,23 +580,11 @@ def getOfftargets(seq, org, pam, batchId, startDict, queue,genomep=None):
            "and try again, e.g. by reloading this page. If you see this message for "
            "more than 2-3 minutes, please send an email %s.net. Thanks!" % contactEmail)
 
-    if not isfile(otBedFname) or commandLineMode:
+    if not isfile(otBedFname):
         # write potential PAM sites to file 
         faFname = batchBase+".fa"
-        writePamFlank(seq, startDict, pam, faFname)
-        if commandLineMode:
-            processSubmission(faFname, org, pam, otBedFname, batchBase, batchId, queue,genomep=genomep)
-#         else:
-#             # umask is not respected by sqlite, bug http://www.mail-archive.com/sqlite-users@sqlite.org/msg59080.html
-#             q = JobQueue()
-#             ip = os.environ["REMOTE_ADDR"]
-#             wasOk = q.addJob("search", batchId, "ip=%s,org=%s,pam=%s" % (ip, org, pam))
-#             if not wasOk:
-#                 #print "CRISPOR job is running..." % batchId
-#                 pass
-#             q.close()
-#             return None
-
+        writePamFlank(seq, startDict, pam, faFname,GUIDELEN,pamPlusLen)
+        processSubmission(faFname, org, pam, otBedFname, batchBase, batchId, queue,maxMMs,genomep,params_findofftargetbwa)
     return otBedFname
 #--
 
@@ -615,9 +598,10 @@ def intToExtPamId(pamId):
     guideDesc = str(int(pamPos)+1)+strDesc
     return guideDesc
 
-def iterGuideRows(guideData, addHeaders=False, seqId=None, minSpec=None, minFusi=None):
+def iterGuideRows(guideData, guideHeaders,addHeaders=False, seqId=None, minSpec=None, minFusi=None):
     "yield rows from guide data. Need to know if for Cpf1 or not "
-    headers, tableScoreNames = makeGuideHeaders()
+    headers, tableScoreNames = makeGuideHeaders(guideHeaders,scoreNames,
+                     cpf1Mode,scoreDescs)
 
 #     if satMutOpt:
 #         headers.append("Oligonucleotide")
@@ -625,7 +609,7 @@ def iterGuideRows(guideData, addHeaders=False, seqId=None, minSpec=None, minFusi
 #         headers.append("AdapterHandle+PrimerRev")
 #         oligoPrefix, oligoSuffix, primerFwPrefix, primerRevPrefix, batchId, genome, position, ampLen, tm = satMutOpt
 
-#         batchBase = join(batchDir, batchId)
+#         batchBase = join(TEMPDIR, batchId)
 #         otBedFname = batchBase+".bed"
 #         otMatches = parseOfftargets(otBedFname)
 
@@ -663,7 +647,9 @@ def iterGuideRows(guideData, addHeaders=False, seqId=None, minSpec=None, minFusi
 #         if seqId != None:
 #             row.insert(0, seqId)
         yield row
-def makeGuideHeaders():
+    
+def makeGuideHeaders(guideHeaders,scoreNames,
+                     cpf1Mode,scoreDescs):
     " return list of the headers of the guide output file "
     headers = list(tuple(guideHeaders)) # make a copy of the list
 
@@ -894,7 +880,8 @@ def parsePos(text):
         chrom, start, end, strand = "", 0, 0, "+"
     return chrom, start, end, strand
 
-def mergeGuideInfo(seq, startDict, pamPat, otMatches, inputPos, effScores=None, sortBy=None, org=None,sort=False):
+def mergeGuideInfo(seq, startDict, pamPat, otMatches, inputPos, 
+                   GUIDELEN,pamPlusLen,effScores=None, sortBy=None, org=None,sort=False):
     """
     merges guide information from the sequence, the efficiency scores and the off-targets.
     creates rows with too many fields. Probably needs refactoring.
@@ -910,7 +897,7 @@ def mergeGuideInfo(seq, startDict, pamPat, otMatches, inputPos, effScores=None, 
     hasNotFound = False
     pamIdToSeq = {}
 
-    pamSeqs = list(flankSeqIter(seq.upper(), startDict, len(pamPat), True))
+    pamSeqs = list(flankSeqIter(seq.upper(), startDict, len(pamPat), True,GUIDELEN,pamPlusLen))
 
     for pamId, pamStart, guideStart, strand, guideSeq, pamSeq, pamPlusSeq in pamSeqs:
         # matches in genome
@@ -1068,247 +1055,245 @@ def iterOfftargetRows(guideData, addHeaders=False, skipRepetitive=True, seqId=No
         otRows.insert(0, newRow)
 
     return otRows
+#--------------------------------------------
+def main():
+# def dguide2fltofftarget(cfg):
+    # get dna and protein sequences 
+    #--
+    # junk
+    # write debug output to stdout
+    DEBUG = False
+    #DEBUG = True
+    # calculate the efficienc scores?
+    doEffScoring = True
 
-#--
-# junk
-# write debug output to stdout
-DEBUG = False
-#DEBUG = True
+    # system-wide temporary directory
+    TEMPDIR = "tmp"
+    if not exists(TEMPDIR):
+        makedirs(TEMPDIR)
 
-# calculate the efficienc scores?
-doEffScoring = True
+    # directory of crispor.py
+    baseDir = dirname(__file__)
 
-# system-wide temporary directory
-TEMPDIR = "tmp"
-if not exists(TEMPDIR):
-    makedirs(TEMPDIR)
+    # filename of this script, usually crispor.py
+    # myName = basename(__file__)
 
-# - do not calculate efficiency scores
-clusterJob = False
-if isdir("/scratch/tmp"):
-    TEMPDIR = "/dev/shm/"
-    clusterJob = True
+    # the segments.bed files use abbreviated genomic region names
+    segTypeConv = {"ex":"exon", "in":"intron", "ig":"intergenic"}
 
-# directory of crispor.py
-baseDir = dirname(__file__)
+    # directory for processed batches of offtargets ("cache" of bwa results)
+    TEMPDIR = baseDir+"/tmp"
 
-# filename of this script, usually crispor.py
-# myName = basename(__file__)
+    # use mysql or sqlite for the jobs?
+    jobQueueUseMysql = False
 
-# the segments.bed files use abbreviated genomic region names
-segTypeConv = {"ex":"exon", "in":"intron", "ig":"intergenic"}
+    # the file where the sqlite job queue is stored
+    scriptDir = baseDir+"bin"
 
-# directory for processed batches of offtargets ("cache" of bwa results)
-batchDir = baseDir+"/tmp"
+    # for some PAMs, there are alternative main PAMs. These are also shown on the main sequence panel
+    multiPams = {
+        "NGN" : ["GAW"]
+    }
 
-# use mysql or sqlite for the jobs?
-jobQueueUseMysql = False
+    offtargetPams = {
+        "NGG" : ["NAG","NGA"],
+        "NGN" : ["GAW"],
+        "NGK" : ["GAW"],
+        "NGA" : ["NGG"],
+        "NNGRRT" : ["NNGRRN"]
+    }
 
-# the file where the sqlite job queue is stored
-scriptDir = baseDir+"bin"
+    # BWA: allow up to X mismatches
+    maxMMs=4
 
-# for some PAMs, there are alternative main PAMs. These are also shown on the main sequence panel
-multiPams = {
-    "NGN" : ["GAW"]
-}
+    # maximum number of occurences in the genome to get flagged as repeats. 
+    # This is used in bwa samse, when converting the same file
+    # and for warnings in the table output.
+    MAXOCC = 60000
 
-offtargetPams = {
-    "NGG" : ["NAG","NGA"],
-    "NGN" : ["GAW"],
-    "NGK" : ["GAW"],
-    "NGA" : ["NGG"],
-    "NNGRRT" : ["NNGRRN"]
-}
+    # the BWA queue size is 2M by default. We derive the queue size from MAXOCC
+    MFAC = 2000000/MAXOCC
 
-# BWA: allow up to X mismatches
-maxMMs=4
+    # the length of the guide sequence, set by setupPamInfo
+    GUIDELEN=None
+    # length of the PAM sequence
+    PAMLEN=None
 
-# maximum number of occurences in the genome to get flagged as repeats. 
-# This is used in bwa samse, when converting the same file
-# and for warnings in the table output.
-MAXOCC = 60000
+    # input sequences are extended by X basepairs so we can calculate the efficiency scores
+    # and can better design primers
+    FLANKLEN=100
 
-# the BWA queue size is 2M by default. We derive the queue size from MAXOCC
-MFAC = 2000000/MAXOCC
+    # the name of the currently processed batch, assigned only once 
+    # in readBatchParams and only for json-type batches
+    batchName = ""
 
-# the length of the guide sequence, set by setupPamInfo
-GUIDELEN=None
-# length of the PAM sequence
-PAMLEN=None
+    # are we doing a Cpf1 run?
+    # this variable changes almost all processing and
+    # has to be set on program start, as soon as we know 
+    # the PAM we're running on
+    cpf1Mode=None
 
-# input sequences are extended by X basepairs so we can calculate the efficiency scores
-# and can better design primers
-FLANKLEN=100
+    ALTPAMMINSCORE = 1.0
 
-# the name of the currently processed batch, assigned only once 
-# in readBatchParams and only for json-type batches
-batchName = ""
+    # how much shall we extend the guide after the PAM to match restriction enzymes?
+    pamPlusLen = 5
 
-# are we doing a Cpf1 run?
-# this variable changes almost all processing and
-# has to be set on program start, as soon as we know 
-# the PAM we're running on
-cpf1Mode=None
+    # global flag to indicate if we're run from command line or as a CGI
 
-ALTPAMMINSCORE = 1.0
+    # names/order of efficiency scores to show in UI
+    scoreNames = ["fusi", "crisprScan"]
+    # allScoreNames = ["fusi", "fusiOld", "chariRank", "ssc", "doench", "wang", "crisprScan", "aziInVitro"]
 
-# how much shall we extend the guide after the PAM to match restriction enzymes?
-pamPlusLen = 5
+    cpf1ScoreNames = ["seqDeepCpf1"]
 
-# global flag to indicate if we're run from command line or as a CGI
-commandLineMode = False
-
-# names/order of efficiency scores to show in UI
-scoreNames = ["fusi", "crisprScan"]
-# allScoreNames = ["fusi", "fusiOld", "chariRank", "ssc", "doench", "wang", "crisprScan", "aziInVitro"]
-
-cpf1ScoreNames = ["seqDeepCpf1"]
-
-saCas9ScoreNames = ["najm"]
+    saCas9ScoreNames = ["najm"]
 
 
 
-# labels and descriptions of eff. scores
-scoreDescs = {
-    "doench" : ("Doench '14", "Range: 0-100. Linear regression model trained on 880 guides transfected into human MOLM13/NB4/TF1 cells (three genes) and mouse cells (six genes). Delivery: lentivirus. The Fusi score can be considered an updated version this score, as their training data overlaps a lot. See <a target='_blank' href='http://www.nature.com/nbt/journal/v32/n12/full/nbt.3026.html'>Doench et al.</a>"),
-    "ssc" : ("Xu", "Range ~ -2 - +2. Aka 'SSC score'. Linear regression model trained on data from &gt;1000 genes in human KBM7/HL60 cells (Wang et al) and mouse (Koike-Yusa et al.). Delivery: lentivirus. Ranges mostly -2 to +2. See <a target='_blank' href='http://genome.cshlp.org/content/early/2015/06/10/gr.191452.115'>Xu et al.</a>"),
-    "crisprScan" : ["Moreno-Mateos", "Also called 'CrisprScan'. Range: mostly 0-100. Linear regression model, trained on data from 1000 guides on &gt;100 genes, from zebrafish 1-cell stage embryos injected with mRNA. See <a target=_blank href='http://www.nature.com/nmeth/journal/v12/n10/full/nmeth.3543.html'>Moreno-Mateos et al.</a>. Recommended for guides transcribed <i>in-vitro</i> (T7 promoter). Click to sort by this score."],
-    "wang" : ("Wang", "Range: 0-100. SVM model trained on human cell culture data on guides from &gt;1000 genes. The Xu score can be considered an updated version of this score, as the training data overlaps a lot. Delivery: lentivirus. See <a target='_blank' href='http://http://www.ncbi.nlm.nih.gov/pmc/articles/PMC3972032/'>Wang et al.</a>"),
-    "chariRank" : ("Chari", "Range: 0-100. Support Vector Machine, converted to rank-percent, trained on data from 1235 guides targeting sequences that were also transfected with a lentivirus into human 293T cells. See <a target='_blank' href='http://www.nature.com/nmeth/journal/v12/n9/abs/nmeth.3473.html'>Chari et al.</a>"),
-    "fusi" : ("Doench '16", "Aka the 'Fusi-Score', since V4.4 using the version 'Azimuth', scores are slightly different than before April 2018 but very similar (click 'show all' to see the old scores). Range: 0-100. Boosted Regression Tree model, trained on data produced by Doench et al (881 guides, MOLM13/NB4/TF1 cells + unpublished additional data). Delivery: lentivirus. See <a target='_blank' href='http://biorxiv.org/content/early/2015/06/26/021568'>Fusi et al. 2015</a> and <a target='_blank' href='http://www.nature.com/nbt/journal/v34/n2/full/nbt.3437.html'>Doench et al. 2016</a> and <a target=_blank href='https://crispr.ml/'>crispr.ml</a>. Recommended for guides expressed in cells (U6 promoter). Click to sort the table by this score."),
-    "fusiOld" : ("Doench '16-Old", "The original implementation of the Doench 2016 score, as received from John Doench. The scores are similar, but not exactly identical to the 'Azimuth' version of the Doench 2016 model that is currently the default on this site, since Apr 2018."),
-    "najm" : ("Najm 2018", "A modified version of the Doench 2016 score ('Azimuth'), by Mudra Hegde for S. aureus Cas9. Range 0-100. See <a target=_blank href='https://www.nature.com/articles/nbt.4048'>Najm et al 2018</a>."),
-    "aziInVitro" : ("Azimuth in-vitro", "The Doench 2016 model trained on the Moreno-Mateos zebrafish data. Unpublished model, gratefully provided by J. Listgarden"),
-    "housden" : ("Housden", "Range: ~ 1-10. Weight matrix model trained on data from Drosophila mRNA injections. See <a target='_blank' href='http://stke.sciencemag.org/content/8/393/rs9.long'>Housden et al.</a>"),
-    "proxGc" : ("ProxGCCount", "Number of GCs in the last 4pb before the PAM"),
-    "seqDeepCpf1" : ("DeepCpf1", "Range: ~ 0-100. Convolutional Neural Network trained on ~20k Cpf1 lentiviral guide results. This is the score without DNAse information, 'Seq-DeepCpf1' in the paper. See <a target='_blank' href='https://www.nature.com/articles/nbt.4061'>Kim et al. 2018</a>"),
-    "oof" : ("Out-of-Frame", "Range: 0-100. Predicts the percentage of clones that will carry out-of-frame deletions, based on the micro-homology in the sequence flanking the target site. See <a target='_blank' href='http://www.nature.com/nmeth/journal/v11/n7/full/nmeth.3015.html'>Bae et al.</a>. Click the score to show the most likely deletions for this guide.")
-}
+    # labels and descriptions of eff. scores
+    scoreDescs = {
+        "doench" : ("Doench '14", "Range: 0-100. Linear regression model trained on 880 guides transfected into human MOLM13/NB4/TF1 cells (three genes) and mouse cells (six genes). Delivery: lentivirus. The Fusi score can be considered an updated version this score, as their training data overlaps a lot. See <a target='_blank' href='http://www.nature.com/nbt/journal/v32/n12/full/nbt.3026.html'>Doench et al.</a>"),
+        "ssc" : ("Xu", "Range ~ -2 - +2. Aka 'SSC score'. Linear regression model trained on data from &gt;1000 genes in human KBM7/HL60 cells (Wang et al) and mouse (Koike-Yusa et al.). Delivery: lentivirus. Ranges mostly -2 to +2. See <a target='_blank' href='http://genome.cshlp.org/content/early/2015/06/10/gr.191452.115'>Xu et al.</a>"),
+        "crisprScan" : ["Moreno-Mateos", "Also called 'CrisprScan'. Range: mostly 0-100. Linear regression model, trained on data from 1000 guides on &gt;100 genes, from zebrafish 1-cell stage embryos injected with mRNA. See <a target=_blank href='http://www.nature.com/nmeth/journal/v12/n10/full/nmeth.3543.html'>Moreno-Mateos et al.</a>. Recommended for guides transcribed <i>in-vitro</i> (T7 promoter). Click to sort by this score."],
+        "wang" : ("Wang", "Range: 0-100. SVM model trained on human cell culture data on guides from &gt;1000 genes. The Xu score can be considered an updated version of this score, as the training data overlaps a lot. Delivery: lentivirus. See <a target='_blank' href='http://http://www.ncbi.nlm.nih.gov/pmc/articles/PMC3972032/'>Wang et al.</a>"),
+        "chariRank" : ("Chari", "Range: 0-100. Support Vector Machine, converted to rank-percent, trained on data from 1235 guides targeting sequences that were also transfected with a lentivirus into human 293T cells. See <a target='_blank' href='http://www.nature.com/nmeth/journal/v12/n9/abs/nmeth.3473.html'>Chari et al.</a>"),
+        "fusi" : ("Doench '16", "Aka the 'Fusi-Score', since V4.4 using the version 'Azimuth', scores are slightly different than before April 2018 but very similar (click 'show all' to see the old scores). Range: 0-100. Boosted Regression Tree model, trained on data produced by Doench et al (881 guides, MOLM13/NB4/TF1 cells + unpublished additional data). Delivery: lentivirus. See <a target='_blank' href='http://biorxiv.org/content/early/2015/06/26/021568'>Fusi et al. 2015</a> and <a target='_blank' href='http://www.nature.com/nbt/journal/v34/n2/full/nbt.3437.html'>Doench et al. 2016</a> and <a target=_blank href='https://crispr.ml/'>crispr.ml</a>. Recommended for guides expressed in cells (U6 promoter). Click to sort the table by this score."),
+        "fusiOld" : ("Doench '16-Old", "The original implementation of the Doench 2016 score, as received from John Doench. The scores are similar, but not exactly identical to the 'Azimuth' version of the Doench 2016 model that is currently the default on this site, since Apr 2018."),
+        "najm" : ("Najm 2018", "A modified version of the Doench 2016 score ('Azimuth'), by Mudra Hegde for S. aureus Cas9. Range 0-100. See <a target=_blank href='https://www.nature.com/articles/nbt.4048'>Najm et al 2018</a>."),
+        "aziInVitro" : ("Azimuth in-vitro", "The Doench 2016 model trained on the Moreno-Mateos zebrafish data. Unpublished model, gratefully provided by J. Listgarden"),
+        "housden" : ("Housden", "Range: ~ 1-10. Weight matrix model trained on data from Drosophila mRNA injections. See <a target='_blank' href='http://stke.sciencemag.org/content/8/393/rs9.long'>Housden et al.</a>"),
+        "proxGc" : ("ProxGCCount", "Number of GCs in the last 4pb before the PAM"),
+        "seqDeepCpf1" : ("DeepCpf1", "Range: ~ 0-100. Convolutional Neural Network trained on ~20k Cpf1 lentiviral guide results. This is the score without DNAse information, 'Seq-DeepCpf1' in the paper. See <a target='_blank' href='https://www.nature.com/articles/nbt.4061'>Kim et al. 2018</a>"),
+        "oof" : ("Out-of-Frame", "Range: 0-100. Predicts the percentage of clones that will carry out-of-frame deletions, based on the micro-homology in the sequence flanking the target site. See <a target='_blank' href='http://www.nature.com/nmeth/journal/v11/n7/full/nmeth.3015.html'>Bae et al.</a>. Click the score to show the most likely deletions for this guide.")
+    }
 
-# the headers for the guide and offtarget output files
-guideHeaders = ["guideId", "targetSeq", "mitSpecScore", "offtargetCount", "targetGenomeGeneLocus"]
-offtargetHeaders = ["guideId", "guideSeq", "offtargetSeq", "mismatchPos", "mismatchCount", "mitOfftargetScore", "cfdOfftargetScore", "chrom", "start", "end", "strand", "locusDesc"]
+    # the headers for the guide and offtarget output files
+    guideHeaders = ["guideId", "targetSeq", "mitSpecScore", "offtargetCount", "targetGenomeGeneLocus"]
+    offtargetHeaders = ["guideId", "guideSeq", "offtargetSeq", "mismatchPos", "mismatchCount", "mitOfftargetScore", "cfdOfftargetScore", "chrom", "start", "end", "strand", "locusDesc"]
 
-# a file crispor.conf in the directory of the script allows to override any global variable
-myDir = dirname(__file__)
-confPath =myDir+"crispor.conf"
-if isfile(confPath):
-    exec(open(confPath))
+    # a file crispor.conf in the directory of the script allows to override any global variable
+    myDir = dirname(__file__)
+#     confPath =myDir+"crispor.conf"
+#     if isfile(confPath):
+#         exec(open(confPath))
 
-# cgiParams = None
+    # cgiParams = None
 
-# ====== END GLOBALS ============
-revTbl = {'A' : 'T', 'C' : 'G', 'G' : 'C', 'T' : 'A', 'N' : 'N' , 'M' : 'K', 'K' : 'M',
-    "R" : "Y" , "Y":"R" , "g":"c", "a":"t", "c":"g","t":"a", "n":"n", "V" : "B", "v":"b", 
-    "B" : "V", "b": "v", "W" : "W", "w" : "w"}
-pamIdRe = re.compile(r's([0-9]+)([+-])g?([0-9]*)')
+    # ====== END GLOBALS ============
+    revTbl = {'A' : 'T', 'C' : 'G', 'G' : 'C', 'T' : 'A', 'N' : 'N' , 'M' : 'K', 'K' : 'M',
+        "R" : "Y" , "Y":"R" , "g":"c", "a":"t", "c":"g","t":"a", "n":"n", "V" : "B", "v":"b", 
+        "B" : "V", "b": "v", "W" : "W", "w" : "w"}
+    pamIdRe = re.compile(r's([0-9]+)([+-])g?([0-9]*)')
 
-#
-DEBUG=True
-doEffScoring=False
-commandLineMode=True
+    #
+    DEBUG=True
+    doEffScoring=False
 
-# inSeqFname='data/04_specificity/in/test_batchId.fa'
-# faFname='tmp/in/x50sPGMoTvUagv3zWjGg.fa'
-# genomeDir='tmp/in/genomes/'
-genomeDir='/media/rohan/tnetennba/Documents/propropro/writ/prjs/03beditor/code/02_get_gene_sequences_from_genome/pub/release-92/fasta'
-org='saccharomyces_cerevisiae'
-outGuideFname='data/04_specificity/out/sample.sacCer3.mine.out.tsv'
-offtargetFname='data/04_specificity/out/sample.sacCer3.mine.offs.tsv'
-genome=org
-pam='NGG'
-genomefn='dna/Saccharomyces_cerevisiae.R64-1-1.dna_sm.chromosome.I.fa'
-genomep='{}/{}/{}'.format(genomeDir,org,genomefn)
-inSeqFname=genomep
-# genomep='crisporWebsite/genomes/sacCer3/sacCer3.fa'
-bedFname='test.bed'
-dirs2ps={'binDir':'bin/Linux',
- 'pyp':str(subprocess.check_output('which bwa'.split(' '))).replace("b'",'').replace("\\n'",''),
- 'scriptDir':'bin',
-}
-locals().update(dirs2ps)
-class options(object):
-    def __init__(self, pam):
-        self.pam = pam
-        self.skipAlign = False
-        self.genomeDir=genomeDir
-        self.offtargetFname=offtargetFname
-        self.debug=DEBUG
-        
-options=options(pam=pam)
+#     inSeqFname='data/04_specificity/in/test_batchId.fa'
+    # faFname='tmp/in/x50sPGMoTvUagv3zWjGg.fa'
+    # genomeDir='tmp/in/genomes/'
+    genomeDir='../../../04_offtarget/pub/release-92/fasta'
+    org='saccharomyces_cerevisiae'
+    outGuideFname='../../../04_offtarget/out/sample.sacCer3.mine.out.tsv'
+    offtargetFname='../../../04_offtarget/out/sample.sacCer3.mine.offs.tsv'
+    genomefn='dna/Saccharomyces_cerevisiae.R64-1-1.dna_sm.chromosome.I.fa'
+    genome=org
+    pam='NGG'
+    genomep='{}/{}/{}'.format(genomeDir,org,genomefn)
+    inSeqFname=genomep
+    # genomep='crisporWebsite/genomes/sacCer3/sacCer3.fa'
+    bedFname='test.bed'
+    class options(object):
+        def __init__(self, pam):
+            self.pam = pam
+            self.skipAlign = False
+            self.genomeDir=genomeDir
+            self.offtargetFname=offtargetFname
+            self.debug=DEBUG
 
-class ConsQueue:
-    """ a pseudo job queue that does nothing but report progress to the console """
-    def startStep(self, batchId, desc, label):
-        logging.info("Progress %s - %s - %s" % (batchId, desc, label))
+    options=options(pam=pam)
+    params_offtargetbwa={'GUIDELEN':GUIDELEN,
+                    'MFAC':MFAC,
+                    'MAXOCC':MAXOCC,
+                    'offtargetPams':offtargetPams,
+                    'ALTPAMMINSCORE':ALTPAMMINSCORE,
+                    'DEBUG':DEBUG}
+    class ConsQueue:
+        """ a pseudo job queue that does nothing but report progress to the console """
+        def startStep(self, batchId, desc, label):
+            logging.info("Progress %s - %s - %s" % (batchId, desc, label))
 
-effScores='na'
-vn2v_pam=setupPamInfo(pam,setupPamInfo,scoreNames)
-locals().update(vn2v_pam)
-skipAlign = False
-if options.skipAlign:
-    skipAlign = True
+    effScores='na'
+    GUIDELEN,cpf1Mode,addGenePlasmids,PAMLEN,scoreNames=setupPamInfo(pam,setupPamInfo,scoreNames)
+    skipAlign = False
+    if options.skipAlign:
+        skipAlign = True
 
-# different genomes directory?
-if options.genomeDir != None:
-    global genomesDir
-    genomesDir = options.genomeDir
+    # different genomes directory?
+    if options.genomeDir != None:
+        genomesDir = options.genomeDir
 
-# get sequence
+    # get sequence
 
-seqs = parseFasta(open(inSeqFname))
-guideFh = None
-offtargetFh = None
-for seqId, seq in seqs.items():
-    seq = seq.upper()
-    logging.info(" * running on sequence '%s', guideLen=%d, seqLen=%d" % (seqId, GUIDELEN, len(seq)))
-    # get the other parameters and write to a new batch
-    seq = seq.upper()
-    pamPat = options.pam
-    batchId, position, extSeq = newBatch(seqId, seq, org, pamPat, skipAlign,genomep=genomep)
-    logging.debug("Temporary output directory: %s/%s" % (batchDir, batchId))
+    seqs = parseFasta(open(inSeqFname))
+    guideFh = None
+    offtargetFh = None
+    for seqId, seq in seqs.items():
+        seq = seq.upper()
+        print(seqId, GUIDELEN, len(seq))
+        logging.info(" * running on sequence '%s', guideLen=%d, seqLen=%d" % (seqId, GUIDELEN, len(seq)))
+        # get the other parameters and write to a new batch
+        seq = seq.upper()
+        pamPat = options.pam
+        batchId, position, extSeq = newBatch(seqId, seq, org, pamPat, genome,TEMPDIR,skipAlign,
+                                             flank=FLANKLEN,genomep=genomep)
+        logging.debug("Temporary output directory: %s/%s" % (TEMPDIR, batchId))
 
-    if position=="?":
-        logging.error("no match found for sequence %s in genome %s" % (inSeqFname, org))
+        if position=="?":
+            logging.error("no match found for sequence %s in genome %s" % (inSeqFname, org))
 
-    startDict, endSet = findAllPams(seq, pamPat)
+        startDict, endSet = findAllPams(seq, pamPat,GUIDELEN,multiPams)
 
-    otBedFname = getOfftargets(seq, org, pamPat, batchId, startDict, ConsQueue(),genomep=genomep)
-    otMatches = parseOfftargets(otBedFname)
-    guideData, guideScores, hasNotFound, pamIdToSeq = \
-        mergeGuideInfo(seq, startDict, pamPat, otMatches, position, effScores)
-    
-    # write guide headers
-    if guideFh is None:
-        guideFh = open(join(batchDir, "guideInfo.tab"), "w")
-        guideHeaders, _ = makeGuideHeaders()
-        guideHeaders.insert(0, "#seqId")
-        guideFh.write("\t".join(guideHeaders)+"\n")
+        otBedFname = getOfftargets(seq, org, pamPat, batchId, startDict, ConsQueue(),TEMPDIR,GUIDELEN,pamPlusLen,maxMMs,genomep,params_offtargetbwa)
+        otMatches = parseOfftargets(otBedFname)
+        guideData, guideScores, hasNotFound, pamIdToSeq = \
+            mergeGuideInfo(seq, startDict, pamPat, otMatches, position, GUIDELEN, pamPlusLen, effScores)
 
-#     write offtarget headers
-    if options.offtargetFname and (offtargetFh is None):
-        print('# write offtarget headers')
-        offtargetFh = open(join(batchDir, "offtargetInfo.tab"), "w")
-        offtargetHeaders.insert(0, "seqId")
-        offtargetFh.write("\t".join(offtargetHeaders)+"\n")
-    print(offtargetHeaders)
-    for row in iterGuideRows(guideData, seqId=seqId):
-        guideFh.write("\t".join(row))
-        guideFh.write("\n")
+        # write guide headers
+        if guideFh is None:
+            guideFh = open(join(TEMPDIR, "guideInfo.tab"), "w")
+            guideHeaders, _ = makeGuideHeaders(guideHeaders,scoreNames,
+                     cpf1Mode,scoreDescs)
+            guideHeaders.insert(0, "#seqId")
+            guideFh.write("\t".join(guideHeaders)+"\n")
+
+    #     write offtarget headers
+        if options.offtargetFname and (offtargetFh is None):
+            print('# write offtarget headers')
+            offtargetFh = open(join(TEMPDIR, "offtargetInfo.tab"), "w")
+            offtargetHeaders.insert(0, "seqId")
+            offtargetFh.write("\t".join(offtargetHeaders)+"\n")
+        print(offtargetHeaders)
+        for row in iterGuideRows(guideData, guideHeaders,seqId=seqId):
+            guideFh.write("\t".join(row))
+            guideFh.write("\n")
+
+        if options.offtargetFname:
+            for row in iterOfftargetRows(guideData, seqId=seqId, skipRepetitive=False):
+                offtargetFh.write("\t".join(row))
+                offtargetFh.write("\n")
+
+    guideFh.close()
+    shutil.move(guideFh.name, outGuideFname)
+    logging.info("guide info written to %s" % outGuideFname)
 
     if options.offtargetFname:
-        for row in iterOfftargetRows(guideData, seqId=seqId, skipRepetitive=False):
-            offtargetFh.write("\t".join(row))
-            offtargetFh.write("\n")
+        offtargetFh.close()
+        shutil.move(offtargetFh.name, options.offtargetFname)
+        logging.info("off-target info written to %s" % options.offtargetFname)
 
-guideFh.close()
-shutil.move(guideFh.name, outGuideFname)
-logging.info("guide info written to %s" % outGuideFname)
+    if not options.debug and not options.tempDir:
+        shutil.rmtree(TEMPDIR)
 
-if options.offtargetFname:
-    offtargetFh.close()
-    shutil.move(offtargetFh.name, options.offtargetFname)
-    logging.info("off-target info written to %s" % options.offtargetFname)
-
-if not options.debug and not options.tempDir:
-    shutil.rmtree(batchDir)
+if __name__ == '__main__':
+    main()

@@ -1,7 +1,8 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
-from os.path import exists
+from os.path import exists, dirname
+import subprocess
 
 from Bio import SeqIO, Alphabet, Data, Seq, SeqUtils
 from Bio import motifs,Seq,AlignIO
@@ -26,3 +27,10 @@ pos_muts.loc['Target-AID','Position of mutation from PAM: maximum']=-17
 
 pos_muts['Position of codon start from PAM: minimum']=pos_muts['Position of mutation from PAM: minimum']-2
 pos_muts['Position of codon start from PAM: maximum']=pos_muts['Position of mutation from PAM: maximum']
+
+# EXT 
+dirs2ps={'pyp':str(subprocess.check_output('which python3'.split(' '))).replace("b'",'').replace("\\n'",''),
+'binDir':dirname(str(subprocess.check_output('which bwa'.split(' '))).replace("b'",'').replace("\\n'",'')),
+ 'scriptDir':'bin',
+}
+

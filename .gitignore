@@ -24,3 +24,4 @@ paper/latex.template
 paper/.Rhistory
 pub
 beditor/lib/global_vars_crispror.py
+beditor/lib/tmp/
