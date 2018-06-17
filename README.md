@@ -2,7 +2,12 @@
 
 Python package to streamline designing of guides. 
 
-The package (called `beditor`) can be installed in python 3.6 environment by following commands.
+## Requirements
+
+Need `bwa`, `samtools` and `bedtools` installed on the system.
+
+## Instalation
+The package can be installed in python 3.6 environment by following commands.
 
 ```
 cd beditor

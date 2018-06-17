@@ -22,3 +22,5 @@ test/*
 test_dataset/*
 paper/latex.template
 paper/.Rhistory
+pub
+beditor/lib/global_vars_crispror.py
