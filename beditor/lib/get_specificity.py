@@ -161,7 +161,7 @@ def parseChromSizes(genome,genomep=None):
         ret[chrom] = int(size)
     return ret
 
-def extendAndGetSeq(db, chrom, start, end, strand, oldSeq, flank=100,genomep=None):
+def extendAndGetSeq(db, chrom, start, end, strand, oldSeq,TEMPDIR, flank=100,genomep=None):
     """ extend (start, end) by flank and get sequence for it using twoBitTwoFa.
     Return None if not possible to extend.
     #>>> extendAndGetSeq("hg19", "chr21", 10000000, 10000005, "+", flank=3)
@@ -246,7 +246,7 @@ def newBatch(batchName, seq, org, pam,genome, TEMPDIR,skipAlign=False,flank=100,
     # try to get a 100bp-extended version of the input seq
     extSeq = None
     if chrom!=None:
-        extSeq = extendAndGetSeq(org, chrom, start, end, strand, seq,flank=flank, genomep=genomep)
+        extSeq = extendAndGetSeq(org, chrom, start, end, strand, seq,TEMPDIR,flank=flank, genomep=genomep)
         #if extSeq!=None:
             #ofh.write(">extSeq\n%s\n" % (extSeq))
     batchData["extSeq"] = extSeq
@@ -588,7 +588,7 @@ def getOfftargets(seq, org, pam, batchId, startDict, queue,TEMPDIR,GUIDELEN,pamP
     return otBedFname
 #--
 
-def intToExtPamId(pamId):
+def intToExtPamId(pamId,pamIdRe):
     " convert the internal pam Id like s20+ to the external one, like 21Forw "
     pamPos, strand, rest = pamIdRe.match(pamId).groups()
     if strand=="+":
@@ -598,7 +598,8 @@ def intToExtPamId(pamId):
     guideDesc = str(int(pamPos)+1)+strDesc
     return guideDesc
 
-def iterGuideRows(guideData, guideHeaders,addHeaders=False, seqId=None, minSpec=None, minFusi=None):
+def iterGuideRows(guideData, guideHeaders,scoreNames,
+                     cpf1Mode,scoreDescs,pamIdRe,addHeaders=False, seqId=None, minSpec=None, minFusi=None):
     "yield rows from guide data. Need to know if for Cpf1 or not "
     headers, tableScoreNames = makeGuideHeaders(guideHeaders,scoreNames,
                      cpf1Mode,scoreDescs)
@@ -635,7 +636,7 @@ def iterGuideRows(guideData, guideHeaders,addHeaders=False, seqId=None, minSpec=
         if otData!=None:
             otCount = len(otData)
 
-        guideDesc = intToExtPamId(pamId)
+        guideDesc = intToExtPamId(pamId,pamIdRe)
 
         fullSeq = concatGuideAndPam(guideSeq, pamSeq)
         row = [guideDesc, fullSeq, guideScore, otCount, ontargetDesc]
@@ -720,7 +721,7 @@ def parseOfftargets(bedFname):
     return indexedOts
 #--
 
-def concatGuideAndPam(guideSeq, pamSeq, pamPlusSeq=""):
+def concatGuideAndPam(guideSeq, pamSeq,cpf1Mode=False, pamPlusSeq=""):
     " return guide+pam or pam+guide, depending on cpf1Mode "
     if cpf1Mode:
         return pamPlusSeq+pamSeq+guideSeq
@@ -1013,7 +1014,8 @@ def highlightMismatches(guide, offTarget, pamLen):
         else:
             s.append("*")
     return "".join(s)
-def iterOfftargetRows(guideData, addHeaders=False, skipRepetitive=True, seqId=None):
+
+def iterOfftargetRows(guideData, offtargetHeaders,addHeaders=False, skipRepetitive=True, seqId=None):
     " yield bulk offtarget rows for the tab-sep download file "
     otRows = []
     print(offtargetHeaders)
@@ -1189,18 +1191,17 @@ def main():
     DEBUG=True
     doEffScoring=False
 
-#     inSeqFname='data/04_specificity/in/test_batchId.fa'
+    inSeqFname='../../../04_offtarget/data/04_specificity/in/sample.sacCer3.fa'
     # faFname='tmp/in/x50sPGMoTvUagv3zWjGg.fa'
     # genomeDir='tmp/in/genomes/'
     genomeDir='../../../04_offtarget/pub/release-92/fasta'
     org='saccharomyces_cerevisiae'
-    outGuideFname='../../../04_offtarget/out/sample.sacCer3.mine.out.tsv'
-    offtargetFname='../../../04_offtarget/out/sample.sacCer3.mine.offs.tsv'
+    outGuideFname='../../../04_offtarget/data/04_specificity/out/sample.sacCer3.mine.out.tsv'
+    offtargetFname='../../../04_offtarget/data/04_specificity/out/sample.sacCer3.mine.offs.tsv'
     genomefn='dna/Saccharomyces_cerevisiae.R64-1-1.dna_sm.chromosome.I.fa'
     genome=org
     pam='NGG'
     genomep='{}/{}/{}'.format(genomeDir,org,genomefn)
-    inSeqFname=genomep
     # genomep='crisporWebsite/genomes/sacCer3/sacCer3.fa'
     bedFname='test.bed'
     class options(object):
@@ -1253,8 +1254,14 @@ def main():
             logging.error("no match found for sequence %s in genome %s" % (inSeqFname, org))
 
         startDict, endSet = findAllPams(seq, pamPat,GUIDELEN,multiPams)
-
-        otBedFname = getOfftargets(seq, org, pamPat, batchId, startDict, ConsQueue(),TEMPDIR,GUIDELEN,pamPlusLen,maxMMs,genomep,params_offtargetbwa)
+#         startDict={33: '+', 40: '+', 57: '+', 103: '+', 136: '+', 79: '-', 139: '-'}
+#         endSet={36, 106, 43, 139, 142, 82, 60}
+#         print('>>>>>')
+#         print(startDict)
+#         print(endSet)
+#         print('>>>>>')
+        otBedFname = getOfftargets(seq, org, pamPat, batchId, startDict,
+                                   ConsQueue(),TEMPDIR,GUIDELEN,pamPlusLen,maxMMs,genomep,params_offtargetbwa)
         otMatches = parseOfftargets(otBedFname)
         guideData, guideScores, hasNotFound, pamIdToSeq = \
             mergeGuideInfo(seq, startDict, pamPat, otMatches, position, GUIDELEN, pamPlusLen, effScores)
@@ -1274,12 +1281,13 @@ def main():
             offtargetHeaders.insert(0, "seqId")
             offtargetFh.write("\t".join(offtargetHeaders)+"\n")
         print(offtargetHeaders)
-        for row in iterGuideRows(guideData, guideHeaders,seqId=seqId):
+        for row in iterGuideRows(guideData, guideHeaders,scoreNames,
+                     cpf1Mode,scoreDescs,pamIdRe,seqId=seqId):
             guideFh.write("\t".join(row))
             guideFh.write("\n")
 
         if options.offtargetFname:
-            for row in iterOfftargetRows(guideData, seqId=seqId, skipRepetitive=False):
+            for row in iterOfftargetRows(guideData,offtargetHeaders, seqId=seqId, skipRepetitive=False):
                 offtargetFh.write("\t".join(row))
                 offtargetFh.write("\n")
 
