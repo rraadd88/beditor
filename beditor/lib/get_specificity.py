@@ -2,15 +2,11 @@
 
 import logging
 import subprocess
-import tempfile
 import logging
 import shutil
-import time
 import re
-import random
 import os
-import logging, operator, sqlite3, time
-import json
+import logging, operator
 
 from collections import defaultdict
 from os.path import join, isfile, basename, dirname, isdir, abspath, exists
@@ -159,69 +155,6 @@ def parseChromSizes(genome,genomep=None):
         ret[chrom] = int(size)
     return ret
 
-def extendAndGetSeq(db, chrom, start, end, strand, oldSeq,TEMPDIR, flank=100,genomep=None):
-    """ extend (start, end) by flank and get sequence for it using twoBitTwoFa.
-    Return None if not possible to extend.
-    #>>> extendAndGetSeq("hg19", "chr21", 10000000, 10000005, "+", flank=3)
-    #'AAGGAATGTAG'
-    """
-    print('db',db)
-    print('chrom',chrom)
-    print('start',start)
-    print('end',end)
-    print('strand',strand)
-    print('oldSeq',oldSeq)
-    print('flank',flank)
-    
-    assert("|" not in chrom) # we are using | to split info in BED files. | is not allowed in the fasta
-    chromSizes = parseChromSizes(db,genomep=genomep)
-    maxEnd = chromSizes[chrom]+1
-
-    start -= flank
-    end += flank
-    if start < 0 or end > maxEnd:
-        return None
-
-#     genomeDir = genomesDir
-#     twoBitFname = "%(genomeDir)s/%(db)s/%(db)s.2bit" % locals()
-#     print(twoBitFname)
-#     progDir = binDir
-#     genome = db
-    seqStr='{}:{}-{}'.format(chrom,start,end)
-    seqp='{}/{}.fa'.format(TEMPDIR,seqStr)
-    cmd='samtools faidx {} {} > {}'.format(genomep,seqStr,seqp)
-#     cmd = "%(progDir)s/twoBitToFa %(genomeDir)s/%(genome)s/%(genome)s.2bit stdout -seq='%(chrom)s' -start=%(start)s -end=%(end)s" % locals()
-    print(cmd)
-#     proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
-#     seqStr = proc.stdout.read()
-#     proc.wait()
-#     if proc.returncode!=0:
-#         errAbort("Could not run '%s'. Return code %s" % (cmd, str(proc.returncode)))
-# #     print(seqStr)
-    err=subprocess.call(cmd,shell=True)
-    if err!=0:
-        errAbort("Could not run '%s'. Return code %s" % (cmd, str(proc.returncode)))        
-#     faFile = StringIO(seqStr.decode("utf-8"))
-#     seqs = parseFasta(faFile)
-#     assert(len(seqs)==1)
-#     seq = list(seqs.values())[0].upper()
-    seq=SeqIO.read(seqp, "fasta").seq
-    if strand=="-":
-        seq=seq.reverse_complement()
-#         seq = revComp(seq)
-    # ? make sure that user annotations, like added Ns, are retained in the long sequence
-    #fixedSeq = seq[:100]+oldSeq+seq[-100:]
-    #assert(len(fixedSeq)==len(seq))
-    print(seq)
-    return str(seq)
-
-def get_position(genome, seq, batchId,TEMPDIR,genomep):
-    """ obtain a batch ID and write seq/org/pam to their files.
-    Return batchId, position string and a 100bp-extended seq, if possible.
-    """
-    chrom, start, end, strand = findBestMatch(genome, seq, batchId,TEMPDIR=TEMPDIR,bwaIndexPath=genomep)
-    posStr = coordsToPosStr(chrom, start, end, strand)
-    return posStr
 
 #---
 revTbl = {'A' : 'T', 'C' : 'G', 'G' : 'C', 'T' : 'A', 'N' : 'N' , 'M' : 'K', 'K' : 'M',
@@ -345,20 +278,6 @@ def findPams (seq, pam, strand, startDict, endSet,GUIDELEN,cpf1Mode=False):
         endSet.add(end)
     return startDict, endSet
 
-def findAllPams(seq, pam,GUIDELEN,multiPams):
-    """ find all matches for PAM and return as dict startPos -> strand and a set
-    of end positions
-    """
-    seq = seq.upper()
-    startDict, endSet = findPams(seq, pam, "+", {}, set(),GUIDELEN=GUIDELEN)
-    startDict, endSet = findPams(seq, revComp(pam), "-", startDict, endSet,GUIDELEN=GUIDELEN)
-
-    if pam in multiPams:
-        for pam2 in multiPams[pam]:
-            startDict, endSet = findPams(seq, pam2, "+", startDict, endSet,GUIDELEN=GUIDELEN)
-            startDict, endSet = findPams(seq, revComp(pam2), "-", startDict, endSet,GUIDELEN=GUIDELEN)
-
-    return startDict, endSet
 #--
 def flankSeqIter(seq, startDict, pamLen, doFilterNs,GUIDELEN,pamPlusLen,cpf1Mode=False):
     """ given a seq and dictionary of pamPos -> strand and the length of the pamSite
