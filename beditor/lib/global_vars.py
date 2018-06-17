@@ -29,8 +29,10 @@ pos_muts['Position of codon start from PAM: minimum']=pos_muts['Position of muta
 pos_muts['Position of codon start from PAM: maximum']=pos_muts['Position of mutation from PAM: maximum']
 
 # EXT 
+import beditor 
 dirs2ps={'pyp':str(subprocess.check_output('which python3'.split(' '))).replace("b'",'').replace("\\n'",''),
-'binDir':dirname(str(subprocess.check_output('which bwa'.split(' '))).replace("b'",'').replace("\\n'",'')),
- 'scriptDir':'bin',
+#'binDir':dirname(str(subprocess.check_output('which bwa'.split(' '))).replace("b'",'').replace("\\n'",'')),
+'binDir':dirname(beditor.__file__)+'/bin', 
+'scriptDir':dirname(beditor.__file__)+'/bin',
 }
 

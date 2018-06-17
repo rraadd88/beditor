@@ -76,6 +76,7 @@ def runCmd(cmd):
     cmd = cmd.replace("$BIN", dirs2ps['binDir'])
     cmd = cmd.replace("$PYTHON", dirs2ps['pyp'])
     cmd = cmd.replace("$SCRIPT", dirs2ps['scriptDir'])
+    print(cmd)
     err=subprocess.call(cmd,shell=True)
     if err!=0:
         print('bash command error: {}\n{}\n'.format(err,cmd))
@@ -104,8 +105,7 @@ def findBestMatch(genome, seq, batchId,TEMPDIR,bwaIndexPath=None):
     faFname = tmpFaFh.name
 
     # create temp SAM file
-    tmpSamFh = tempfile.NamedTemporaryFile(dir=TEMPDIR, prefix="crisporBestMatch", suffix=".sam")
-    samFname = tmpSamFh.name
+    samFname = TEMPDIR+"/crisporBestMatch.sam"
     if bwaIndexPath is None:
         bwaIndexPath = abspath(join(genomesDir, genome, genome+".fa"))
     cmd = "$BIN/bwa bwasw -T 20 %(bwaIndexPath)s %(faFname)s > %(samFname)s" % locals()
@@ -138,8 +138,6 @@ def findBestMatch(genome, seq, batchId,TEMPDIR,bwaIndexPath=None):
         chrom, start, end =  rName, int(pos)-1, int(pos)-1+matchLen # SAM is 1-based
         assert("|" not in chrom) # We do not allow '|' in chrom name. I use this char to sep. info fields in BED.
 
-    # delete the temp files
-    tmpSamFh.close()
     tmpFaFh.close()
     print(chrom, start, end)
     logging.debug("Found best match at %s:%d-%d:%s" % (chrom, start, end, strand))
@@ -216,46 +214,6 @@ def extendAndGetSeq(db, chrom, start, end, strand, oldSeq,TEMPDIR, flank=100,gen
     #assert(len(fixedSeq)==len(seq))
     print(seq)
     return str(seq)
-
-def newBatch(batchName, seq, org, pam,genome, TEMPDIR,skipAlign=False,flank=100,genomep=None):
-    """ obtain a batch ID and write seq/org/pam to their files.
-    Return batchId, position string and a 100bp-extended seq, if possible.
-    """
-#     batchId = makeTempBase(seq, org, pam, batchName)
-    batchId='test_batchId'
-    if skipAlign:
-        chrom, start, end, strand = None, None, None, None
-    else:
-        chrom, start, end, strand = findBestMatch(genome, seq, batchId,TEMPDIR=TEMPDIR,bwaIndexPath=genomep)
-    # define temp file names
-    batchBase = join(TEMPDIR, batchId)
-    # save input seq, pamSeq, genome, position for primer design later
-    batchJsonName = batchBase+".json"
-    posStr = coordsToPosStr(chrom, start, end, strand)
-
-    batchJsonTmpName = batchJsonName+".tmp"
-    ofh = open(batchJsonTmpName, "w")
-    #ofh.write(">%s %s %s\n%s\n" % (org, pam, posStr, batchName, seq))
-    batchData = {}
-    batchData["org"] = org
-    batchData["pam"] = pam
-    batchData["posStr"] = posStr
-    batchData["batchName"] = batchName
-    batchData["seq"] = seq
-
-    # try to get a 100bp-extended version of the input seq
-    extSeq = None
-    if chrom!=None:
-        extSeq = extendAndGetSeq(org, chrom, start, end, strand, seq,TEMPDIR,flank=flank, genomep=genomep)
-        #if extSeq!=None:
-            #ofh.write(">extSeq\n%s\n" % (extSeq))
-    batchData["extSeq"] = extSeq
-
-    json.dump(batchData, ofh)
-    ofh.close()
-    # fixes a run condition
-    os.rename(batchJsonTmpName, batchJsonName)
-    return batchId, posStr, extSeq
 
 def get_position(genome, seq, batchId,TEMPDIR,genomep):
     """ obtain a batch ID and write seq/org/pam to their files.
@@ -593,9 +551,9 @@ def getOfftargets(seq, org, pam, batchId, startDict, queue,TEMPDIR,GUIDELEN,pamP
         errAbort("This sequence is still being processed. Please wait for ~20 seconds "
            "and try again, e.g. by reloading this page. If you see this message for "
            "more than 2-3 minutes, please send an email %s.net. Thanks!" % contactEmail)
-
+    print(otBedFname)
     if not isfile(otBedFname):
-        # write potential PAM sites to file 
+    # write potential PAM sites to file 
         faFname = batchBase+".fa"
         writePamFlank(seq, startDict, pam, faFname,GUIDELEN,pamPlusLen)
         processSubmission(faFname, org, pam, otBedFname, batchBase, batchId, queue,maxMMs,genomep,params_findofftargetbwa)
@@ -741,8 +699,10 @@ def concatGuideAndPam(guideSeq, pamSeq,cpf1Mode=False, pamPlusSeq=""):
         return pamPlusSeq+pamSeq+guideSeq
     else:
         return guideSeq+pamSeq+pamPlusSeq
-def makePosList(org, countDict, guideSeq, pam, inputPos):
-    """ for a given guide sequence, return a list of tuples that
+def makePosList(org, countDict, guideSeq, pam, inputPos, maxMMs,cpf1Mode,
+               GUIDELEN,MFAC,MAXOCC,offtargetPams,ALTPAMMINSCORE,DEBUG):
+    """     
+    for a given guide sequence, return a list of tuples that
     describes the offtargets sorted by score and a string to describe the offtargets in the
     format x/y/z/w of mismatch counts
     inputPos has format "chrom:start-end:strand". All 0MM matches in this range
@@ -825,7 +785,7 @@ def makePosList(org, countDict, guideSeq, pam, inputPos):
             else:
                 dist = None
 
-            alnHtml, hasLast12Mm = makeAlnStr(org, guideSeq, otSeq, pam, mitScore, cfdScore, posStr, dist)
+            alnHtml, hasLast12Mm = makeAlnStr(org, guideSeq, otSeq, pam, mitScore, cfdScore, posStr, dist,cpf1Mode)
             if not hasLast12Mm:
                 last12MmOtCount+=1
             posList.append( (otSeq, mitScore, cfdScore, editDist, posStr, geneDesc, alnHtml) )
@@ -876,6 +836,7 @@ def parsePos(text):
     """ parse a string of format chr:start-end:strand and return a 4-tuple
     Strand defaults to + and end defaults to start+23
     """
+    print(text)
     if text!=None and len(text)!=0 and text!="?":
         fields = text.split(":")
         if len(fields)==2:
@@ -896,7 +857,7 @@ def parsePos(text):
     return chrom, start, end, strand
 
 def mergeGuideInfo(seq, startDict, pamPat, otMatches, inputPos, 
-                   GUIDELEN,pamPlusLen,effScores=None, sortBy=None, org=None,sort=False):
+                   GUIDELEN,pamPlusLen,maxMMs,cpf1Mode,params_findofftargetbwa,effScores=None, sortBy=None, org=None,sort=False):
     """
     merges guide information from the sequence, the efficiency scores and the off-targets.
     creates rows with too many fields. Probably needs refactoring.
@@ -923,7 +884,7 @@ def mergeGuideInfo(seq, startDict, pamPat, otMatches, inputPos,
             mutEnzymes = []#matchRestrEnz(allEnzymes, guideSeq, pamSeq, pamPlusSeq)
             posList, otDesc, guideScore, guideCfdScore, last12Desc, ontargetDesc, \
                subOptMatchCount = \
-                   makePosList(org, pamMatches, guideSeqFull, pamPat, inputPos)
+                   makePosList(org, pamMatches, guideSeqFull, pamPat, inputPos,maxMMs,cpf1Mode,**params_findofftargetbwa)
 
         # no off-targets found?
         else:
@@ -956,7 +917,7 @@ def mergeGuideInfo(seq, startDict, pamPat, otMatches, inputPos,
     
     return guideData, guideScores, hasNotFound, pamIdToSeq
 #--
-def makeAlnStr(org, seq1, seq2, pam, mitScore, cfdScore, posStr, chromDist):
+def makeAlnStr(org, seq1, seq2, pam, mitScore, cfdScore, posStr, chromDist,cpf1Mode):
     " given two strings of equal length, return a html-formatted string that highlights the differences "
     lines = [ [], [], [] ]
     last12MmCount = 0
@@ -1013,7 +974,7 @@ def makeAlnStr(org, seq1, seq2, pam, mitScore, cfdScore, posStr, chromDist):
 
     hasLast12Mm = last12MmCount>0
     return htmlText1+htmlText2, hasLast12Mm
-def highlightMismatches(guide, offTarget, pamLen):
+def highlightMismatches(guide, offTarget, pamLen,cpf1Mode=False):
     " return a string that marks mismatches between guide and offtarget with * "
     if cpf1Mode:
         offTarget = offTarget[pamLen:]
@@ -1029,7 +990,7 @@ def highlightMismatches(guide, offTarget, pamLen):
             s.append("*")
     return "".join(s)
 
-def iterOfftargetRows(guideData, offtargetHeaders,addHeaders=False, skipRepetitive=True, seqId=None):
+def iterOfftargetRows(guideData, offtargetHeaders,pamIdRe,addHeaders=False, skipRepetitive=True, seqId=None):
     " yield bulk offtarget rows for the tab-sep download file "
     otRows = []
     print(offtargetHeaders)
@@ -1056,7 +1017,7 @@ def iterOfftargetRows(guideData, offtargetHeaders,addHeaders=False, skipRepetiti
             for otSeq, mitScore, cfdScore, editDist, pos, gene, alnHtml in otData:
                 gene = gene.replace(",", "_").replace(";","-")
                 chrom, start, end, strand = parsePos(pos)
-                guideDesc = intToExtPamId(pamId)
+                guideDesc = intToExtPamId(pamId,pamIdRe)
                 mismStr = highlightMismatches(guideSeq, otSeq, len(pamSeq))
                 fullSeq = concatGuideAndPam(guideSeq, pamSeq)
                 row = [guideDesc, fullSeq, otSeq, mismStr, editDist, mitScore, cfdScore, chrom, start, end, strand, gene]
@@ -1088,23 +1049,11 @@ def main():
     if not exists(TEMPDIR):
         makedirs(TEMPDIR)
 
-    # directory of crispor.py
-    baseDir = dirname(__file__)
-
     # filename of this script, usually crispor.py
     # myName = basename(__file__)
 
     # the segments.bed files use abbreviated genomic region names
     segTypeConv = {"ex":"exon", "in":"intron", "ig":"intergenic"}
-
-    # directory for processed batches of offtargets ("cache" of bwa results)
-    TEMPDIR = baseDir+"/tmp"
-
-    # use mysql or sqlite for the jobs?
-    jobQueueUseMysql = False
-
-    # the file where the sqlite job queue is stored
-    scriptDir = baseDir+"bin"
 
     # for some PAMs, there are alternative main PAMs. These are also shown on the main sequence panel
     multiPams = {
@@ -1269,7 +1218,8 @@ def main():
 #             logging.error("no match found for sequence %s in genome %s" % (inSeqFname, org))
 
 #         startDict, endSet = findAllPams(seq, pamPat,GUIDELEN,multiPams)
-        position=get_position(genome, seq, batchId,TEMPDIR=TEMPDIR,genomep=genomep)
+#        position=get_position(genome, seq, batchId,TEMPDIR=TEMPDIR,genomep=genomep)
+        position='chr:1:10' #FIXME
         startDict={33: '+', 40: '+', 57: '+', 103: '+', 136: '+', 79: '-', 139: '-'}
         endSet={36, 106, 43, 139, 142, 82, 60}
 #         print('>>>>>')
@@ -1280,7 +1230,7 @@ def main():
                                    ConsQueue(),TEMPDIR,GUIDELEN,pamPlusLen,maxMMs,genomep,params_findofftargetbwa)
         otMatches = parseOfftargets(otBedFname)
         guideData, guideScores, hasNotFound, pamIdToSeq = \
-            mergeGuideInfo(seq, startDict, options.pam, otMatches, position, GUIDELEN, pamPlusLen, effScores)
+            mergeGuideInfo(seq, startDict, options.pam, otMatches, position, GUIDELEN, pamPlusLen, maxMMs,cpf1Mode,params_findofftargetbwa,effScores)
 
         # write guide headers
         if guideFh is None:
@@ -1303,7 +1253,7 @@ def main():
             guideFh.write("\n")
 
         if options.offtargetFname:
-            for row in iterOfftargetRows(guideData,offtargetHeaders, seqId=seqId, skipRepetitive=False):
+            for row in iterOfftargetRows(guideData,offtargetHeaders,pamIdRe, seqId=seqId, skipRepetitive=False):
                 offtargetFh.write("\t".join(row))
                 offtargetFh.write("\n")
 
