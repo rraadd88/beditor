@@ -14,22 +14,14 @@ from os import makedirs
 import pandas as pd
 from Bio import SeqIO
 
+import pysam
+import numpy as np
+from glob import glob
+
 def pamIsCpf1(pam):
     " if you change this, also change bin/filterFaToBed! "
     return (pam in ["TTN", "TTTN", "TYCV", "TATV"])
         
-def pamIsSaCas9(pam):
-    " only used for notes and efficiency scores, unlike its Cpf1 cousin function "
-    return (pam in ["NNGRRT", "NNNRRT"])
-
-def pamIsXCas9(pam):
-    " "
-    return (pam in ["NGK", "NGN"])
-    
-def pamIsSpCas9(pam):
-    " only used for notes and efficiency scores, unlike its Cpf1 cousin function "
-    return (pam in ["NGG", "NGA", "NGCG"])
-
 def setupPamInfo(pam,addGenePlasmids,scoreNames):
     " modify a few globals based on the current pam "
     PAMLEN = len(pam)
@@ -59,11 +51,14 @@ def runbashcmd(cmd):
     if err!=0:
         print('bash command error: {}\n{}\n'.format(err,cmd))
         sys.exit(1)
-           
 
-#-new code-----------
-import pysam
-import numpy as np
+def fa2df(alignedfastap):
+    dtmp=pd.read_csv(alignedfastap,names=["c"])
+    dtmp=dtmp.iloc[::2].reset_index(drop=True).join(dtmp.iloc[1::2].reset_index(drop=True),rsuffix='r')
+    dtmp.columns=['id','seqeunce']
+    dtmp=dtmp.set_index('id')
+    dtmp.index=[i[1:] for i in dtmp.index]
+    return dtmp           
 
 def str2num(x):
     """
@@ -78,62 +73,66 @@ def hamming_distance(s1, s2):
     if len(s1) != len(s2):
         raise ValueError("Undefined for sequences of unequal length")
     return sum(el1 != el2 for el1, el2 in zip(s1, s2))
-def align(s1,s2,l):
+def align(s1,s2,l,cfg['test']=False):
     from Bio import pairwise2
-    alignments = pairwise2.align.localxx(s1, s2)
+    alignments = pairwise2.align.globalms(s1,s2,1,-1,-5,-5)
+#     globalms(sequenceA, sequenceB, match, mismatch, open, extend)
 #     if len(alignments)==0:
-#     print(len(alignments))
+    if cfg['test']:
+        print(alignments)
     alignsymb=np.nan
     score=np.nan
+    sorted_alignments = sorted(alignments, key=operator.itemgetter(2))
     for a in alignments:
-        if len(a[0])==l and len(a[1])==l:
-            alignstr=pairwise2.format_alignment(*a)
-            alignsymb=alignstr.split('\n')[1]
-            score=a[2]
-            break
+        alignstr=pairwise2.format_alignment(*a)
+        alignsymb=alignstr.split('\n')[1]
+        score=a[2]
+        if cfg['test']:
+            print(alignstr)
+        break
     return alignsymb,score
 
 #--------------------------------------------
-# def main(inSeqFname,genomeDir,org,outGuideFname,offtargetFname,genomefn):
-def main():
-    force=True
-    
-    
-    dguidesp='../../../04_offtarget/crisporWebsite/sampleFiles/_mine/test.csv'
-    datad='../../../04_offtarget/data_test_yeast'
-    # inSeqFname='../../../04_offtarget/data/04_specificity/in/sample.sacCer3.fa',
-    # faFname='tmp/in/x50sPGMoTvUagv3zWjGg.fa'
-    # genomeDir='tmp/in/genomes/'
-#     datad='data_test_human'
-    dataind='{}/04_specificity/in'.format(datad)
-    datatmpd='{}/04_specificity/tmp'.format(datad)
-    dataoutd='{}/04_specificity/out'.format(datad)
-    for dp in [dataind,datatmpd,dataoutd]: 
-        if not exists(dp) or force:
-            makedirs(dp,exist_ok=force)
+def dguides2offtargets(cfg):
+
+    #TODO get fa and gff and prepare them
+
+    # cfg['datad']='../../../04_offtarget/data_cfg['test']_'
+    # dguidesp='../../../04_offtarget/crisporWebsite/sampleFiles/mine/cfg['test'].csv'
+#     dguidesp='../../../04_offtarget/data_cfg['test']_human_dguides.tsv'
+#     cfg['datad']='../../../04_offtarget/data_cfg['test']_human_sabatani_cfg['test']'
+#     cfg['host']='homo_sapiens'
+#     genomefn='dna/Homo_sapiens.GRCh38.dna_sm.toplevel.fa'
+#     genomegffp='pub/release-92/gff3/homo_sapiens/Homo_sapiens.GRCh38.92.gff3.gz'
+
+    stepn='04_offtargets'
+    dguidesp='{}/dguides.csv'.(cfg['datad'])
+    host_="_".join(s for s in cfg['host'].split('_')).capitalize()
+
+    genomed='pub/release-{}/fasta/'.format(cfg['genomerelease'])
+    genomefn_='dna/{}.{}.dna_sm.*.fa'.format(host_,cfg['genomeassembly'])
+    genomep=glob('{}/{}/{}'.format(genomed,cfg['host'],genomefn))[0]
+
+    genomeannotd='pub/release-{}/gff3/'.format(cfg['genomerelease'])
+    genomegffp='{}/{}/{}.{}.{}.gff3.gz'.format(genomeannotd,cfg['host'],host_,cfg['genomeassembly'],cfg['genomerelease'])
+
+    dataind='{}/{}/in'.format(cfg['datad'],stepn)
+    makedirs(dataind,exist_ok=False)
+    datatmpd='{}/{}/tmp'.format(cfg['datad'],stepn)
+    dataoutd='{}/{}/out'.format(cfg['datad'],stepn)
+    for dp in [datatmpd,dataoutd]: 
+        makedirs(dp,exist_ok=cfg['force'])
 
     dguides=pd.read_csv(dguidesp,sep='\t')
     dguides.to_csv('{}/{}'.format(dataind,basename(dguidesp)),sep='\t')
     dguides=dguides.set_index('guideId')
     with open('{}/batchId.fa'.format(datatmpd),'w') as f:
         for gi in dguides.index:
-            f.write('>{}\n{}\n'.format(gi,dguides.loc[gi,'targetSeq']))
+            f.write('>{}\n{}\n'.format(gi,dguides.loc[gi,'guide sequence+PAM']))
 
-    genomeDir='pub/release-92/fasta/'
-    org='saccharomyces_cerevisiae'
-    genomefn='dna/Saccharomyces_cerevisiae.R64-1-1.dna_sm.chromosome.I.fa'
-    genomegffp='pub/release-92/gff3/saccharomyces_cerevisiae/Saccharomyces_cerevisiae.R64-1-1.92.gff3.gz'
-
-    # def dguide2fltofftarget(cfg):
-    # get dna and protein sequences 
-    #--
-    # junk
-    # write debug output to stdout
-    DEBUG = False
-    #DEBUG = True
 
     # BWA: allow up to X mismatches
-    maxMMs=4
+    maxMMs=5
 
     # maximum number of occurences in the genome to get flagged as repeats. 
     # This is used in bwa samse, when converting the same file
@@ -142,41 +141,24 @@ def main():
 
     # the BWA queue size is 2M by default. We derive the queue size from MAXOCC
     MFAC = 2000000/MAXOCC
-
-    # the length of the guide sequence, set by setupPamInfo
     guidel=None
-    # length of the PAM sequence
     PAMLEN=None
-
-    # are we doing a Cpf1 run?
-    # this variable changes almost all processing and
-    # has to be set on program start, as soon as we know 
-    # the PAM we're running on
     cpf1Mode=None
-
-    # global flag to indicate if we're run from command line or as a CGI
-
-    # names/order of efficiency scores to show in UI
     scoreNames = ["fusi", "crisprScan"]
-    # allScoreNames = ["fusi", "fusiOld", "chariRank", "ssc", "doench", "wang", "crisprScan", "aziInVitro"]
-
     cpf1ScoreNames = ["seqDeepCpf1"]
-
     saCas9ScoreNames = ["najm"]
-
-    #
-    DEBUG=True
+    cfg['test']=True
     pam='NGG'
-    genomep='{}/{}/{}'.format(genomeDir,org,genomefn)
-    # genomep='crisporWebsite/genomes/sacCer3/sacCer3.fa'
-    class options(object):
-        def __init__(self, pam):
-            self.debug=DEBUG
+
+    #FIXME prepare genome
+    # bwa index pub/release-92/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna_sm.toplevel.fa
+    # samtools faidx pub/release-92/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna_sm.toplevel.fa    
+
     guidel,cpf1Mode,addGenePlasmids,PAMLEN,scoreNames=setupPamInfo(pam,setupPamInfo,scoreNames)
 
     # get sequence
     # seqs = parseFasta(open(inSeqFname))
-    batchId='batchId'
+    batchId='align'
     batchBase = join(datatmpd, batchId)
     otBedFname = batchBase+".bed"
     print(otBedFname)
@@ -185,7 +167,7 @@ def main():
     matchesBedFname = batchBase+".matches.bed"
     saFname = batchBase+".sa"
     samp = batchBase+".sam"
-    genomeDir = dirname(genomep) # make var local, see below
+    genomed = dirname(genomep) # make var local, see below
 
     open(matchesBedFname, "w") # truncate to 0 size
 
@@ -204,19 +186,11 @@ def main():
     bed_colns = ['chromosome','start','end','id','NM','strand']
 
     samfile=pysam.AlignmentFile(samp, "rb")
-    # with pysam.AlignmentFile(samp, "rb") as samfile:
-    #     print(samfile.contigs)
-    # cols=['chromosome','start','end','id','NM','strand']
     dalignbed=pd.DataFrame(columns=bed_colns)
-    # rowi=1
     for read in samfile.fetch():
-    #     print(read) 
-    #     print(read.reference_name)
-    #     algnid='{}|{}{}|{}|{}'.format(dalignbed.loc[rowi,'chromosome'],
-    #              dalignbed.loc[rowi,'strand'],dalignbed.loc[rowi,'start'],read.cigarstring,dalignbed.loc[rowi,'NM'])
         algnids=[]
         algnids.append('{}|{}{}|{}|{}'.format(read.reference_name,
-                 '-' if read.is_reverse else '+',read.positions[0],read.cigarstring,read.get_tag('NM')))
+                 ('-' if read.is_reverse else '+'),read.positions[0],read.cigarstring,read.get_tag('NM')))
         algnids+=['|'.join(s.split(',')) for s in read.get_tag('XA').split(';') if len(s.split(','))>1]
         chroms=[]
         starts=[]
@@ -242,14 +216,13 @@ def main():
         dalignbed = dalignbed.append(dalignbed_,ignore_index=True)
     #     break
     samfile.close()
+    
+    dalignbedp='{}/dalignbed.tsv'.format(datatmpd)
+    dalignbed.to_csv(dalignbedp,sep='\t')
 
     alignmentbedp='{}/alignment.bed'.format(datatmpd)
     dalignbed.loc[:,bed_colns].to_csv(alignmentbedp,sep='\t',
                     header=False,index=False)
-    # loc[:,cols].to
-    # bedtools sort -i data_test_human/04_specificity/tmp/alignment.bed > data_test_human/04_specificity/tmp/alignment.sorted.bed
-    # bedtools sort -i pub/release-92/gff3/saccharomyces_cerevisiae/Saccharomyces_cerevisiae.R64-1-1.92.gff3.gz > pub/release-92/gff3/saccharomyces_cerevisiae/Saccharomyces_cerevisiae.R64-1-1.92.sorted.gff3.gz
-    # bedtools intersect -wa -wb -loj -a data_test_human/04_specificity/tmp/alignment.sorted.bed -b pub/release-92/gff3/saccharomyces_cerevisiae/Saccharomyces_cerevisiae.R64-1-1.92.sorted.gff3.gz > data_test_human/04_specificity/tmp/annotations.bed
     alignmentbedsortedp=alignmentbedp+'.sorted.bed'
     cmd='bedtools sort -i {} > {}'.format(alignmentbedp,alignmentbedsortedp)
     runbashcmd(cmd)
@@ -259,31 +232,43 @@ def main():
     annotationsbedp='{}/annotations.bed'.format(datatmpd)
     cmd='bedtools intersect -wa -wb -loj -a {} -b {} > {}'.format(alignmentbedsortedp,genomegffsortedp,annotationsbedp)
     runbashcmd(cmd)
+#     if the error in human, use: `cut -f 1 data/alignment.bed.sorted.bed | sort| uniq -c | grep -v CHR | grep -v GL | grep -v KI`
 
     dannots=pd.read_csv('{}/annotations.bed'.format(datatmpd),sep='\t',
                names=bed_colns+gff_colns)
 
     dalignbed=dalignbed.set_index('grnaId').join(dguides)
-
     dalignbed=dalignbed.reset_index().set_index('id')
 
+    dalignbed.to_csv('data/dalignbedguides.tsv','\t')
+    
     # dalignid2seq=pd.DataFrame(columns=['sequence'])
     # dalignid2seq.index.name='id'
     alignedfastap='{}/alignment.fa'.format(datatmpd)
     cmd='bedtools getfasta -s -name -fi {} -bed {} -fo {}'.format(genomep,alignmentbedp,alignedfastap)
     runbashcmd(cmd)
     
-    for seq in SeqIO.parse(alignedfastap,"fasta"):
-        dalignbed.loc[seq.id,'aligned sequence']=str(seq.seq)
-    #     break
+    dalignedfasta=fa2df(alignedfastap)
+    dalignedfasta.columns=['aligned sequence']
 
-    dalignbed.loc[:,'Hamming distance']=[hamming_distance(dalignbed.loc[i,'targetSeq'], dalignbed.loc[i,'aligned sequence']) for i in dalignbed.index]
+    dalignbed=dalignbed.set_index('id').join(dalignedfasta)
+    
+    dalignbedguidesseqp='{}/dalignbedguidesseq.tsv'.format(datatmpd)
+    dalignbed.to_csv(dalignbedguidesseqp,sep='\t')
+    # for seq in SeqIO.parse(alignedfastap,"fasta"):
+    #     dalignbed.loc[seq.id,'aligned sequence']=str(seq.seq.upper())
+    # #     break
+    dalignbed=dalignbed.drop_duplicates()
 
-    for i in dalignbed.index:
-        dalignbed.loc[i,'alignment'],dalignbed.loc[i,'alignment: score']=align(dalignbed.loc[i,'targetSeq'],dalignbed.loc[i,'aligned sequence'],l=guidel)
+    dalignbed['Hamming distance']=dalignbed.apply(lambda x : hamming_distance(x['guide sequence+PAM'], x['aligned sequence']),axis=1)
+    dalignbed['alignment','alignment: score']=dalignbed.apply(lambda x: align(x['guide sequence+PAM'],x['aligned sequence'],l=guidel),axis=1)
+
+    # for i in dalignbed.index:
+    #     dalignbed.loc[i,'alignment'],dalignbed.loc[i,'alignment: score']=align(dalignbed.loc[i,'guide sequence+PAM'],dalignbed.loc[i,'aligned sequence'],l=guidel)
 
     dcombo=dalignbed.join(dannots.set_index('id'),rsuffix='.2')
-
     dcombo.to_csv('{}/dcombo.tsv'.format(dataoutd),sep='\t')
+
+
 if __name__ == '__main__':
     main()

@@ -1,6 +1,6 @@
 #!usr/bin/python
 
-# Copyright 2016, Rohan Dandage <rraadd_8@hotmail.com,rohan@igib.in>
+# Copyright 2018, Rohan Dandage <rraadd_8@hotmail.com,rohan@igib.in>
 # This program is distributed under General Public License v. 3.  
 
 import sys
@@ -29,8 +29,8 @@ def main():
     parser = argparse.ArgumentParser(description=version_info)
     parser.add_argument("cfg", help="path to project directory", 
                         action="store", default=False)    
-    parser.add_argument("--step", help="1: get seqeucnces,\n2: get possible strategies,\n3: make guides", dest="step", 
-                        type=float,action="store", choices=[1,2,3],default=None)  
+    parser.add_argument("--step", help="1: get seqeucnces,\n2: get possible strategies,\n3: make guides,\n 4: check offtargets", dest="step", 
+                        type=float,action="store", choices=[1,2,3,4],default=None)  
     parser.add_argument("--test", help="Debug mode on", dest="test", 
                         action='store_true', default=False)    
     parser.add_argument("--force", help="Debug mode on", dest="force", 
@@ -69,9 +69,12 @@ def pipeline(cfgp,step=None,test=False,force=False):
         dseq2dmutagenesis(cfg)
     if step==3 or step==None:
         dseq2dguides(cfg)
+    if step==4 or step==None:
+        dguides2offtargets(cfg)
+
     logging.info("Location of output data: {}".format(cfg['datad']))
     logging.info("Location of output plot: {}".format(cfg['plotd']))
-    # logging.info("log file: {}".format(cfgp+'.log'))
+
     logging.shutdown()
 
 if __name__ == '__main__':
