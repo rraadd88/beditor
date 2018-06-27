@@ -73,12 +73,12 @@ def hamming_distance(s1, s2):
     if len(s1) != len(s2):
         raise ValueError("Undefined for sequences of unequal length")
     return sum(el1 != el2 for el1, el2 in zip(s1, s2))
-def align(s1,s2,l,cfg['test']=False):
+def align(s1,s2,l,test=False):
     from Bio import pairwise2
     alignments = pairwise2.align.globalms(s1,s2,1,-1,-5,-5)
 #     globalms(sequenceA, sequenceB, match, mismatch, open, extend)
 #     if len(alignments)==0:
-    if cfg['test']:
+    if test:
         print(alignments)
     alignsymb=np.nan
     score=np.nan
@@ -87,7 +87,7 @@ def align(s1,s2,l,cfg['test']=False):
         alignstr=pairwise2.format_alignment(*a)
         alignsymb=alignstr.split('\n')[1]
         score=a[2]
-        if cfg['test']:
+        if test:
             print(alignstr)
         break
     return alignsymb,score
@@ -106,7 +106,7 @@ def dguides2offtargets(cfg):
 #     genomegffp='pub/release-92/gff3/homo_sapiens/Homo_sapiens.GRCh38.92.gff3.gz'
 
     stepn='04_offtargets'
-    dguidesp='{}/dguides.csv'.(cfg['datad'])
+    dguidesp='{}/dguides.csv'.format(cfg['datad'])
     host_="_".join(s for s in cfg['host'].split('_')).capitalize()
 
     genomed='pub/release-{}/fasta/'.format(cfg['genomerelease'])

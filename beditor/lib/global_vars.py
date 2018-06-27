@@ -36,3 +36,6 @@ dirs2ps={'pyp':str(subprocess.check_output('which python3'.split(' '))).replace(
 'scriptDir':dirname(beditor.__file__)+'/bin',
 }
 
+## ref coordinate system
+# UCSC : 0 based 
+# ENSEMBL : 1 based
