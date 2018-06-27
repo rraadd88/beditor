@@ -271,9 +271,11 @@ def get_possible_mutagenesis(dcodontable,dcodonusage,
 
 from beditor.lib.global_vars import BEs,pos_muts
 def dseq2dmutagenesis(cfg):
+    cfg['datad']=cfg[cfg['step']]
+    cfg['plotd']=cfg['datad']
     dmutagenesisp='{}/dmutagenesis.csv'.format(cfg['datad'])
     if not exists(dmutagenesisp) or cfg['force']:
-        dseq=pd.read_csv('{}/dseq.csv'.format(cfg['datad']))
+        dseq=pd.read_csv('{}/dseq.csv'.format(cfg[cfg['step']-1]))
         aas=list(dseq['aminoacid: wild-type'].unique())#['S','T','Y']
 
         dcodontable=get_codon_table(aa=aas, host=cfg['host'])
