@@ -82,24 +82,53 @@ def get_codon_seq(dintseqflt01,test=False):
             print('{}:{}'.format(dintseqflt01.loc[subi,'P'],dintseqflt01.loc[subi,'P-codon']))
     return dintseqflt01
 
+from tqdm import trange
+
+from beditor.lib.global_vars import bed_colns
+from beditor.lib.io_seqs import fa2df 
+from beditor.lib.io_sys import runbashcmd
+
+
+def tboundaries2positions(t):
+    coding_sequence_positions=[]
+    for ini,end in t.coding_sequence_position_ranges:
+        if t.strand == '+':
+            coding_sequence_positions+=np.arange(ini, end+1,1).tolist()
+        if t.strand == '-':
+            coding_sequence_positions+=np.arange(end, ini-1,-1).tolist()            
+    coding_sequence_positions+=np.arange(coding_sequence_positions[-1], coding_sequence_positions[-1]+3,1).tolist()
+    return coding_sequence_positions
+
+def t2pmapper(t,coding_sequence_positions):
+    dcoding=pd.DataFrame(columns=['coding sequence positions','coding sequence'])
+    # dcoding.index.name='transcript index'
+    dcoding['coding sequence positions']=coding_sequence_positions
+    dcoding['coding sequence']=list(t.coding_sequence)
+    dcoding['protein sequence']=np.ravel(list(zip(list(t.protein_sequence+'*'),list(t.protein_sequence+'*'),list(t.protein_sequence+'*'))))
+    prtidx=np.arange(1,len(t.protein_sequence+'*')+1)
+    dcoding['protein index']=np.ravel(list(zip(prtidx,prtidx,prtidx)))
+    dcoding['transcript index']=dcoding.index.values+1
+    return dcoding.sort_values(by='transcript index',ascending=True)#.set_index('transcript index')
+
 def din2dseq(cfg):
     cfg['datad']=cfg[cfg['step']]
     cfg['plotd']=cfg['datad']
     # get dna and protein sequences 
     dseqp='{}/dseq.csv'.format(cfg['datad'])
     if not exists(dseqp) or cfg['force']:
-        din=pd.read_csv(cfg['dinp'])    
-        if cfg['host']=='human':
+        din=pd.read_csv(cfg['dinp'],sep='\t')
+#         din=pd.read_csv(cfg['dinp'])    
+        if cfg['host']=='homo_sapiens':
             import pyensembl
             #import ensembl object that would fetch genes 
-            ensembl = pyensembl.EnsemblRelease(release=cfg['release'])
+            ensembl = pyensembl.EnsemblRelease(release=cfg['genomerelease'])
             
             din.index=range(len(din))
             dbedp='{}/dbedflank.bed'.format(cfg['datad'])
             dbed=pd.DataFrame(columns=bed_colns)
             terrpositions=[]
             bedrowi=0
-            for i in tnrange(len(din)-1,desc='get positions for bedtools'):
+            for i in trange(len(din)-1,desc='get positions for bedtools'):
                 t=ensembl.transcript_by_id(din.loc[i,'transcript: id'])
                 coding_sequence_positions=tboundaries2positions(t)
                 if len(coding_sequence_positions)==len(t.coding_sequence):
@@ -161,7 +190,7 @@ def din2dseq(cfg):
             dseq.columns=list(dseq2compatible.keys())
 #             dseq.to_csv('data/dseq.csv')            
             
-        else:
+        elif cfg['host']=='saccharomyces_cerevisiae':
             dseq=get_seq_yeast(din,
                           orfs_fastap='{}/../data/yeast/orf_coding_all.fasta'.format(abspath(dirname(__file__))),
                           host=cfg['host'],

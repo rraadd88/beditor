@@ -4,7 +4,7 @@
 # This program is distributed under General Public License v. 3.  
 
 import sys
-from os.path import exists,splitext,dirname,splitext,basename
+from os.path import exists,splitext,dirname,splitext,basename,realpath
 from os import makedirs
 import argparse
 import pkg_resources
@@ -47,20 +47,24 @@ def pipeline(cfgp,step=None,test=False,force=False):
     from beditor.lib.get_seq import din2dseq
     from beditor.lib.get_mutations import dseq2dmutagenesis 
     from beditor.lib.make_guides import dseq2dguides
+    from glob import glob
 
     import yaml
     cfg=yaml.load(open(cfgp, 'r'))
 
 # refs
-    if 'human' in cfg['host'].lower()
+    if 'human' in cfg['host'].lower():
         cfg['host']='homo_sapiens'
-    if 'yeast' in cfg['host'].lower()
+    if 'yeast' in cfg['host'].lower():
         cfg['host']='saccharomyces_cerevisiae'
     host_="_".join(s for s in cfg['host'].split('_')).capitalize()
-    genomed='pub/release-{}/fasta/'.format(cfg['genomerelease'])
-    genomefn_='dna/{}.{}.dna_sm.*.fa'.format(host_,cfg['genomeassembly'])
-    cfg['genomep']=glob('{}/{}/{}'.format(genomed,cfg['host'],genomefn))[0]
-
+    genomed='{}/lib/pub/release-{}/fasta/'.format(dirname(realpath(__file__)),cfg['genomerelease'])
+    genomefn='dna/{}.{}.dna_sm.*.fa'.format(host_,cfg['genomeassembly'])
+    try:
+        cfg['genomep']=glob('{}/{}/{}'.format(genomed,cfg['host'],genomefn))[0]
+    except OSError:
+        logging.error('path not found'+'{}/{}/{}'.format(genomed,cfg['host'],genomefn))
+    
     genomeannotd='pub/release-{}/gff3/'.format(cfg['genomerelease'])
     cfg['genomegffp']='{}/{}/{}.{}.{}.gff3.gz'.format(genomeannotd,cfg['host'],host_,cfg['genomeassembly'],cfg['genomerelease'])
 

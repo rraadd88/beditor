@@ -268,6 +268,83 @@ def get_possible_mutagenesis(dcodontable,dcodonusage,
     dmutagenesis=dmutagenesis.reset_index()
     return dmutagenesis
 
+from beditor.lib.io_dfs import df2unstack
+from os.path import abspath,dirname
+def get_submap(cfg):
+    mimetism_levels={'high': 1,
+                     'medium': 5,
+                     'low': 10}
+    try:
+        dsubmap=pd.read_csv('{}/data/dsubmap_{}.csv'.format(dirname(abspath(__file__)),cfg['host'])).set_index('AA1')
+    except:
+        dsubmap=pd.read_csv('data/dsubmap_{}.csv'.format(cfg['host'])).set_index('AA1')
+    dsubmap.index.name='amino acid'
+    dsubmap.columns.name='amino acid mutation'
+    dsubmap=dsubmap.T
+
+    dsubmaptop=pd.DataFrame(columns=dsubmap.columns,index=dsubmap.index)
+    dsubmaptop=dsubmaptop.fillna(False)
+    for i in dsubmap.index:
+        for c in dsubmap:
+            if i==c:
+                dsubmaptop.loc[i,c]=True
+
+    dsubmaptop_=dsubmaptop.copy()
+    for c in dsubmap:
+        dsubmaptop.loc[dsubmap.nlargest(mimetism_levels[cfg['mimetism_level']],c).index,c]=True
+    import seaborn as sns
+    sns.heatmap(dsubmaptop.astype(int),square=True)
+    plt.savefig('{}/heatmap_submap.svg'.format(cfg['datad']))
+    dsubmaptop=df2unstack(dsubmaptop,col='mimetic')
+    dsubmaptop.to_csv('{}/dsubmaptop.svg'.format(cfg['datad']))
+    dsubmaptop=dsubmaptop[dsubmaptop['mimetic']]
+    return dsubmaptop
+
+def filterdmutagenesis(dmutagenesis,cfg):
+    logging.info('filtering: dmutagenesis.shape: ',dmutagenesis.shape)    
+    # filter by mutation_type
+    if not cfg['mutation_type'] is None:
+        if cfg['mutation_type']=='S':
+            dmutagenesis=dmutagenesis.loc[(dmutagenesis['amino acid']==dmutagenesis['amino acid mutation'])]
+        elif cfg['mutation_type']=='N':
+            dmutagenesis=dmutagenesis.loc[(dmutagenesis['amino acid']!=dmutagenesis['amino acid mutation'])]
+        logging.info('dmutagenesis.shape: ',dmutagenesis.shape)    
+    # filter by nonsense
+    if not cfg['keep_mutation_nonsense'] is None:
+        if not cfg['keep_mutation_nonsense']:
+            dmutagenesis=dmutagenesis.loc[(dmutagenesis['amino acid mutation']!='*'),:]
+        logging.info('dmutagenesis.shape: ',dmutagenesis.shape)    
+
+    # filter by mutation per codon
+    if not cfg['max_subs_per_codon'] is None:
+        dmutagenesis=dmutagenesis.loc[(dmutagenesis['nucleotide mutation: count']==cfg['max_subs_per_codon']),:]
+        logging.info('dmutagenesis.shape: ',dmutagenesis.shape)    
+
+    # filter by method
+    if not cfg['BEs'] is None:
+        dmutagenesis=dmutagenesis.loc[dmutagenesis['method'].isin(cfg['BEs']),:]
+        logging.info('dmutagenesis.shape: ',dmutagenesis.shape)    
+
+    # filter by submap
+    if not cfg['submap_type'] is None:
+        if cfg['submap_type']=='M':
+            dsubmap=get_submap(cfg)
+        elif cfg['submap_type']=='P':
+            if cfg['dsubmap_preferred_path'] is None:    
+                logging.error('submap_type is P and dsubmap_preferred_path is None')
+            else:
+                dsubmap=pd.read_csv(cfg['dsubmap_preferred_path']) # has two cols: amino acid and amino acid mutation
+        elif cfg['submap_type']=='both':
+            dsubmap=get_submap(cfg).append(pd.read_csv(cfg['dsubmap_preferred_path'])).drop_duplicates()
+        dmutagenesis=pd.merge(dsubmap,dmutagenesis,on=['amino acid','amino acid mutation'],how='inner')
+        logging.info('dmutagenesis.shape: ',dmutagenesis.shape)    
+
+    # filter non interchageables
+    if not cfg['non_intermutables'] is None:
+        non_intermutables=list(itertools.permutations(''.join(cfg['non_intermutables']),2))
+        dmutagenesis.loc[(dmutagenesis.apply(lambda row: not (row['amino acid'], row['amino acid mutation']) in non_intermutables, axis=1)),:]    
+        logging.info('dmutagenesis.shape: ',dmutagenesis.shape)    
+    return dmutagenesis
 
 from beditor.lib.global_vars import BEs,pos_muts
 def dseq2dmutagenesis(cfg):
@@ -286,10 +363,10 @@ def dseq2dmutagenesis(cfg):
         #                          aa=aas,
                                               BEs=BEs,pos_muts=pos_muts,
                                      host=cfg['host'])
-        
+        dmutagenesis=filterdmutagenesis(dmutagenesis,cfg)
         dmutagenesis.to_csv(dmutagenesisp)
 
-        print('Possible 1 nucleotide mutations of the phospho-sites:')
+        print('Possible 1 nucleotide mutations:')
         print(dmutagenesis.set_index('amino acid')[['amino acid mutation','method','codon','codon mutation',
         #               'position of mutation in codon','mutation on strand',
         #               'nucleotide','nucleotide mutation',
