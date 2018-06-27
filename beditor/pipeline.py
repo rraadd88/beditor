@@ -50,6 +50,20 @@ def pipeline(cfgp,step=None,test=False,force=False):
 
     import yaml
     cfg=yaml.load(open(cfgp, 'r'))
+
+# refs
+    if 'human' in cfg['host'].lower()
+        cfg['host']='homo_sapiens'
+    if 'yeast' in cfg['host'].lower()
+        cfg['host']='saccharomyces_cerevisiae'
+    host_="_".join(s for s in cfg['host'].split('_')).capitalize()
+    genomed='pub/release-{}/fasta/'.format(cfg['genomerelease'])
+    genomefn_='dna/{}.{}.dna_sm.*.fa'.format(host_,cfg['genomeassembly'])
+    cfg['genomep']=glob('{}/{}/{}'.format(genomed,cfg['host'],genomefn))[0]
+
+    genomeannotd='pub/release-{}/gff3/'.format(cfg['genomerelease'])
+    cfg['genomegffp']='{}/{}/{}.{}.{}.gff3.gz'.format(genomeannotd,cfg['host'],host_,cfg['genomeassembly'],cfg['genomerelease'])
+
     
     cfg['prj']=splitext(basename(cfgp))[0]
     cfg['prjd']=dirname(cfgp)+'/'+cfg['prj']

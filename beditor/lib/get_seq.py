@@ -83,6 +83,8 @@ def get_codon_seq(dintseqflt01,test=False):
     return dintseqflt01
 
 def din2dseq(cfg):
+    cfg['datad']=cfg[cfg['step']]
+    cfg['plotd']=cfg['datad']
     # get dna and protein sequences 
     dseqp='{}/dseq.csv'.format(cfg['datad'])
     if not exists(dseqp) or cfg['force']:
@@ -91,17 +93,74 @@ def din2dseq(cfg):
             import pyensembl
             #import ensembl object that would fetch genes 
             ensembl = pyensembl.EnsemblRelease(release=cfg['release'])
-            dseq=din.copy()
-            dseq.index=range(len(dseq.index))
-            for rowi in dseq.index:
-                gene_id=dseq.loc[rowi,'gene: id']
-                transcript=ensembl.transcript_by_id(dseq.loc[rowi,'transcript: id'])
-                dnaseq=transcript.coding_sequence
-                prtseq=transcript.protein_sequence
-                dseq.loc[rowi,'aminoacid: wild-type']=prtseq[dseq.loc[rowi,'aminoacid: position']-1]
-                dseq.loc[rowi,'codon: wild-type']=dnaseq[(dseq.loc[rowi,'aminoacid: position']-1)*3:(dseq.loc[rowi,'aminoacid: position']-1)*3+3]
-                dseq.loc[rowi,'transcript: sequence']=dnaseq
-                dseq.loc[rowi,'protein: sequence']=prtseq
+            
+            din.index=range(len(din))
+            dbedp='{}/dbedflank.bed'.format(cfg['datad'])
+            dbed=pd.DataFrame(columns=bed_colns)
+            terrpositions=[]
+            bedrowi=0
+            for i in tnrange(len(din)-1,desc='get positions for bedtools'):
+                t=ensembl.transcript_by_id(din.loc[i,'transcript: id'])
+                coding_sequence_positions=tboundaries2positions(t)
+                if len(coding_sequence_positions)==len(t.coding_sequence):
+                #TODO     need to check if the seq made from coding_sequence_positions is same as t.coding_seqeunce
+                    dbed.loc[bedrowi,'chromosome']=t.contig
+                    dcoding=t2pmapper(t,coding_sequence_positions)
+                    dcodingmutpos=dcoding.loc[(dcoding['protein index']==din.loc[i,'aminoacid: position']),:]
+                    if t.strand=='+':
+                        dbed.loc[bedrowi,'codon start'],dbed.loc[bedrowi,'codon end']=dcodingmutpos['coding sequence positions'].tolist()[0],dcodingmutpos['coding sequence positions'].tolist()[1]
+                    elif t.strand=='-':
+                        dbed.loc[bedrowi,'codon end'],dbed.loc[bedrowi,'codon start']=dcodingmutpos['coding sequence positions'].tolist()[0],dcodingmutpos['coding sequence positions'].tolist()[1]
+                    dbed.loc[bedrowi,'start'],dbed.loc[bedrowi,'end']=dbed.loc[bedrowi,'codon start']-20,dbed.loc[bedrowi,'codon end']+20
+                    dbed.loc[bedrowi,'reference residue']=dcodingmutpos['protein sequence'].tolist()[0]
+                    dbed.loc[bedrowi,'reference codon']=''.join(dcodingmutpos['coding sequence'].tolist())
+                    dbed.loc[bedrowi,'strand']=t.strand
+                    dbed.loc[bedrowi,'id']='{}|{}|{}|{}|{}'.format(din.loc[i,'transcript: id'],
+                                                                  dbed.loc[bedrowi,'chromosome'],
+                             dbed.loc[bedrowi,'strand'],dbed.loc[bedrowi,'start'],dbed.loc[bedrowi,'end'])        
+                    dbed.loc[bedrowi,'gene: id']=t.gene_id
+                    dbed.loc[bedrowi,'gene: name']=t.gene.name
+                    dbed.loc[bedrowi,'protein: id']=t.protein_id
+                    dbed.loc[bedrowi,'aminoacid: position']=din.loc[i,'aminoacid: position']
+            #         break
+                    bedrowi+=1
+                else:
+                    terrpositions.append(t.id)
+            dbed.loc[:,'start']=dbed.loc[:,'start'].astype(int)
+            dbed.loc[:,'end']=dbed.loc[:,'end'].astype(int)
+
+            print(terrpositions)
+            dbed.loc[:,bed_colns].to_csv(dbedp,sep='\t',
+                            header=False,index=False)
+
+            bedp='{}/dbedflank.bed'.format(cfg['datad'])
+            fastap='{}/dbedflank.fa'.format(cfg['datad'])
+            cmd='bedtools getfasta -s -name -fi {} -bed {} -fo {}'.format(cfg['genomep'],bedp,fastap)
+            runbashcmd(cmd)
+
+            dflankfa=fa2df(fastap,ids2cols=True)
+            dflankfa.loc[:,'sequence']=dflankfa.loc[:,'sequence'].apply(lambda x : x.upper())
+            dflankfa.loc[:,'sequence: length']=[len(s) for s in dflankfa['sequence']]
+            dseq=dbed.set_index('id').join(dflankfa,rsuffix='.1')
+
+            dseq2compatible={'aminoacid: position':'aminoacid: position',
+             'gene: id':'gene: id',
+             'gene: name':'gene: name',
+             'protein: id':'protein: id',
+             'transcript: id':'seqid',
+             'aminoacid: wild-type':'reference residue',
+             'codon: wild-type':'reference codon',
+             'contig':'contig',
+             'strand':'strand',
+             'start':'start',
+             'end':'end',
+             'codon start':'codon start',
+             'codon end':'codon end',
+            }
+            dseq=dseq[list(dseq2compatible.values())]
+            dseq.columns=list(dseq2compatible.keys())
+#             dseq.to_csv('data/dseq.csv')            
+            
         else:
             dseq=get_seq_yeast(din,
                           orfs_fastap='{}/../data/yeast/orf_coding_all.fasta'.format(abspath(dirname(__file__))),

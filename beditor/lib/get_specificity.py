@@ -18,6 +18,9 @@ import pysam
 import numpy as np
 from glob import glob
 
+from beditor.lib.io_sys import runbashcmd
+from beditor.lib.io_seqs import fa2df 
+
 def pamIsCpf1(pam):
     " if you change this, also change bin/filterFaToBed! "
     return (pam in ["TTN", "TTTN", "TYCV", "TATV"])
@@ -40,25 +43,6 @@ def setupPamInfo(pam,addGenePlasmids,scoreNames):
         guidel = 20
         cpf1Mode = False
     return guidel,cpf1Mode,addGenePlasmids,PAMLEN,scoreNames
-
-def runbashcmd(cmd):
-    from beditor.lib.global_vars import dirs2ps 
-    cmd = cmd.replace("$BIN", dirs2ps['binDir'])
-    cmd = cmd.replace("$PYTHON", dirs2ps['pyp'])
-    cmd = cmd.replace("$SCRIPT", dirs2ps['scriptDir'])
-#     print(cmd)
-    err=subprocess.call(cmd,shell=True)
-    if err!=0:
-        print('bash command error: {}\n{}\n'.format(err,cmd))
-        sys.exit(1)
-
-def fa2df(alignedfastap):
-    dtmp=pd.read_csv(alignedfastap,names=["c"])
-    dtmp=dtmp.iloc[::2].reset_index(drop=True).join(dtmp.iloc[1::2].reset_index(drop=True),rsuffix='r')
-    dtmp.columns=['id','seqeunce']
-    dtmp=dtmp.set_index('id')
-    dtmp.index=[i[1:] for i in dtmp.index]
-    return dtmp           
 
 def str2num(x):
     """
@@ -107,14 +91,14 @@ def dguides2offtargets(cfg):
 
     stepn='04_offtargets'
     dguidesp='{}/dguides.csv'.format(cfg['datad'])
-    host_="_".join(s for s in cfg['host'].split('_')).capitalize()
+#     host_="_".join(s for s in cfg['host'].split('_')).capitalize()
 
-    genomed='pub/release-{}/fasta/'.format(cfg['genomerelease'])
-    genomefn_='dna/{}.{}.dna_sm.*.fa'.format(host_,cfg['genomeassembly'])
-    genomep=glob('{}/{}/{}'.format(genomed,cfg['host'],genomefn))[0]
+#     genomed='pub/release-{}/fasta/'.format(cfg['genomerelease'])
+#     genomefn_='dna/{}.{}.dna_sm.*.fa'.format(host_,cfg['genomeassembly'])
+#     genomep=glob('{}/{}/{}'.format(genomed,cfg['host'],genomefn))[0]
 
-    genomeannotd='pub/release-{}/gff3/'.format(cfg['genomerelease'])
-    genomegffp='{}/{}/{}.{}.{}.gff3.gz'.format(genomeannotd,cfg['host'],host_,cfg['genomeassembly'],cfg['genomerelease'])
+#     genomeannotd='pub/release-{}/gff3/'.format(cfg['genomerelease'])
+#     genomegffp='{}/{}/{}.{}.{}.gff3.gz'.format(genomeannotd,cfg['host'],host_,cfg['genomeassembly'],cfg['genomerelease'])
 
     dataind='{}/{}/in'.format(cfg['datad'],stepn)
     makedirs(dataind,exist_ok=False)
