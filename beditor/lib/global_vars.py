@@ -8,8 +8,8 @@ from Bio import SeqIO, Alphabet, Data, Seq, SeqUtils
 from Bio import motifs,Seq,AlignIO
 
 hosts={"coli":11, # http://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi
-"yeast":12,
-"human":1}
+"saccharomyces_cerevisiae":12,
+"homo_sapiens":1}
 
 BEs={'Target-AID on + strand':['C',['T','G']],
 'ABE on + strand':['A',['G']],
