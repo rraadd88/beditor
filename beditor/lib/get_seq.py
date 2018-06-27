@@ -177,6 +177,7 @@ def din2dseq(cfg):
              'gene: name':'gene: name',
              'protein: id':'protein: id',
              'transcript: id':'seqid',
+             'transcript: sequence':'sequence',
              'aminoacid: wild-type':'reference residue',
              'codon: wild-type':'reference codon',
              'contig':'contig',

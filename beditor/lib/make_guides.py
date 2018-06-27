@@ -7,13 +7,18 @@ from Bio import SeqIO, Alphabet, Data, Seq, SeqUtils
 from Bio import motifs,Seq,AlignIO
 
 import logging
+from tqdm import trange
 
 def make_guides(dseq,dmutagenesis,
                test=False,
                dbug=False):
     dguides=dseq.copy()
+    dguides=dguides.reset_index()
+    dguides.index=range(len(dguides))
     for strand in dmutagenesis.loc[:,'mutation on strand'].unique():
-        for subi,sub in zip(dguides.index,dguides['gene: name'].tolist()):
+        logging.info('working on {}'.format(strand))
+        for subi in trange(len(dguides)-1,desc='mutations'):
+            sub=dguides.loc[subi,'gene: name']
             seq=dguides.loc[subi,'transcript: sequence']
             pos_codon=(int(dguides.loc[subi,'aminoacid: position'])-1)*3 # 0based index
             codon=dguides.loc[subi,'codon: wild-type']
@@ -21,7 +26,7 @@ def make_guides(dseq,dmutagenesis,
                 if codon!=seq[(pos_codon):pos_codon+3]:
                     print('pos_codon is wrong')
                     break
-            if strand=='- strand':
+            if strand=='-':
                 seq=str(Seq.Seq(seq,Alphabet.generic_dna).reverse_complement())
                 codon=str(Seq.Seq(codon,Alphabet.generic_dna).reverse_complement())
                 pos_codon=len(seq)-(pos_codon)-3
@@ -35,9 +40,9 @@ def make_guides(dseq,dmutagenesis,
                         seq_activity=seq_target[20+dmutagenesis.loc[muti,'Position of mutation from PAM: minimum']:20+1+dmutagenesis.loc[muti,'Position of mutation from PAM: maximum']]
                         if seq_activity.count(dmutagenesis.loc[muti,'nucleotide'])==1:
                             if (pos_codon_from_PAM>=dmutagenesis.loc[muti,'Position of codon start from PAM: minimum']) and (pos_codon_from_PAM<=dmutagenesis.loc[muti,'Position of codon start from PAM: maximum']):
-                                if strand=='+ strand':
+                                if strand=='+':
                                     pos_mut_from_PAM=pos_codon_from_PAM-1+dmutagenesis.loc[muti,'position of mutation in codon']                    
-                                elif strand=='- strand':
+                                elif strand=='-':
                                     pos_mut_from_PAM=pos_codon_from_PAM-1+4-dmutagenesis.loc[muti,'position of mutation in codon']                    
                                 if (pos_mut_from_PAM>=dmutagenesis.loc[muti,'Position of mutation from PAM: minimum']) and (pos_mut_from_PAM<=dmutagenesis.loc[muti,'Position of mutation from PAM: maximum']):
                                     strategy='{}; {}: {} to {}; {} to {}, codon position={}; mutation position={};'.format(dmutagenesis.loc[muti,'mutation on strand'],
@@ -50,7 +55,7 @@ def make_guides(dseq,dmutagenesis,
                                                                                 pos_mut_from_PAM
                                                                                 )        
                                     codon_mut=dmutagenesis.loc[muti,'codon mutation']
-                                    if strand=='- strand':
+                                    if strand=='-':
                                         codon_mut=str(Seq.Seq(codon_mut,Alphabet.generic_dna).reverse_complement())
 #                                     dguides.loc[subi,'guide sequence ({0})'.format(strategy)]=seq_target
                                     dguides.loc[subi,'guide sequence+PAM({0})'.format(strategy)]=seq_target+seq[posGG-1:posGG+2]
@@ -78,10 +83,12 @@ def make_guides(dseq,dmutagenesis,
 
 from beditor.lib.global_vars import BEs,pos_muts
 def dseq2dguides(cfg):
+    cfg['datad']=cfg[cfg['step']]
+    cfg['plotd']=cfg['datad']
     dguidesp='{}/dguides.csv'.format(cfg['datad'])
     if not exists(dguidesp) or cfg['force']:
-        dseq=pd.read_csv('{}/dseq.csv'.format(cfg['datad']))
-        dmutagenesis=pd.read_csv('{}/dmutagenesis.csv'.format(cfg['datad']))
+        dseq=pd.read_csv('{}/dseq.csv'.format(cfg[cfg['step']-2])) #FIXME if numbering of steps is changed, this is gonna blow
+        dmutagenesis=pd.read_csv('{}/dmutagenesis.csv'.format(cfg[cfg['step']-1]))
 
         dguides=make_guides(dseq,dmutagenesis)
 
