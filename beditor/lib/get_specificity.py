@@ -285,7 +285,7 @@ def dguides2offtargets(cfg):
     dannots=pd.read_csv('{}/annotations.bed'.format(datatmpd),sep='\t',
                names=bed_colns+gff_colns)
 
-    dcombo=dalignbed.join(dannots.set_index('id'),rsuffix='.2')
+    dcombo=dalignbed.set_index('id').join(dannots.reset_index().set_index('id'),rsuffix='.2')
     dcombo.to_csv('{}/dofftargets.tsv'.format(cfg['datad']),sep='\t')
 
 

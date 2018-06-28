@@ -26,3 +26,4 @@ pub
 beditor/lib/global_vars_crispror.py
 beditor/lib/tmp/
 beditor/data/data_feats_aas.txt
+beditor/_bin/
