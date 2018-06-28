@@ -20,6 +20,7 @@ from glob import glob
 
 from beditor.lib.io_sys import runbashcmd
 from beditor.lib.io_seqs import fa2df 
+from beditor.lib.io_dfs import set_index 
 
 def pamIsCpf1(pam):
     " if you change this, also change bin/filterFaToBed! "
@@ -114,7 +115,6 @@ def dguides2offtargets(cfg):
     batchId='align'
     batchBase = join(datatmpd, batchId)
     otBedFname = batchBase+".bed"
-    print(otBedFname)
     faFname = batchBase+".fa"
     if not exists(faFname) or cfg['force']:
         with open(faFname,'w') as f:
@@ -285,7 +285,7 @@ def dguides2offtargets(cfg):
     dannots=pd.read_csv('{}/annotations.bed'.format(datatmpd),sep='\t',
                names=bed_colns+gff_colns)
 
-    dcombo=dalignbed.set_index('id').join(dannots.reset_index().set_index('id'),rsuffix='.2')
+    dcombo=set_index(dalignbed,'id').join(set_index(dannots,'id'),rsuffix='.2')
     dcombo.to_csv('{}/dofftargets.tsv'.format(cfg['datad']),sep='\t')
 
 
