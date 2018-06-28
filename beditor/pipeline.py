@@ -66,7 +66,7 @@ def pipeline(cfgp,step=None,test=False,force=False):
     except OSError:
         logging.error('path not found'+'{}/{}/{}'.format(genomed,cfg['host'],genomefn))
     
-    genomeannotd='pub/release-{}/gff3/'.format(cfg['genomerelease'])
+    genomeannotd='{}/lib/pub/release-{}/gff3/'.format(dirname(realpath(__file__)),cfg['genomerelease'])
     cfg['genomegffp']='{}/{}/{}.{}.{}.gff3.gz'.format(genomeannotd,cfg['host'],host_,cfg['genomeassembly'],cfg['genomerelease'])
 
     

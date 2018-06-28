@@ -6,6 +6,7 @@ def fa2df(alignedfastap,ids2cols=False):
     dtmp.columns=['id','sequence']
     dtmp=dtmp.set_index('id')
     dtmp.index=[i[1:] for i in dtmp.index]
+    dtmp.index.name='id'
     if ids2cols:
         for i in dtmp.index:
             seqid,contig,strand,start,end=i.split('|')
