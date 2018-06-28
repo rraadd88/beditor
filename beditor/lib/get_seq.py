@@ -115,6 +115,7 @@ def din2dseq(cfg):
     cfg['plotd']=cfg['datad']
     # get dna and protein sequences 
     dseqp='{}/dseq.csv'.format(cfg['datad'])
+    dseqtmpp='{}/dseqtmp.csv'.format(cfg['datad'])
     if not exists(dseqp) or cfg['force']:
         din=pd.read_csv(cfg['dinp'],sep='\t')
 #         din=pd.read_csv(cfg['dinp'])    
@@ -136,11 +137,18 @@ def din2dseq(cfg):
                     dbed.loc[bedrowi,'chromosome']=t.contig
                     dcoding=t2pmapper(t,coding_sequence_positions)
                     dcodingmutpos=dcoding.loc[(dcoding['protein index']==din.loc[i,'aminoacid: position']),:]
+                    codon_positions=dcodingmutpos['coding sequence positions'].tolist()
+                    if cfg['test']:
+                        print(codon_positions)
                     if t.strand=='+':
-                        dbed.loc[bedrowi,'codon start'],dbed.loc[bedrowi,'codon end']=dcodingmutpos['coding sequence positions'].tolist()[0],dcodingmutpos['coding sequence positions'].tolist()[1]
+                        dbed.loc[bedrowi,'codon start']=codon_positions[0]
+                        dbed.loc[bedrowi,'codon end']=codon_positions[2]
                     elif t.strand=='-':
-                        dbed.loc[bedrowi,'codon end'],dbed.loc[bedrowi,'codon start']=dcodingmutpos['coding sequence positions'].tolist()[0],dcodingmutpos['coding sequence positions'].tolist()[1]
-                    dbed.loc[bedrowi,'start'],dbed.loc[bedrowi,'end']=dbed.loc[bedrowi,'codon start']-20,dbed.loc[bedrowi,'codon end']+20
+                        dbed.loc[bedrowi,'codon start']=codon_positions[2]
+                        dbed.loc[bedrowi,'codon end']=codon_positions[0]
+                    dbed.loc[bedrowi,'start']=dbed.loc[bedrowi,'codon start']-22
+                    dbed.loc[bedrowi,'end']=dbed.loc[bedrowi,'codon end']+21
+
                     dbed.loc[bedrowi,'reference residue']=dcodingmutpos['protein sequence'].tolist()[0]
                     dbed.loc[bedrowi,'reference codon']=''.join(dcodingmutpos['coding sequence'].tolist())
                     dbed.loc[bedrowi,'strand']=t.strand
@@ -171,7 +179,7 @@ def din2dseq(cfg):
             dflankfa.loc[:,'sequence']=dflankfa.loc[:,'sequence'].apply(lambda x : x.upper())
             dflankfa.loc[:,'sequence: length']=[len(s) for s in dflankfa['sequence']]
             dseq=dbed.set_index('id').join(dflankfa,rsuffix='.1')
-
+            dseq.to_csv(dseqtmpp)
             dseq2compatible={'aminoacid: position':'aminoacid: position',
              'gene: id':'gene: id',
              'gene: name':'gene: name',
@@ -196,7 +204,7 @@ def din2dseq(cfg):
                           orfs_fastap='{}/../data/yeast/orf_coding_all.fasta'.format(abspath(dirname(__file__))),
                           host=cfg['host'],
                           test=cfg['test'])
-        din.to_csv('{}/din.csv'.format(cfg['datad']))
+#         din.to_csv('{}/din.csv'.format(cfg['datad']))
         dseq.to_csv(dseqp)
         logging.info('Counts of amino acids to mutate:')
         logging.info(dseq['aminoacid: wild-type'].value_counts())

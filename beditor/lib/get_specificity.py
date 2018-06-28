@@ -78,7 +78,9 @@ def align(s1,s2,l,test=False):
 
 #--------------------------------------------
 def dguides2offtargets(cfg):
-
+    cfg['datad']=cfg[cfg['step']]
+    cfg['plotd']=cfg['datad']
+    
     #TODO get fa and gff and prepare them
 
     # cfg['datad']='../../../04_offtarget/data_cfg['test']_'
@@ -90,7 +92,7 @@ def dguides2offtargets(cfg):
 #     genomegffp='pub/release-92/gff3/homo_sapiens/Homo_sapiens.GRCh38.92.gff3.gz'
 
     stepn='04_offtargets'
-    dguidesp='{}/dguides.csv'.format(cfg['datad'])
+    dguidesp='{}/dguideslin.csv'.format(cfg[cfg['step']-1])
 #     host_="_".join(s for s in cfg['host'].split('_')).capitalize()
 
 #     genomed='pub/release-{}/fasta/'.format(cfg['genomerelease'])
@@ -100,20 +102,22 @@ def dguides2offtargets(cfg):
 #     genomeannotd='pub/release-{}/gff3/'.format(cfg['genomerelease'])
 #     genomegffp='{}/{}/{}.{}.{}.gff3.gz'.format(genomeannotd,cfg['host'],host_,cfg['genomeassembly'],cfg['genomerelease'])
 
-    dataind='{}/{}/in'.format(cfg['datad'],stepn)
-    makedirs(dataind,exist_ok=False)
-    datatmpd='{}/{}/tmp'.format(cfg['datad'],stepn)
-    dataoutd='{}/{}/out'.format(cfg['datad'],stepn)
-    for dp in [datatmpd,dataoutd]: 
+    datatmpd='{}/tmp'.format(cfg['datad'],stepn)
+    for dp in [datatmpd]: 
         makedirs(dp,exist_ok=cfg['force'])
 
-    dguides=pd.read_csv(dguidesp,sep='\t')
-    dguides.to_csv('{}/{}'.format(dataind,basename(dguidesp)),sep='\t')
-    dguides=dguides.set_index('guideId')
-    with open('{}/batchId.fa'.format(datatmpd),'w') as f:
+    dguides=pd.read_csv(dguidesp)
+#     dguides.to_csv('{}/{}'.format(cfg['datad'],basename(dguidesp)),sep='\t')
+    dguides=dguides.set_index('guide: id')
+
+    batchId='align'
+    batchBase = join(datatmpd, batchId)
+    otBedFname = batchBase+".bed"
+    print(otBedFname)
+    faFname = batchBase+".fa"
+    with open(faFname,'w') as f:
         for gi in dguides.index:
             f.write('>{}\n{}\n'.format(gi,dguides.loc[gi,'guide sequence+PAM']))
-
 
     # BWA: allow up to X mismatches
     maxMMs=5
@@ -142,15 +146,11 @@ def dguides2offtargets(cfg):
 
     # get sequence
     # seqs = parseFasta(open(inSeqFname))
-    batchId='align'
-    batchBase = join(datatmpd, batchId)
-    otBedFname = batchBase+".bed"
-    print(otBedFname)
-    faFname = batchBase+".fa"
 
     matchesBedFname = batchBase+".matches.bed"
     saFname = batchBase+".sa"
     samp = batchBase+".sam"
+    genomep=cfg['genomep']
     genomed = dirname(genomep) # make var local, see below
 
     open(matchesBedFname, "w") # truncate to 0 size
@@ -160,10 +160,10 @@ def dguides2offtargets(cfg):
     seqLen = guidel
 
     bwaM = MFAC*MAXOCC # -m is queue size in bwa
-    cmd = "$BIN/bwa aln -o 0 -m %(bwaM)s -n %(maxDiff)d -k %(maxDiff)d -N -l %(seqLen)d %(genomep)s %(faFname)s > %(saFname)s" % locals()
+    cmd = "bwa aln -o 0 -m %(bwaM)s -n %(maxDiff)d -k %(maxDiff)d -N -l %(seqLen)d %(genomep)s %(faFname)s > %(saFname)s" % locals()
     runbashcmd(cmd)
 
-    cmd = "$BIN/bwa samse -n %(MAXOCC)d %(genomep)s %(saFname)s %(faFname)s > %(samp)s" % locals()
+    cmd = "bwa samse -n %(MAXOCC)d %(genomep)s %(saFname)s %(faFname)s > %(samp)s" % locals()
     runbashcmd(cmd)
     #----make tables-----------
     gff_colns = ['chromosome', 'source', 'type', 'start', 'end', 'score', 'strand', 'phase', 'attributes']
@@ -196,7 +196,7 @@ def dguides2offtargets(cfg):
                        'strand':strands}
     #     col2dalignbed=dict(zip(cols,[a.split('|')[0],a.split('|')[1],a.split('|')[2],a,a.split('|')[3],a.split('|')[4] for a in algnids]))
         dalignbed_=pd.DataFrame(col2dalignbed)
-        dalignbed_['grnaId']=read.qname
+        dalignbed_['guide: id']=read.qname
         dalignbed = dalignbed.append(dalignbed_,ignore_index=True)
     #     break
     samfile.close()
@@ -251,8 +251,8 @@ def dguides2offtargets(cfg):
     #     dalignbed.loc[i,'alignment'],dalignbed.loc[i,'alignment: score']=align(dalignbed.loc[i,'guide sequence+PAM'],dalignbed.loc[i,'aligned sequence'],l=guidel)
 
     dcombo=dalignbed.join(dannots.set_index('id'),rsuffix='.2')
-    dcombo.to_csv('{}/dcombo.tsv'.format(dataoutd),sep='\t')
+    dcombo.to_csv('{}/dcombo.tsv'.format(cfg['datad']),sep='\t')
 
 
-if __name__ == '__main__':
-    main()
+# if __name__ == '__main__':
+#     main()

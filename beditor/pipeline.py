@@ -47,6 +47,7 @@ def pipeline(cfgp,step=None,test=False,force=False):
     from beditor.lib.get_seq import din2dseq
     from beditor.lib.get_mutations import dseq2dmutagenesis 
     from beditor.lib.make_guides import dseq2dguides
+    from beditor.lib.get_specificity import dguides2offtargets
     from glob import glob
 
     import yaml
@@ -70,7 +71,10 @@ def pipeline(cfgp,step=None,test=False,force=False):
 
     
     cfg['prj']=splitext(basename(cfgp))[0]
-    cfg['prjd']=dirname(cfgp)+'/'+cfg['prj']
+    if dirname(cfgp)!='':
+        cfg['prjd']=dirname(cfgp)+'/'+cfg['prj']
+    else:
+        cfg['prjd']=cfg['prj']
     cfg['test']=test
     cfg['force']=force
     cfg['cfgp']=cfgp
@@ -86,16 +90,16 @@ def pipeline(cfgp,step=None,test=False,force=False):
         for i in range(0,4+1,1):
             makedirs(cfg[i])
     if step==1 or step==None:
-        cfg['step']=step
+        cfg['step']=1
         din2dseq(cfg)
     if step==2 or step==None:
-        cfg['step']=step
+        cfg['step']=2
         dseq2dmutagenesis(cfg)
     if step==3 or step==None:
-        cfg['step']=step
+        cfg['step']=3
         dseq2dguides(cfg)
     if step==4 or step==None:
-        cfg['step']=step
+        cfg['step']=4
         dguides2offtargets(cfg)
 
     logging.info("Location of output data: {}".format(cfg['datad']))

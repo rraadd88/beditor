@@ -1,7 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
-from os.path import exists,abspath,dirname
+from os.path import exists,realpath,dirname
 import itertools
 
 from Bio import SeqIO, Alphabet, Data, Seq, SeqUtils
@@ -275,9 +275,12 @@ def get_submap(cfg):
                      'medium': 5,
                      'low': 10}
     try:
-        dsubmap=pd.read_csv('{}/data/dsubmap_{}.csv'.format(dirname(abspath(__file__)),cfg['host'])).set_index('AA1')
+        dsubmap=pd.read_csv('{}/../data/dsubmap_{}.csv'.format(dirname(realpath(__file__)),cfg['host'])).set_index('AA1')
     except:
+        if cfg['test']:
+            print('{}/data/dsubmap_{}.csv'.format(dirname(realpath(__file__)),cfg['host']))
         dsubmap=pd.read_csv('data/dsubmap_{}.csv'.format(cfg['host'])).set_index('AA1')
+        
     dsubmap.index.name='amino acid'
     dsubmap.columns.name='amino acid mutation'
     dsubmap=dsubmap.T
@@ -364,6 +367,10 @@ def dseq2dmutagenesis(cfg):
                                               BEs=BEs,pos_muts=pos_muts,
                                      host=cfg['host'])
         dmutagenesis=filterdmutagenesis(dmutagenesis,cfg)
+        
+        colns_pos=[c for c in dmutagenesis if ('position' in c) or ('Position' in c)]
+        dmutagenesis.loc[:,colns_pos]=dmutagenesis.loc[:,colns_pos].astype(int)
+        
         dmutagenesis.to_csv(dmutagenesisp)
 
         print('Possible 1 nucleotide mutations:')

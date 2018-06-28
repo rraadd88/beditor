@@ -1,4 +1,5 @@
 import subprocess
+import sys
 
 def runbashcmd(cmd):
     from beditor.lib.global_vars import dirs2ps 
