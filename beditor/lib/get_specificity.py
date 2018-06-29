@@ -2,10 +2,10 @@
 
 import logging
 import subprocess
-import logging
 import re
 import sys
-import logging, operator
+import logging 
+import operator
 
 from collections import defaultdict
 from os.path import join, basename, dirname, abspath, exists
@@ -57,12 +57,10 @@ def hamming_distance(s1, s2):
 #     print(s1,s2)
     if len(s1) != len(s2):
         raise ValueError("Undefined for sequences of unequal length")
-    return sum(el1 != el2 for el1, el2 in zip(s1, s2))
-def align(s1,s2,l,test=False):
+    return sum(el1 != el2 for el1, el2 in zip(s1.upper(), s2.upper()))
+def align(s1,s2,test=False):
     from Bio import pairwise2
-    alignments = pairwise2.align.globalms(s1,s2,1,-1,-5,-5)
-#     globalms(sequenceA, sequenceB, match, mismatch, open, extend)
-#     if len(alignments)==0:
+    alignments = pairwise2.align.globalms(s1.upper(),s2.upper(),1,-1,-5,-5)
     if test:
         print(alignments)
     alignsymb=np.nan
@@ -76,7 +74,20 @@ def align(s1,s2,l,test=False):
             print(alignstr)
         break
     return alignsymb,score
-
+def gffatributes2ids(s):
+    d=dict([i.split('=') for i in s.split(';')])
+    if 'Parent' in d:
+        d[d['Parent'].split(':')[0]+'_id']=d['Parent'].split(':')[1]
+    Name,gene_id,transcript_id,protein_id=np.nan,np.nan,np.nan,np.nan
+    if 'Name' in d:    
+        Name=d['Name']
+    if 'gene_id' in d:    
+        gene_id=d['gene_id']
+    if 'transcript_id' in d:    
+        transcript_id=d['transcript_id']
+    if 'protein_id' in d:    
+        protein_id=d['protein_id']
+    return Name,gene_id,transcript_id,protein_id
 #--------------------------------------------
 def dguides2offtargets(cfg):
     cfg['datad']=cfg[cfg['step']]
@@ -274,18 +285,24 @@ def dguides2offtargets(cfg):
         dalignbed=dalignbed.drop_duplicates()
         dalignbed.to_csv(dalignbedguidesseqp,sep='\t')
     else:
-        dalignbed=pd.read_csv(dalignbedguidesseqp,sep='\t')
+        dalignbed=pd.read_csv(dalignbedguidesseqp,sep='\t',low_memory=False)
         dalignbed=dalignbed.drop([c for c in dalignbed if 'Unnamed' in c],axis=1)
                 
     dalignbed['Hamming distance']=dalignbed.apply(lambda x : hamming_distance(x['guide sequence+PAM'], x['aligned sequence']),axis=1)
-    dalignbed['alignment','alignment: score']=dalignbed.apply(lambda x: align(x['guide sequence+PAM'],x['aligned sequence'],l=guidel),axis=1)
+    df=dalignbed.apply(lambda x: align(x['guide sequence+PAM'],x['aligned sequence']),axis=1).apply(pd.Series)
+    df.columns=['alignment','alignment: score']
+    dalignbed=dalignbed.join(df)
 
-    # for i in dalignbed.index:
-    #     dalignbed.loc[i,'alignment'],dalignbed.loc[i,'alignment: score']=align(dalignbed.loc[i,'guide sequence+PAM'],dalignbed.loc[i,'aligned sequence'],l=guidel)
     dannots=pd.read_csv('{}/annotations.bed'.format(datatmpd),sep='\t',
-               names=bed_colns+gff_colns)
+               names=bed_colns+gff_colns,
+                       low_memory=False)
 
     dcombo=set_index(dalignbed,'id').join(set_index(dannots,'id'),rsuffix='.2')
+    #separate ids from attribute columns
+    df=dcombo.apply(lambda x: gffatributes2ids(x['attributes']),axis=1).apply(pd.Series)
+    df.columns=['gene name','gene id','transcript id','protein id']
+    dcombo=dcombo.join(df)
+    
     dcombo.to_csv('{}/dofftargets.tsv'.format(cfg['datad']),sep='\t')
 
 
