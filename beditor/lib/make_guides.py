@@ -107,8 +107,8 @@ def dseq2dguides(cfg):
         dguideslin=dguides.set_index('id').loc[:,colns_guideseq]
         dguideslin.index.name='guide: id'
 
-        dguideslin=df2unstack(dguideslin,coln='stretegy',col='guide sequence+PAM').dropna(axis=0,how='any')
-        dguideslin['guide: id']=dguideslin.apply(lambda x : x['guide: id']+'|'+x['stretegy'],axis=1)
+        dguideslin=df2unstack(dguideslin,coln='strategy',col='guide sequence+PAM').dropna(axis=0,how='any')
+        dguideslin['guide: id']=dguideslin.apply(lambda x : x['guide: id']+'|'+x['strategy'],axis=1)
         dguideslin.to_csv(dguideslinp)
 
         plot_nt_composition(dguides,

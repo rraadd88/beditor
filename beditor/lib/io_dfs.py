@@ -72,9 +72,8 @@ def del_Unnamed(df):
     :param df: pandas dataframe
     """
     cols_del=[c for c in df.columns if 'Unnamed' in c]
-    for c in cols_del:
-        del df[c]
-    return df
+    return df.drop(cols_del,axis=1)
+     
 
 def get_colmin(data):
     """
@@ -180,3 +179,10 @@ def df2info(df):
         print('**COLS**: ',df.columns.tolist())
     print('**HEAD**: ',df.loc[:,df.columns[:5]].head())
     print('**SHAPE**: ',df.shape)
+    
+def lambda2cols(df,lambdaf,in_coln,to_colns):
+    df_=df.apply(lambda x: lambdaf(x[in_coln]),
+                 axis=1).apply(pd.Series)
+    df_.columns=to_colns
+    df=df.join(df_)        
+    return df

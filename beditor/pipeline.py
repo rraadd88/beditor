@@ -63,8 +63,21 @@ def pipeline(cfgp,step=None,test=False,force=False):
     genomefn='dna/{}.{}.dna_sm.*.fa'.format(host_,cfg['genomeassembly'])
     try:
         cfg['genomep']=glob('{}/{}/{}'.format(genomed,cfg['host'],genomefn))[0]
-    except OSError:
+    except:
         logging.error('path not found'+'{}/{}/{}'.format(genomed,cfg['host'],genomefn))
+        sys.exit(1)
+## #FIXME download contigs and cat and get index, sizes
+#         for contig in contigs:
+#             fn='{}.{}.dna_sm.chromosome.{}.fa.gz'.format(str2spp(host),assembly,contig)
+#             cmd='wget -x -nH ftp://ftp.ensembl.org/pub/release-{}/fasta/{}/dna/{}'.format(release,host,fn)
+#         #     subprocess.call()
+#             print(cmd)
+#             break
+## make the fa ready
+# gunzip fa.gz
+# bin/Linux/bwa index fa
+# samtools faidx fa
+# cut -f1,2 fa.fai > fa.sizes
     
     genomeannotd='{}/lib/pub/release-{}/gff3/'.format(dirname(realpath(__file__)),cfg['genomerelease'])
     cfg['genomegffp']='{}/{}/{}.{}.{}.gff3.gz'.format(genomeannotd,cfg['host'],host_,cfg['genomeassembly'],cfg['genomerelease'])
@@ -87,7 +100,8 @@ def pipeline(cfgp,step=None,test=False,force=False):
 
     if not exists(cfg['prjd']):
         makedirs(cfg['prjd'])
-        for i in range(0,4+1,1):
+    for i in range(0,4+1,1):
+        if not exists(cfg[i]):
             makedirs(cfg[i])
     if step==1 or step==None:
         cfg['step']=1

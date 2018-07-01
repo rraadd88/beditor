@@ -154,7 +154,7 @@ def din2dseq(cfg):
                     dbed.loc[bedrowi,'strand']=t.strand
                     dbed.loc[bedrowi,'id']='{}|{}|{}|{}|{}'.format(din.loc[i,'transcript: id'],
                                                                   dbed.loc[bedrowi,'chromosome'],
-                             dbed.loc[bedrowi,'strand'],dbed.loc[bedrowi,'start'],dbed.loc[bedrowi,'end'])        
+                             dbed.loc[bedrowi,'strand'],int(dbed.loc[bedrowi,'start']),int(dbed.loc[bedrowi,'end']))        
                     dbed.loc[bedrowi,'gene: id']=t.gene_id
                     dbed.loc[bedrowi,'gene: name']=t.gene.name
                     dbed.loc[bedrowi,'protein: id']=t.protein_id

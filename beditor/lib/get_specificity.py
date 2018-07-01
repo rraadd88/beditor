@@ -20,30 +20,7 @@ from glob import glob
 
 from beditor.lib.io_sys import runbashcmd
 from beditor.lib.io_seqs import fa2df 
-from beditor.lib.io_dfs import set_index 
-
-def pamIsCpf1(pam):
-    " if you change this, also change bin/filterFaToBed! "
-    return (pam in ["TTN", "TTTN", "TYCV", "TATV"])
-        
-def setupPamInfo(pam,addGenePlasmids,scoreNames):
-    " modify a few globals based on the current pam "
-    PAMLEN = len(pam)
-    if pamIsCpf1(pam):
-        logging.debug("switching on Cpf1 mode, guide length is 23bp")
-        guidel = 23
-        cpf1Mode = True
-        scoreNames = cpf1ScoreNames
-    elif pam=="NNGRRT" or pam=="NNNRRT":
-        logging.debug("switching on S. aureus mode, guide length is 21bp")
-        addGenePlasmids = addGenePlasmidsAureus
-        guidel = 21
-        cpf1Mode = False
-        scoreNames = saCas9ScoreNames
-    else:
-        guidel = 20
-        cpf1Mode = False
-    return guidel,cpf1Mode,addGenePlasmids,PAMLEN,scoreNames
+from beditor.lib.io_dfs import set_index,del_Unnamed 
 
 def str2num(x):
     """
@@ -78,7 +55,7 @@ def gffatributes2ids(s):
     d=dict([i.split('=') for i in s.split(';')])
     if 'Parent' in d:
         d[d['Parent'].split(':')[0]+'_id']=d['Parent'].split(':')[1]
-    Name,gene_id,transcript_id,protein_id=np.nan,np.nan,np.nan,np.nan
+    Name,gene_id,transcript_id,protein_id,exon_id=np.nan,np.nan,np.nan,np.nan,np.nan
     if 'Name' in d:    
         Name=d['Name']
     if 'gene_id' in d:    
@@ -87,33 +64,19 @@ def gffatributes2ids(s):
         transcript_id=d['transcript_id']
     if 'protein_id' in d:    
         protein_id=d['protein_id']
-    return Name,gene_id,transcript_id,protein_id
+    if 'exon_id' in d:    
+        exon_id=d['exon_id']
+    return Name,gene_id,transcript_id,protein_id,exon_id
 #--------------------------------------------
+from beditor.lib.io_dfs import lambda2cols
+
 def dguides2offtargets(cfg):
     cfg['datad']=cfg[cfg['step']]
     cfg['plotd']=cfg['datad']
     
-    #TODO get fa and gff and prepare them
-
-    # cfg['datad']='../../../04_offtarget/data_cfg['test']_'
-    # dguidesp='../../../04_offtarget/crisporWebsite/sampleFiles/mine/cfg['test'].csv'
-#     dguidesp='../../../04_offtarget/data_cfg['test']_human_dguides.tsv'
-#     cfg['datad']='../../../04_offtarget/data_cfg['test']_human_sabatani_cfg['test']'
-#     cfg['host']='homo_sapiens'
-#     genomefn='dna/Homo_sapiens.GRCh38.dna_sm.toplevel.fa'
-#     genomegffp='pub/release-92/gff3/homo_sapiens/Homo_sapiens.GRCh38.92.gff3.gz'
-
     stepn='04_offtargets'
+    logging.info(stepn)
     dguidesp='{}/dguideslin.csv'.format(cfg[cfg['step']-1])
-#     host_="_".join(s for s in cfg['host'].split('_')).capitalize()
-
-#     genomed='pub/release-{}/fasta/'.format(cfg['genomerelease'])
-#     genomefn_='dna/{}.{}.dna_sm.*.fa'.format(host_,cfg['genomeassembly'])
-#     genomep=glob('{}/{}/{}'.format(genomed,cfg['host'],genomefn))[0]
-
-#     genomeannotd='pub/release-{}/gff3/'.format(cfg['genomerelease'])
-#     genomegffp='{}/{}/{}.{}.{}.gff3.gz'.format(genomeannotd,cfg['host'],host_,cfg['genomeassembly'],cfg['genomerelease'])
-
     datatmpd='{}/tmp'.format(cfg['datad'],stepn)
     for dp in [datatmpd]:
         if not exists(dp):
@@ -123,73 +86,59 @@ def dguides2offtargets(cfg):
 #     dguides.to_csv('{}/{}'.format(cfg['datad'],basename(dguidesp)),sep='\t')
     dguides=dguides.set_index('guide: id')
 
-    batchId='align'
-    batchBase = join(datatmpd, batchId)
-    otBedFname = batchBase+".bed"
-    faFname = batchBase+".fa"
-    if not exists(faFname) or cfg['force']:
-        with open(faFname,'w') as f:
+    guidesfap = '{}/guides.fa'.format(datatmpd)
+    logging.info(basename(guidesfap))
+    if not exists(guidesfap) or cfg['force']:
+        with open(guidesfap,'w') as f:
             for gi in dguides.index:
                 f.write('>{}\n{}\n'.format(gi.replace(' ','_'),dguides.loc[gi,'guide sequence+PAM']))
 
     # BWA: allow up to X mismatches
-    maxMMs=5
+    maxMMs=0
+    cores=8
 
     # maximum number of occurences in the genome to get flagged as repeats. 
-    # This is used in bwa samse, when converting the same file
+    # This is used in bwa samse, when converting the sam file
     # and for warnings in the table output.
     MAXOCC = 60000
 
     # the BWA queue size is 2M by default. We derive the queue size from MAXOCC
     MFAC = 2000000/MAXOCC
-    guidel=None
-    PAMLEN=None
-    cpf1Mode=None
-    scoreNames = ["fusi", "crisprScan"]
-    cpf1ScoreNames = ["seqDeepCpf1"]
-    saCas9ScoreNames = ["najm"]
-    cfg['test']=True
+    guidel=23
+    PAMLEN=3
     pam='NGG'
 
     #FIXME prepare genome
     # bwa index pub/release-92/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna_sm.toplevel.fa
     # samtools faidx pub/release-92/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna_sm.toplevel.fa    
+    # cut pub/release-92/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna_sm.toplevel.fa faidx   
 
-    guidel,cpf1Mode,addGenePlasmids,PAMLEN,scoreNames=setupPamInfo(pam,setupPamInfo,scoreNames)
-
-    # get sequence
-    # seqs = parseFasta(open(inSeqFname))
-
-    matchesBedFname = batchBase+".matches.bed"
-    saFname = batchBase+".sa"
-    samp = batchBase+".sam"
     genomep=cfg['genomep']
     genomed = dirname(genomep) # make var local, see below
     genomegffp=cfg['genomegffp']
     
-    open(matchesBedFname, "w") # truncate to 0 size
-
     # increase MAXOCC if there is only a single query, but only in CGI mode
-    maxDiff = maxMMs
-    seqLen = guidel
-
     bwaM = MFAC*MAXOCC # -m is queue size in bwa
-    if not exists(saFname) or cfg['force']:
-        cmd = "bwa aln -o 0 -m %(bwaM)s -n %(maxDiff)d -k %(maxDiff)d -N -l %(seqLen)d %(genomep)s %(faFname)s > %(saFname)s" % locals()
+    guidessap = '{}/guides.sa'.format(datatmpd)
+    logging.info(basename(guidessap))
+    if not exists(guidessap) or cfg['force']:
+        cmd = "bwa aln -t %(cores)s -o 0 -m %(bwaM)s -n %(maxMMs)d -k %(maxMMs)d -N -l %(guidel)d %(genomep)s %(guidesfap)s > %(guidessap)s" % locals()
         runbashcmd(cmd)
-        
-    if not exists(samp) or cfg['force']:
-        cmd = "bwa samse -n %(MAXOCC)d %(genomep)s %(saFname)s %(faFname)s > %(samp)s" % locals()
+
+    guidessamp = '{}/guides.sam'.format(datatmpd)
+    logging.info(basename(guidessamp))        
+    if not exists(guidessamp) or cfg['force']:
+        cmd = "bwa samse -n %(MAXOCC)d %(genomep)s %(guidessap)s %(guidesfap)s > %(guidessamp)s" % locals()
         runbashcmd(cmd)
     
     #----make tables-----------
-    gff_colns = ['chromosome', 'source', 'type', 'start', 'end', 'score', 'strand', 'phase', 'attributes']
-    bed_colns = ['chromosome','start','end','id','NM','strand']
-    
+    from beditor.lib.global_vars import bed_colns,gff_colns    
+
     alignmentbedp='{}/alignment.bed'.format(datatmpd)
     dalignbedp='{}/dalignbed.tsv'.format(datatmpd)
+    logging.info(basename(dalignbedp))
     if not exists(alignmentbedp) or cfg['force']:
-        samfile=pysam.AlignmentFile(samp, "rb")
+        samfile=pysam.AlignmentFile(guidessamp, "rb")
         dalignbed=pd.DataFrame(columns=bed_colns)
         for read in samfile.fetch():
             algnids=[]
@@ -223,8 +172,8 @@ def dguides2offtargets(cfg):
         samfile.close()
 
         # filter bad asssembly junk genmomes
-        from beditor.lib.global_vars import host2contigs
-        dalignbed=dalignbed.loc[dalignbed['chromosome'].isin(host2contigs[cfg['host']]),:]
+#         from beditor.lib.global_vars import host2contigs
+#         dalignbed=dalignbed.loc[dalignbed['chromosome'].isin(host2contigs[cfg['host']]),:]
         dalignbed.to_csv(dalignbedp,sep='\t')
         dalignbed.loc[:,bed_colns].to_csv(alignmentbedp,sep='\t',
                         header=False,index=False)
@@ -233,32 +182,37 @@ def dguides2offtargets(cfg):
         dalignbed=dalignbed.drop([c for c in dalignbed if 'Unnamed' in c],axis=1)
         
     alignmentbedsortedp=alignmentbedp+'.sorted.bed'
+    logging.info(basename(alignmentbedsortedp))
     if not exists(alignmentbedsortedp) or cfg['force']:
         cmd='bedtools sort -i {} > {}'.format(alignmentbedp,alignmentbedsortedp)
         runbashcmd(cmd)
     
     genomegffsortedp=genomegffp+'.sorted.gff3.gz'
+    logging.info(basename(genomegffsortedp))
     if not exists(genomegffsortedp) or cfg['force']:    
         cmd='bedtools sort -i {} > {}'.format(genomegffp,genomegffsortedp)
         runbashcmd(cmd)
         
     annotationsbedp='{}/annotations.bed'.format(datatmpd)
+    logging.info(basename(annotationsbedp))
     if not exists(annotationsbedp) or cfg['force']:    
         cmd='bedtools intersect -wa -wb -loj -a {} -b {} > {}'.format(alignmentbedsortedp,genomegffsortedp,annotationsbedp)
         runbashcmd(cmd)
 #     if the error in human, use: `cut -f 1 data/alignment.bed.sorted.bed | sort| uniq -c | grep -v CHR | grep -v GL | grep -v KI`
     dalignbedguidesp='{}/dalignbedguides.tsv'.format(datatmpd)
+    logging.info(basename(dalignbedguidesp))
     if not exists(dalignbedguidesp) or cfg['force']:
         dalignbed=dalignbed.set_index('guide: id').join(dguides)
         dalignbed=dalignbed.reset_index().set_index('guide: id')
         dalignbed.to_csv(dalignbedguidesp,'\t')
     else:
         dalignbed=pd.read_csv(dalignbedguidesp,'\t')
-        dalignbed=dalignbed.drop([c for c in dalignbed if 'Unnamed' in c],axis=1)
+        dalignbed=del_Unnamed(dalignbed)
         
     # dalignid2seq=pd.DataFrame(columns=['sequence'])
     # dalignid2seq.index.name='id'
     dalignedfastap='{}/dalignedfasta.tsv'.format(datatmpd)
+    logging.info(basename(dalignedfastap))
     if not exists(dalignedfastap) or cfg['force']:
         alignedfastap='{}/alignment.fa'.format(datatmpd)
         if not exists(alignedfastap) or cfg['force']:
@@ -271,8 +225,10 @@ def dguides2offtargets(cfg):
     else:
         dalignedfasta=pd.read_csv(dalignedfastap,sep='\t')        
         dalignedfasta=dalignedfasta.drop([c for c in dalignbed if 'Unnamed' in c],axis=1)
+        dalignedfasta=del_Unnamed(dalignedfasta)
         
     dalignbedguidesseqp='{}/dalignbedguidesseq.tsv'.format(datatmpd)
+    logging.info(basename(dalignbedguidesseqp))
     if not exists(dalignbedguidesseqp) or cfg['force']:        
 #         from beditor.lib.io_dfs import df2info
 #         if cfg['test']:
@@ -286,23 +242,42 @@ def dguides2offtargets(cfg):
         dalignbed.to_csv(dalignbedguidesseqp,sep='\t')
     else:
         dalignbed=pd.read_csv(dalignbedguidesseqp,sep='\t',low_memory=False)
-        dalignbed=dalignbed.drop([c for c in dalignbed if 'Unnamed' in c],axis=1)
-                
-    dalignbed['Hamming distance']=dalignbed.apply(lambda x : hamming_distance(x['guide sequence+PAM'], x['aligned sequence']),axis=1)
-    df=dalignbed.apply(lambda x: align(x['guide sequence+PAM'],x['aligned sequence']),axis=1).apply(pd.Series)
-    df.columns=['alignment','alignment: score']
-    dalignbed=dalignbed.join(df)
+        dalignbed=del_Unnamed(dalignbed)
 
-    dannots=pd.read_csv('{}/annotations.bed'.format(datatmpd),sep='\t',
-               names=bed_colns+gff_colns,
-                       low_memory=False)
+    dalignbedstatsp='{}/dalignbedstats.tsv'.format(datatmpd)  
+    logging.info(basename(dalignbedstatsp))
+    if not exists(dalignbedstatsp) or cfg['force']:
+#         dalignbed['Hamming distance']=dalignbed.apply(lambda x : hamming_distance(x['guide sequence+PAM'], x['aligned sequence']),axis=1)
+        df=dalignbed.apply(lambda x: align(x['guide sequence+PAM'],x['aligned sequence']),
+                           axis=1).apply(pd.Series)
+        df.columns=['alignment','alignment: score']
+        dalignbed=dalignbed.join(df)
+        del df
+        dalignbed.to_csv(dalignbedstatsp,sep='\t')
+    else:
+        dalignbed=pd.read_csv(dalignbedstatsp,sep='\t',low_memory=False)
+        dalignbed=del_Unnamed(dalignbed)
+            
+    dalignbedannotp='{}/dalignbedannot.tsv'.format(datatmpd)  
+    logging.info(basename(dalignbedannotp))
+    if not exists(dalignbedannotp) or cfg['force']:
+        dannots=pd.read_csv('{}/annotations.bed'.format(datatmpd),sep='\t',
+                   names=bed_colns+gff_colns,
+                           low_memory=False)
+        dannots=del_Unnamed(dannots)
 
-    dcombo=set_index(dalignbed,'id').join(set_index(dannots,'id'),rsuffix='.2')
-    #separate ids from attribute columns
-    df=dcombo.apply(lambda x: gffatributes2ids(x['attributes']),axis=1).apply(pd.Series)
-    df.columns=['gene name','gene id','transcript id','protein id']
-    dcombo=dcombo.join(df)
-    
+        dcombo=set_index(dalignbed,'id').join(set_index(dannots,'id'),
+                                              rsuffix='.2')
+        dcombo=dcombo.drop_duplicates(subset=['type','guide: id','start.1','end.1'])
+        #separate ids from attribute columns
+#         dcombo=lambda2cols(dcombo,lambdaf=gffatributes2ids,
+#                     in_coln='attributes',
+#                 to_colns=['gene name','gene id','transcript id','protein id','exon id'])
+        dcombo.to_csv(dalignbedannotp,sep='\t')
+    else:
+        dcombo=pd.read_csv(dalignbedannotp,sep='\t',low_memory=False)
+        dcombo=del_Unnamed(dcombo)
+    print('{}/dofftargets.tsv'.format(cfg['datad']))
     dcombo.to_csv('{}/dofftargets.tsv'.format(cfg['datad']),sep='\t')
 
 
