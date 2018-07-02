@@ -52,37 +52,7 @@ def pipeline(cfgp,step=None,test=False,force=False):
 
     import yaml
     cfg=yaml.load(open(cfgp, 'r'))
-
-# refs
-    if 'human' in cfg['host'].lower():
-        cfg['host']='homo_sapiens'
-    if 'yeast' in cfg['host'].lower():
-        cfg['host']='saccharomyces_cerevisiae'
-    host_="_".join(s for s in cfg['host'].split('_')).capitalize()
-    genomed='{}/lib/pub/release-{}/fasta/'.format(dirname(realpath(__file__)),cfg['genomerelease'])
-    genomefn='dna/{}.{}.dna_sm.*.fa'.format(host_,cfg['genomeassembly'])
-    try:
-        cfg['genomep']=glob('{}/{}/{}'.format(genomed,cfg['host'],genomefn))[0]
-    except:
-        logging.error('path not found'+'{}/{}/{}'.format(genomed,cfg['host'],genomefn))
-        sys.exit(1)
-## #FIXME download contigs and cat and get index, sizes
-#         for contig in contigs:
-#             fn='{}.{}.dna_sm.chromosome.{}.fa.gz'.format(str2spp(host),assembly,contig)
-#             cmd='wget -x -nH ftp://ftp.ensembl.org/pub/release-{}/fasta/{}/dna/{}'.format(release,host,fn)
-#         #     subprocess.call()
-#             print(cmd)
-#             break
-## make the fa ready
-# gunzip fa.gz
-# bin/Linux/bwa index fa
-# samtools faidx fa
-# cut -f1,2 fa.fai > fa.sizes
-    
-    genomeannotd='{}/lib/pub/release-{}/gff3/'.format(dirname(realpath(__file__)),cfg['genomerelease'])
-    cfg['genomegffp']='{}/{}/{}.{}.{}.gff3.gz'.format(genomeannotd,cfg['host'],host_,cfg['genomeassembly'],cfg['genomerelease'])
-
-    
+    # basics
     cfg['prj']=splitext(basename(cfgp))[0]
     if dirname(cfgp)!='':
         cfg['prjd']=dirname(cfgp)+'/'+cfg['prj']
@@ -91,6 +61,50 @@ def pipeline(cfgp,step=None,test=False,force=False):
     cfg['test']=test
     cfg['force']=force
     cfg['cfgp']=cfgp
+
+# refs
+    if 'human' in cfg['host'].lower():
+        cfg['host']='homo_sapiens'
+    if 'yeast' in cfg['host'].lower():
+        cfg['host']='saccharomyces_cerevisiae'
+    host_="_".join(s for s in cfg['host'].split('_')).capitalize()
+    genomed_ensembl_fasta='pub/release-{}/fasta/{}/dna/'.format(cfg['genomerelease'],cfg['host'])
+    genomed='{}/{}'.format(dirname(realpath(__file__)),genomed_ensembl_fasta)
+    cfg['genomep']='{}/genome.fa'.format(genomed)
+    if not exists(cfg['genomep']):
+        logging.error('not found: {}'.format(cfg['genomep']))
+        ifdlref = input("\nDownload genome at {}?[Y/n]: ".format(genomed))
+        if ifdlref=='Y':
+        # #FIXME download contigs and cat and get index, sizes
+            from beditor.lib.global_vars import host2contigs
+            from beditor.lib.io_sys import runbashcmd
+            for contig in host2contigs[cfg['host']]:
+                fn='{}.{}.dna_sm.chromosome.{}.fa.gz'.format(cfg['host'].capitalize(),cfg['genomeassembly'],contig)
+                fp='{}/{}'.format(genomed_ensembl_fasta,fn)
+                if not exists(fp) or cfg['force']:
+                    cmd='wget -x -nH ftp://ftp.ensembl.org/{} -P {}'.format(fp,dirname(realpath(__file__)))
+                    runbashcmd(cmd,test=cfg['test'])
+#                 break
+            # make the fa ready
+            if not exists(cfg['genomep']) or cfg['force']:
+                cmd='gunzip {}*.fa.gz;cat {}/*.fa > {}/genome.fa;'.format(genomed,genomed,genomed)
+                runbashcmd(cmd,test=cfg['test'])
+            if not exists(cfg['genomep']+'.bwt') or cfg['force']:
+                cmd='bwa index {}'.format(cfg['genomep'])
+                runbashcmd(cmd,test=cfg['test'])
+            if not exists(cfg['genomep']+'.fai') or cfg['force']:
+                cmd='samtools faidx {}'.format(cfg['genomep'])
+                runbashcmd(cmd,test=cfg['test'])
+            if not exists(cfg['genomep']+'.sizes') or cfg['force']:
+                cmd='cut -f1,2 {}.fai > {}.sizes'.format(cfg['genomep'],cfg['genomep'])            
+                runbashcmd(cmd,test=cfg['test'])
+        else:
+            sys.exit(1)
+    
+    genomeannotd='{}/lib/pub/release-{}/gff3/'.format(dirname(realpath(__file__)),cfg['genomerelease'])
+    cfg['genomegffp']='{}/{}/{}.{}.{}.gff3.gz'.format(genomeannotd,cfg['host'],host_,cfg['genomeassembly'],cfg['genomerelease'])
+
+   
     #datads
     cfg[0]=cfg['prjd']+'/00_input/'
     cfg[1]=cfg['prjd']+'/01_sequences/'
