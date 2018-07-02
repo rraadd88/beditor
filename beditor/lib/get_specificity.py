@@ -94,8 +94,7 @@ def dguides2offtargets(cfg):
                 f.write('>{}\n{}\n'.format(gi.replace(' ','_'),dguides.loc[gi,'guide sequence+PAM']))
 
     # BWA: allow up to X mismatches
-    maxMMs=0
-    cores=8
+    # cfg['cores']=8
 
     # maximum number of occurences in the genome to get flagged as repeats. 
     # This is used in bwa samse, when converting the sam file
@@ -122,7 +121,8 @@ def dguides2offtargets(cfg):
     guidessap = '{}/guides.sa'.format(datatmpd)
     logging.info(basename(guidessap))
     if not exists(guidessap) or cfg['force']:
-        cmd = "bwa aln -t %(cores)s -o 0 -m %(bwaM)s -n %(maxMMs)d -k %(maxMMs)d -N -l %(guidel)d %(genomep)s %(guidesfap)s > %(guidessap)s" % locals()
+        # cmd = "bwa aln -t %(cfg['cores'])s -o 0 -m %(bwaM)s -n %(cfg['mismatches_max'])d -k %(cfg['mismatches_max'])d -N -l %(guidel)d %(genomep)s %(guidesfap)s > %(guidessap)s" % locals()
+        cmd = "bwa aln -t {} -o 0 -m {} -n {} -k {} -N -l {} {} {} > {}".format(cfg['cores'],bwaM,cfg['mismatches_max'],cfg['mismatches_max'],guidel,genomep,guidesfap,guidessap)
         runbashcmd(cmd)
 
     guidessamp = '{}/guides.sam'.format(datatmpd)
@@ -175,8 +175,12 @@ def dguides2offtargets(cfg):
 #         from beditor.lib.global_vars import host2contigs
 #         dalignbed=dalignbed.loc[dalignbed['chromosome'].isin(host2contigs[cfg['host']]),:]
         dalignbed.to_csv(dalignbedp,sep='\t')
+        from beditor.lib.io_nums import str2numorstr
+        dalignbed['chromosome']=dalignbed.apply(lambda x : str2numorstr(x['chromosome']),axis=1)
+        dalignbed=dalignbed.sort_values(['chromosome','start','end'], ascending=[True, True, True])
         dalignbed.loc[:,bed_colns].to_csv(alignmentbedp,sep='\t',
-                        header=False,index=False)
+                        header=False,index=False,
+                        chunksize=5000)
     else:
         dalignbed=pd.read_csv(dalignbedp,sep='\t')
         dalignbed=dalignbed.drop([c for c in dalignbed if 'Unnamed' in c],axis=1)

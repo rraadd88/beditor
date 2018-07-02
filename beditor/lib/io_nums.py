@@ -34,6 +34,18 @@ def str2num(x):
     """
     return int(''.join(ele for ele in x if ele.isdigit()))
 
+def str2numorstr(x,method=int):
+    """
+    This extracts numbers from strings. eg. 114 from M114R.
+
+    :param x: string
+    """
+    try:
+        x=method(x)
+        return x
+    except:
+        return x
+
 def plog(x,p = 0.5):
     """
     psudo-log
