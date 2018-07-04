@@ -16,3 +16,11 @@ def fa2df(alignedfastap,ids2cols=False):
             dtmp.loc[i,'start']=start
             dtmp.loc[i,'end']=end
     return dtmp
+
+from Bio import Alphabet,Seq
+def str2seq(s,prt=False):
+    if prt:
+        alpha=Alphabet.ProteinAlphabet
+    else:
+        alpha=Alphabet.generic_dna
+    return Seq.Seq(s,alpha)

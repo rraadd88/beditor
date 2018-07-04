@@ -2,10 +2,11 @@ import numpy as np
 
 def get_beditorscore(NM,mismatches_max,genic,alignment,
                     pentalty_hamming_distance=1,
-                    pentalty_genic=1,
-                    pentalty_intergenic=0.1,
-                    pentalty_pam=1,
-                    pentalty_dist_from_pam=0.2
+                    pentalty_genic=0.5,
+                    pentalty_intergenic=0.9,
+                    pentalty_dist_from_pam=0.97,
+                     pentalty_mutation=0.93,
+                    test=False
                 ):
 #     Hamming distance (0 1)
 #     intergenic or not (0 1)+0.5
@@ -15,10 +16,22 @@ def get_beditorscore(NM,mismatches_max,genic,alignment,
 # intergenic=True
 # alignment='|||||.||||||||||.||||.|'   
 
-    hamming_distance=NM/mismatches_max
-    genic=pentalty_genic if genic else pentalty_intergenic 
-    dist_from_pam=sum(np.array([pentalty_dist_from_pam if s=='.' else 0 for s in alignment])*(np.arange(1,len(alignment)+1)/23))
-    return hamming_distance*genic*dist_from_pam
+    if NM!=0:
+        hamming_distance=(mismatches_max-NM)/mismatches_max
+        
+        genic=pentalty_genic if genic else pentalty_intergenic 
+        
+        mutations_penalties=np.array([pentalty_mutation if s!='|' else 1 for s in alignment])
+        dist_from_pam_penalties=np.arange(start=pentalty_dist_from_pam,stop=1+(1-pentalty_dist_from_pam)/len(alignment),step=(1-pentalty_dist_from_pam)/(len(alignment)-1))[::-1]
+#     dist_from_pam_penalties=(np.arange(1,len(alignment)+1)/len(alignment))[::-1]
+        if test:
+            print(mutations_penalties)
+            print(dist_from_pam_penalties)
+        dist_from_pam=np.prod(mutations_penalties*dist_from_pam_penalties)
+        return hamming_distance*genic*dist_from_pam
+    else:
+        return 1
+        
 
 
 #Calculates the Cutting Frequency Determination score
@@ -310,7 +323,7 @@ def calc_cfd(wt,sg,pam):
 
 # wt = 'ATTCAATCCTATGCTGACTTGGG'
 # off = 'ATTCAATCCTATGATGACTTGGG'
-get_CFDscore(wt,off):
+def get_CFDscore(wt,off):
     m_wt = re.search('[^ATCG]',wt)
     m_off = re.search('[^ATCG]',off)
     if (m_wt is None) and (m_off is None):

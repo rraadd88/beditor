@@ -39,7 +39,7 @@ def hamming_distance(s1, s2):
     return sum(el1 != el2 for el1, el2 in zip(s1.upper(), s2.upper()))
 def align(s1,s2,test=False):
     from Bio import pairwise2
-    alignments = pairwise2.align.globalms(s1.upper(),s2.upper(),1,-1,-5,-5)
+    alignments = pairwise2.align.localms(s1.upper(),s2.upper(),1,-1,-5,-5)
     if test:
         print(alignments)
     alignsymb=np.nan
@@ -157,11 +157,17 @@ def dguides2offtargets(cfg):
             NMs=[]
             strands=[]    
             for a in algnids:
+                strand=a.split('|')[1][0]
                 chroms.append(a.split('|')[0])
-                starts.append(int(a.split('|')[1][1:])-1)
-                ends.append(int(a.split('|')[1][1:])+str2num(a.split('|')[2])-1)
+                if strand=='+':
+                    offset=0
+                elif strand=='-':
+                    offset=0                    
+                starts.append(int(a.split('|')[1][1:])+offset)
+                ends.append(int(a.split('|')[1][1:])+str2num(a.split('|')[2])+offset)
                 NMs.append(a.split('|')[3])
-                strands.append(a.split('|')[1][0])
+                strands.append(strand)
+                del strand,offset
             col2dalignbed={'chromosome':chroms,
                            'start':starts,
                            'end':ends,
@@ -319,12 +325,44 @@ def dguides2offtargets(cfg):
     dalignbedannotp='{}/dalignbedannot.tsv'.format(datatmpd)  
     logging.info(basename(dalignbedannotp))
     if not exists(dalignbedannotp) or cfg['force']:
-        dcombo=set_index(dalignbed,'id').join(set_index(dannotsagg,'id'),
+        dalignbedannot=set_index(dalignbed,'id').join(set_index(dannotsagg,'id'),
                                               rsuffix=' annotation')
-        dcombo.to_csv(dalignbedannotp,sep='\t')
+        dalignbedannot.to_csv(dalignbedannotp,sep='\t')
     else:
-        dcombo=pd.read_csv(dalignbedannotp,sep='\t',low_memory=False)
-        dcombo=del_Unnamed(dcombo)
+        dalignbedannot=pd.read_csv(dalignbedannotp,sep='\t',low_memory=False)
+        dalignbedannot=del_Unnamed(dalignbedannot)
+
+    dofftargetsp='{}/dofftargets.tsv'.format(cfg['datad'])  
+    logging.info(basename(dofftargetsp))
+    if not exists(dofftargetsp) or cfg['force']:
+        from beditor.lib.get_scores import get_beditorscore,get_CFDscore
+        dalignbedannot['beditor score']=dalignbedannot.apply(lambda x : get_beditorscore(x['NM'], cfg['mismatches_max'], True if x['region']=='genic' else False, x['alignment']), axis=1) 
+        dalignbedannot['CFD score']=dalignbedannot.apply(lambda x : get_CFDscore(x['guide sequence+PAM'].upper(), x['aligned sequence'].upper()), axis=1) 
+        dalignbedannot.loc[:,['id',
+ 'guide: id',
+#  'NM',
+#  'chromosome',
+#  'end',
+#  'start',
+#  'strand',
+#  'Unnamed: 0',
+#  'strategy',
+ 'guide sequence+PAM',
+ 'aligned sequence',
+ 'alignment',
+#  'alignment: score',
+ 'annotations count',
+ 'region',
+ 'types',
+#  'gene names',
+#  'gene ids',
+#  'transcript ids',
+#  'protein ids',
+#  'exon ids',
+#  'annotation coordinates',
+ 'beditor score',
+ 'CFD score']].to_csv(dofftargetsp,sep='\t')
+        
     # print('{}/dofftargets.tsv'.format(cfg['datad']))
     # dcombo.to_csv('{}/dofftargets.tsv'.format(cfg['datad']),sep='\t')
 
