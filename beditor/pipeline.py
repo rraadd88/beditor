@@ -29,7 +29,7 @@ def main():
     parser = argparse.ArgumentParser(description=version_info)
     parser.add_argument("cfg", help="path to project directory", 
                         action="store", default=False)    
-    parser.add_argument("--step", help="1: get seqeucnces,\n2: get possible strategies,\n3: make guides,\n 4: check offtargets", dest="step", 
+    parser.add_argument("--step", help="1: get seqeucnces,\n2: get possible strategies,\n3: make guides,\n 4: identify offtargets", dest="step", 
                         type=float,action="store", choices=[1,2,3,4],default=None)  
     parser.add_argument("--test", help="Debug mode on", dest="test", 
                         action='store_true', default=False)    

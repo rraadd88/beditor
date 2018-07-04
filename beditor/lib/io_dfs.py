@@ -29,6 +29,9 @@ def set_index(data,col_index):
         return data
     elif data.index.name==col_index:
         return data
+    else:
+        logging.error("something's wrong with the df")
+        df2info(data)
 
 # dfs
 def concat_cols(df1,df2,idx_col,df1_cols,df2_cols,

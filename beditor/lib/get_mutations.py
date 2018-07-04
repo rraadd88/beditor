@@ -13,6 +13,14 @@ import logging
 from beditor.lib.global_vars  import hosts
 
 def get_codon_table(aa, host):
+    """
+    This fits gaussian.
+    Eq: a*np.exp(-(x-x0)**2/(2*sigma**2))
+    :param x: value of x
+    :param a: value of a
+    :param x0: value of x0
+    :param sigma: value of sigma
+    """
     # get codon table
     codontable=Data.CodonTable.unambiguous_dna_by_id[hosts[host]]
 

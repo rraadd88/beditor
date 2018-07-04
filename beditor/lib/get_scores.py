@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 def get_beditorscore(NM,mismatches_max,genic,alignment,
                     pentalty_hamming_distance=1,
@@ -15,25 +16,25 @@ def get_beditorscore(NM,mismatches_max,genic,alignment,
 # mismatches_max=3
 # intergenic=True
 # alignment='|||||.||||||||||.||||.|'   
+    if not pd.isnull(alignment):
+        if NM!=0:
+            hamming_distance=(mismatches_max-NM)/mismatches_max
 
-    if NM!=0:
-        hamming_distance=(mismatches_max-NM)/mismatches_max
-        
-        genic=pentalty_genic if genic else pentalty_intergenic 
-        
-        mutations_penalties=np.array([pentalty_mutation if s!='|' else 1 for s in alignment])
-        dist_from_pam_penalties=np.arange(start=pentalty_dist_from_pam,stop=1+(1-pentalty_dist_from_pam)/len(alignment),step=(1-pentalty_dist_from_pam)/(len(alignment)-1))[::-1]
-#     dist_from_pam_penalties=(np.arange(1,len(alignment)+1)/len(alignment))[::-1]
-        if test:
-            print(mutations_penalties)
-            print(dist_from_pam_penalties)
-        dist_from_pam=np.prod(mutations_penalties*dist_from_pam_penalties)
-        return hamming_distance*genic*dist_from_pam
+            genic=pentalty_genic if genic else pentalty_intergenic 
+
+            mutations_penalties=np.array([pentalty_mutation if s!='|' else 1 for s in alignment])
+            dist_from_pam_penalties=np.arange(start=pentalty_dist_from_pam,stop=1+(1-pentalty_dist_from_pam)/len(alignment),step=(1-pentalty_dist_from_pam)/(len(alignment)-1))[::-1]
+    #     dist_from_pam_penalties=(np.arange(1,len(alignment)+1)/len(alignment))[::-1]
+            if test:
+                print(mutations_penalties)
+                print(dist_from_pam_penalties)
+            dist_from_pam=np.prod(mutations_penalties*dist_from_pam_penalties)
+            return hamming_distance*genic*dist_from_pam
+        else:
+            return 1
     else:
-        return 1
+        return np.nan
         
-
-
 #Calculates the Cutting Frequency Determination score
 #Requirements: 1. Pickle file with mismatch scores in working directory
 #              2. Pickle file containing PAM scores in working directory 

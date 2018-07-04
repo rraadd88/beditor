@@ -107,9 +107,6 @@ def dguides2offtargets(cfg):
 
     # the BWA queue size is 2M by default. We derive the queue size from MAXOCC
     MFAC = 2000000/MAXOCC
-    guidel=23
-    PAMLEN=3
-    pam='NGG'
 
     #FIXME prepare genome
     # bwa index pub/release-92/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna_sm.toplevel.fa
@@ -126,7 +123,7 @@ def dguides2offtargets(cfg):
     logging.info(basename(guidessap))
     if not exists(guidessap) or cfg['force']:
         # cmd = "bwa aln -t %(cfg['cores'])s -o 0 -m %(bwaM)s -n %(cfg['mismatches_max'])d -k %(cfg['mismatches_max'])d -N -l %(guidel)d %(genomep)s %(guidesfap)s > %(guidessap)s" % locals()
-        cmd = "bwa aln -t {} -o 0 -m {} -n {} -k {} -N -l {} {} {} > {}".format(cfg['cores'],bwaM,cfg['mismatches_max'],cfg['mismatches_max'],guidel,genomep,guidesfap,guidessap)
+        cmd = "bwa aln -t {} -o 0 -m {} -n {} -k {} -N -l {} {} {} > {}".format(cfg['cores'],bwaM,cfg['mismatches_max'],cfg['mismatches_max'],cfg['guidel'],genomep,guidesfap,guidessap)
         runbashcmd(cmd)
 
     guidessamp = '{}/guides.sam'.format(datatmpd)
@@ -216,8 +213,8 @@ def dguides2offtargets(cfg):
     dalignbedguidesp='{}/dalignbedguides.tsv'.format(datatmpd)
     logging.info(basename(dalignbedguidesp))
     if not exists(dalignbedguidesp) or cfg['force']:
-        dalignbed=dalignbed.set_index('guide: id').join(dguides)
-        dalignbed=dalignbed.reset_index().set_index('guide: id')
+        dalignbed=set_index(dalignbed,'guide: id').join(dguides)
+        dalignbed=set_index(dalignbed,'guide: id')
         dalignbed.to_csv(dalignbedguidesp,'\t')
     else:
         dalignbed=pd.read_csv(dalignbedguidesp,'\t')
@@ -234,8 +231,10 @@ def dguides2offtargets(cfg):
             runbashcmd(cmd)
 
         dalignedfasta=fa2df(alignedfastap)
-        dalignedfasta.columns=['aligned sequence']
+        dalignedfasta.columns=['aligned sequence']        
+#         dalignedfasta=dalignedfasta.loc[[False if np.unique(list(s.upper()))=='N' else True for s in dalignedfasta['aligned sequence']],:]
         dalignedfasta.index=[i.split('(')[0] for i in dalignedfasta.index] # for bedtools 2.27, the fasta header now has hanging (+) or (-)
+        dalignedfasta.index.name='id'
         dalignedfasta.to_csv(dalignedfastap,sep='\t')
     else:
         dalignedfasta=pd.read_csv(dalignedfastap,sep='\t')        
@@ -251,7 +250,7 @@ def dguides2offtargets(cfg):
 #             df2info(dalignedfasta)
             
 #         dalignedfasta['guide: id']=dalignedfasta.apply(lambda x : x['guide: id'].replace('_',' '),axis=1)
-        dalignbed=dalignbed.reset_index().set_index('id').join(dalignedfasta)
+        dalignbed=set_index(dalignbed,'id').join(set_index(dalignedfasta,'id'))
         dalignbed.index.name='id'
         dalignbed=dalignbed.drop_duplicates()
         dalignbed.to_csv(dalignbedguidesseqp,sep='\t')
@@ -274,8 +273,9 @@ def dguides2offtargets(cfg):
         dalignbed=del_Unnamed(dalignbed)
             
     daannotp='{}/dannot.tsv'.format(datatmpd)  
+    dannotsaggp='{}/dannotsagg.tsv'.format(datatmpd)  
     logging.info(basename(daannotp))
-    if not exists(daannotp) or cfg['force']:
+    if (not exists(daannotp)) or (not exists(dannotsaggp)) or cfg['force']:
         dannots=pd.read_csv('{}/annotations.bed'.format(datatmpd),sep='\t',
                    names=bed_colns+[c+' annotation' if c in set(bed_colns).intersection(gff_colns) else c for c in gff_colns ],
                            low_memory=False)
@@ -294,7 +294,6 @@ def dguides2offtargets(cfg):
         dannots=pd.read_csv(daannotp,sep='\t',low_memory=False)
         dannots=del_Unnamed(dannots)
 
-    dannotsaggp='{}/dannotsagg.tsv'.format(datatmpd)  
     logging.info(basename(dannotsaggp))
     if not exists(dannotsaggp) or cfg['force']:
         dannotsagg=pd.DataFrame(dannots.groupby('id')['annotations count'].agg('sum'))-1
