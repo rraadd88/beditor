@@ -14,12 +14,11 @@ from beditor.lib.global_vars  import hosts
 
 def get_codon_table(aa, host):
     """
-    This fits gaussian.
+    Gets host specific codon table.
     Eq: a*np.exp(-(x-x0)**2/(2*sigma**2))
-    :param x: value of x
-    :param a: value of a
-    :param x0: value of x0
-    :param sigma: value of sigma
+    :param aa: list of amino acids
+    :param host: name of host
+    :returns: codon table (pandas dataframe)
     """
     # get codon table
     codontable=Data.CodonTable.unambiguous_dna_by_id[hosts[host]]
@@ -47,6 +46,11 @@ def get_codon_table(aa, host):
     return dcodontable
 
 def get_codon_usage(cuspp):
+    """
+    Creates codon usage table.
+    :param cuspp: path to cusp generated file
+    :returns: codon usage table (pandas dataframe)
+    """
     # get codon usage stats
     dcodonusage=pd.read_csv(cuspp,sep='\t',header=5)
     cols=''.join(dcodonusage.columns.tolist()).split(' ')
@@ -62,7 +66,19 @@ def get_possible_mutagenesis(dcodontable,dcodonusage,
                              BEs,pos_muts,
                              host,
                             ): 
+    """
+    Assesses possible mutagenesis strategies, given the set of Base editors and positions of mutations.
+    :param dcodontable: Codon table
+    :param dcodonusage: Codon usage table
+    :param BEs: Base editors (dict), see global_vars.py
+    :param pos_muts: positions of mutations
+    :param host: host organism
+    :returns: possible mutagenesis strategies as a pandas dataframe
+    """
     def write_dmutagenesis(cdni,posi,codon,codonmut,ntwt,ntmut,aa,aamut,method):
+        """
+        Write dmutagenesis table for each iteraction in get_possible_mutagenesis.
+        """
         dmutagenesis.loc[cdni,'codon']=codon
         dmutagenesis.loc[cdni,'position of mutation in codon']=int(posi)
         dmutagenesis.loc[cdni,'codon mutation']=codonmut
@@ -77,6 +93,9 @@ def get_possible_mutagenesis(dcodontable,dcodonusage,
         return dmutagenesis
 
     def get_sm(dmutagenesis,BEs,positions,codon,muti,cdni):
+        """
+        Fetches single nucleotide mutagenesis strategies.
+        """
         for method in BEs:
             for posi in positions: 
                 if BEs[method][0]==codon[posi]:
@@ -109,6 +128,9 @@ def get_possible_mutagenesis(dcodontable,dcodonusage,
                         'method':method})
         return dmutagenesis,muti
     def get_dm(dmutagenesis,BEs,positions_dm,codon,muti,cdni):
+        """
+        Fetches double nucleotide mutagenesis strategies.
+        """
         for method in BEs:
             for posi1,posi2 in positions_dm: 
                 if (BEs[method][0]==codon[posi1]) and (BEs[method][0]==codon[posi2]):
@@ -144,6 +166,9 @@ def get_possible_mutagenesis(dcodontable,dcodonusage,
         return dmutagenesis,muti
 
     def get_tm(dmutagenesis,BEs,positions_tm,codon,muti,cdni):
+        """
+        Fetches triple nucleotide mutagenesis strategies.
+        """
         for method in BEs:
             for posi1,posi2,posi3 in positions_tm:
                 if (BEs[method][0]==codon[posi1]) and (BEs[method][0]==codon[posi2]) and (BEs[method][0]==codon[posi3]):
@@ -174,6 +199,9 @@ def get_possible_mutagenesis(dcodontable,dcodonusage,
         return dmutagenesis,muti
 
     def get_dm_combo(dmutagenesis,BEs,positions_dm,codon,muti,cdni,method):
+        """
+        Fetches double nucleotide mutagenesis strategies utilising 2 different base editors simultaneously.
+        """
         methods=[m for m in itertools.product(BEs.keys(),repeat=2) if ((m[0].split('on')[1]==m[1].split('on')[1])) and (m[0]!=m[1])]
         for method1,method2 in methods:
             for posi1,posi2 in positions_dm: 
@@ -211,6 +239,9 @@ def get_possible_mutagenesis(dcodontable,dcodonusage,
         return dmutagenesis,muti
 
     def get_tm_combo(dmutagenesis,BEs,positions_tm,codon,muti,cdni,method):
+        """
+        Fetches triple nucleotide mutagenesis strategies utilising 2 different base editors simultaneously.
+        """
         methods=[m for m in itertools.product(BEs.keys(),repeat=3) if ((m[0].split('on')[1]==m[1].split('on')[1]==m[2].split('on')[1])) and not (m[0]==m[1]==m[2])]
         for method1,method2,method3 in methods:
             for posi1,posi2,posi3 in positions_tm:
@@ -279,6 +310,11 @@ def get_possible_mutagenesis(dcodontable,dcodonusage,
 from beditor.lib.io_dfs import df2unstack
 from os.path import abspath,dirname
 def get_submap(cfg):
+    """
+    Fetches mimetic substitution map that would be used to filter mutagenesis strategies.
+    Also, 
+    :param cfg: configurations from yml file.
+    """
     mimetism_levels={'high': 1,
                      'medium': 5,
                      'low': 10}
@@ -312,6 +348,11 @@ def get_submap(cfg):
     return dsubmaptop
 
 def filterdmutagenesis(dmutagenesis,cfg):
+    """
+    Filters the mutagenesis strategies by multiple options provided in configuration file (.yml).
+    :param dmutagenesis: mutagenesis strategies (pd.DataFrame)
+    :param cfg: configurations from yml file
+    """
     logging.info('filtering: dmutagenesis.shape: '+str(dmutagenesis.shape))    
     # filter by mutation_type
     if not cfg['mutation_type'] is None:
@@ -359,6 +400,10 @@ def filterdmutagenesis(dmutagenesis,cfg):
 
 from beditor.lib.global_vars import BEs,pos_muts
 def dseq2dmutagenesis(cfg):
+    """
+    Generates mutagenesis strategies from identities of reference and mutated codons (from dseq).
+    :param cfg: configurations from yml file  
+    """
     cfg['datad']=cfg[cfg['step']]
     cfg['plotd']=cfg['datad']
     dmutagenesisp='{}/dmutagenesis.csv'.format(cfg['datad'])
