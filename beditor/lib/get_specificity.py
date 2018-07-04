@@ -38,6 +38,12 @@ def hamming_distance(s1, s2):
         raise ValueError("Undefined for sequences of unequal length")
     return sum(el1 != el2 for el1, el2 in zip(s1.upper(), s2.upper()))
 def align(s1,s2,test=False):
+    """
+    Creates pairwise local alignment between seqeunces.
+    Get the visualization and alignment scores.
+    :param s1: seqeunce 1
+    :param s2: seqeunce 2    
+    """
     from Bio import pairwise2
     alignments = pairwise2.align.localms(s1.upper(),s2.upper(),1,-1,-5,-5)
     if test:
@@ -54,6 +60,11 @@ def align(s1,s2,test=False):
         break
     return alignsymb,score
 def gffatributes2ids(s):
+    """
+    Deconvolutes ids from `attributes` column in GFF3 to seprate columns.
+    :param s: attribute string.
+    :returns: tuple of ids
+    """
     Name,gene_id,transcript_id,protein_id,exon_id=np.nan,np.nan,np.nan,np.nan,np.nan
     if '=' in s:
         d=dict([i.split('=') for i in s.split(';')])
@@ -75,6 +86,10 @@ def gffatributes2ids(s):
 from beditor.lib.io_dfs import lambda2cols
 
 def dguides2offtargets(cfg):
+    """
+    All the processes in offtarget detection are here.
+    :param cfg: Configuration settings provided in .yml file
+    """
     cfg['datad']=cfg[cfg['step']]
     cfg['plotd']=cfg['datad']
     
