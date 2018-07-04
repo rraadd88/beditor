@@ -11,6 +11,12 @@ import logging
 from beditor.lib.global_vars import hosts
 
 def translate(dnaseq,host='human',fmtout=str):
+    """
+    Translates a DNA seqeunce
+    :param dnaseq: DNA sequence
+    :param host: host organism
+    :param fmtout: format of output sequence
+    """
     if isinstance(dnaseq,str): 
         dnaseq=Seq.Seq(dnaseq,Alphabet.generic_dna)
     prtseq=dnaseq.translate(table=hosts[host])
@@ -22,7 +28,10 @@ def translate(dnaseq,host='human',fmtout=str):
 def get_seq_yeast(dseq,orfs_fastap,
             host,
            test=False):
-        
+    """
+    Get yeast seqeunces from local files.
+    Would be removed.
+    """
     orfs=SeqIO.to_dict(SeqIO.parse(orfs_fastap,'fasta'))
     for subi,sub in enumerate(dseq['gene: name'].tolist()):
         if sub in orfs:
@@ -58,6 +67,9 @@ def get_seq_yeast(dseq,orfs_fastap,
     return dseq
 
 def get_codon_seq(dintseqflt01,test=False):
+    """
+    Fetches codon sequences foe given sequences and positions.
+    """
     for subi,sub in zip(dintseqflt01.index,dintseqflt01['gene: name'].tolist()):
         psite=int(dintseqflt01.loc[subi,'Psite01'])
         dintseqflt01.loc[subi,'P']=dintseqflt01.loc[subi,'Protein sequence'][(psite-1)]
@@ -90,6 +102,9 @@ from beditor.lib.io_sys import runbashcmd
 
 
 def tboundaries2positions(t):
+    """
+    Fetches positions from transcript boundaries.
+    """
     coding_sequence_positions=[]
     for ini,end in t.coding_sequence_position_ranges:
         if t.strand == '+':
@@ -100,6 +115,9 @@ def tboundaries2positions(t):
     return coding_sequence_positions
 
 def t2pmapper(t,coding_sequence_positions):
+    """
+    Maps transcript id with protein id. 
+    """
     dcoding=pd.DataFrame(columns=['coding sequence positions','coding sequence'])
     # dcoding.index.name='transcript index'
     dcoding['coding sequence positions']=coding_sequence_positions
@@ -111,6 +129,9 @@ def t2pmapper(t,coding_sequence_positions):
     return dcoding.sort_values(by='transcript index',ascending=True)#.set_index('transcript index')
 
 def din2dseq(cfg):
+    """
+    Wrapper for converting input data (transcript ids and positions of mutation) to seqeunces flanking the codon. 
+    """
     cfg['datad']=cfg[cfg['step']]
     cfg['plotd']=cfg['datad']
     # get dna and protein sequences 
