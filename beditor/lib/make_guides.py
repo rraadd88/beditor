@@ -12,6 +12,12 @@ from tqdm import trange
 def make_guides(dseq,dmutagenesis,
                test=False,
                dbug=False):
+    """
+    Makes guides by
+    1. searching all PAM sequences on 'both' the strands,
+    2. filtering guides by all possible strategies (given in dmutagenesis) e.g. activity window,
+    Finally generates a table.
+    """
     dguides=dseq.copy()
     dguides=dguides.reset_index()
     dguides.index=range(len(dguides))
@@ -83,6 +89,10 @@ def make_guides(dseq,dmutagenesis,
     return dguides
 
 def dseq2dguides(cfg):
+    """
+    Wrapper around make guides function.
+    :param cfg: conffguration settings given in yml file.    
+    """
     from beditor.lib.global_vars import BEs,pos_muts
     from beditor.lib.io_dfs import df2unstack
     from beditor.lib.plot_res import plot_nt_composition
