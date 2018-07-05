@@ -2,11 +2,9 @@ import numpy as np
 import pandas as pd
 
 def get_beditorscore(NM,mismatches_max,genic,alignment,
-                    pentalty_hamming_distance=1,
                     pentalty_genic=0.5,
                     pentalty_intergenic=0.9,
-                    pentalty_dist_from_pam=0.97,
-                     pentalty_mutation=0.93,
+                    pentalty_dist_from_pam=0.1,
                     test=False
                 ):
 #     Hamming distance (0 1)
@@ -22,13 +20,15 @@ def get_beditorscore(NM,mismatches_max,genic,alignment,
 
             genic=pentalty_genic if genic else pentalty_intergenic 
 
-            mutations_penalties=np.array([pentalty_mutation if s!='|' else 1 for s in alignment])
+            mutations_penalties=np.array([1 if s!='|' else 0 for s in alignment])
             dist_from_pam_penalties=np.arange(start=pentalty_dist_from_pam,stop=1+(1-pentalty_dist_from_pam)/len(alignment),step=(1-pentalty_dist_from_pam)/(len(alignment)-1))[::-1]
     #     dist_from_pam_penalties=(np.arange(1,len(alignment)+1)/len(alignment))[::-1]
             if test:
-                print(mutations_penalties)
-                print(dist_from_pam_penalties)
-            dist_from_pam=np.prod(mutations_penalties*dist_from_pam_penalties)
+                print(list(mutations_penalties))
+                print(list(dist_from_pam_penalties))
+                print(sum(mutations_penalties*dist_from_pam_penalties))
+                print(sum(dist_from_pam_penalties))
+            dist_from_pam=sum(mutations_penalties*dist_from_pam_penalties)#/sum(dist_from_pam_penalties)
             return hamming_distance*genic*dist_from_pam
         else:
             return 1

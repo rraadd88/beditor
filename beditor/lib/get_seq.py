@@ -10,6 +10,8 @@ from Bio import motifs,Seq,AlignIO
 import logging
 from beditor.lib.global_vars import hosts
 
+import json
+
 def translate(dnaseq,host='human',fmtout=str):
     """
     Translates a DNA seqeunce
@@ -149,51 +151,67 @@ def din2dseq(cfg):
             dbedp='{}/dbedflank.bed'.format(cfg['datad'])
             dbed=pd.DataFrame(columns=bed_colns)
             terrpositions=[]
+            terrnotfound=[]
+            terrnoncoding=[]
             bedrowi=0
             for i in trange(len(din)-1,desc='get positions for bedtools'):                
                 if din.loc[i,'transcript: id'] in ensembl.transcript_ids():
                     t=ensembl.transcript_by_id(din.loc[i,'transcript: id'])
-                    coding_sequence_positions=tboundaries2positions(t)
-                    if len(coding_sequence_positions)==len(t.coding_sequence):
-                    #TODO     need to check if the seq made from coding_sequence_positions is same as t.coding_seqeunce
-                        dbed.loc[bedrowi,'chromosome']=t.contig
-                        dcoding=t2pmapper(t,coding_sequence_positions)
-                        dcodingmutpos=dcoding.loc[(dcoding['protein index']==din.loc[i,'aminoacid: position']),:]
-                        codon_positions=dcodingmutpos['coding sequence positions'].tolist()
-                        if cfg['test']:
-                            print(codon_positions)
-                        if t.strand=='+':
-                            dbed.loc[bedrowi,'codon start']=codon_positions[0]
-                            dbed.loc[bedrowi,'codon end']=codon_positions[2]
-                        elif t.strand=='-':
-                            dbed.loc[bedrowi,'codon start']=codon_positions[2]
-                            dbed.loc[bedrowi,'codon end']=codon_positions[0]
-                        dbed.loc[bedrowi,'start']=dbed.loc[bedrowi,'codon start']-22
-                        dbed.loc[bedrowi,'end']=dbed.loc[bedrowi,'codon end']+21
+                    if t.is_protein_coding and t.contains_start_codon and t.contains_stop_codon:
+                        coding_sequence_positions=tboundaries2positions(t)
+                        if len(coding_sequence_positions)==len(t.coding_sequence):
+                        #TODO     need to check if the seq made from coding_sequence_positions is same as t.coding_seqeunce
+                            dcoding=t2pmapper(t,coding_sequence_positions)
+                            dcodingmutpos=dcoding.loc[(dcoding['protein index']==din.loc[i,'aminoacid: position']),:]
+                            codon_positions=dcodingmutpos['coding sequence positions'].tolist()
+                            if len(codon_positions)!=0:
+                                dbed.loc[bedrowi,'chromosome']=t.contig
+                                if cfg['test']:
+                                    print(din.loc[i,'transcript: id'],codon_positions)
+                                if t.strand=='+':
+                                    dbed.loc[bedrowi,'codon start']=codon_positions[0]
+                                    dbed.loc[bedrowi,'codon end']=codon_positions[2]
+                                elif t.strand=='-':
+                                    dbed.loc[bedrowi,'codon start']=codon_positions[2]
+                                    dbed.loc[bedrowi,'codon end']=codon_positions[0]
+                                dbed.loc[bedrowi,'start']=dbed.loc[bedrowi,'codon start']-22
+                                dbed.loc[bedrowi,'end']=dbed.loc[bedrowi,'codon end']+21
 
-                        dbed.loc[bedrowi,'reference residue']=dcodingmutpos['protein sequence'].tolist()[0]
-                        dbed.loc[bedrowi,'reference codon']=''.join(dcodingmutpos['coding sequence'].tolist())
-                        dbed.loc[bedrowi,'strand']=t.strand
-                        dbed.loc[bedrowi,'id']='{}|{}|{}|{}|{}'.format(din.loc[i,'transcript: id'],
-                                                                      dbed.loc[bedrowi,'chromosome'],
-                                 dbed.loc[bedrowi,'strand'],int(dbed.loc[bedrowi,'start']),int(dbed.loc[bedrowi,'end']))        
-                        dbed.loc[bedrowi,'gene: id']=t.gene_id
-                        dbed.loc[bedrowi,'gene: name']=t.gene.name
-                        dbed.loc[bedrowi,'protein: id']=t.protein_id
-                        dbed.loc[bedrowi,'aminoacid: position']=din.loc[i,'aminoacid: position']
-                #         break
-                        bedrowi+=1
+                                dbed.loc[bedrowi,'reference residue']=dcodingmutpos['protein sequence'].tolist()[0]
+                                dbed.loc[bedrowi,'reference codon']=''.join(dcodingmutpos['coding sequence'].tolist())
+                                dbed.loc[bedrowi,'strand']=t.strand
+                                dbed.loc[bedrowi,'id']='{}|{}|{}|{}|{}'.format(din.loc[i,'transcript: id'],
+                                                                              dbed.loc[bedrowi,'chromosome'],
+                                         dbed.loc[bedrowi,'strand'],int(dbed.loc[bedrowi,'start']),int(dbed.loc[bedrowi,'end']))        
+                                dbed.loc[bedrowi,'gene: id']=t.gene_id
+                                dbed.loc[bedrowi,'gene: name']=t.gene.name
+                                dbed.loc[bedrowi,'protein: id']=t.protein_id
+                                dbed.loc[bedrowi,'aminoacid: position']=din.loc[i,'aminoacid: position']
+                        #         break
+                                bedrowi+=1
+                            else:
+                                terrpositions.append(t.id)                        
+                        else:
+                            terrpositions.append(t.id)
                     else:
-                        terrpositions.append(t.id)
+                        terrnoncoding.append(t.id)                    
                 else:
+                    terrnotfound.append(din.loc[i,'transcript: id'])
                     if cfg['test']:
                         logging.error('not found: {}'.format(din.loc[i,'transcript: id']))
             dbed.loc[:,'start']=dbed.loc[:,'start'].astype(int)
             dbed.loc[:,'end']=dbed.loc[:,'end'].astype(int)
-
-            print(terrpositions)
+            
             dbed.loc[:,bed_colns].to_csv(dbedp,sep='\t',
                             header=False,index=False)
+            err2tids={'terrpositions':terrpositions,
+                      'terrnotfound':terrnotfound,
+                      'terrnoncoding':terrnoncoding,
+                     }
+            if cfg['test']:
+                print(err2tids)            
+            with open(dbedp+'.err.json', 'w') as outfile:
+                json.dump(err2tids, outfile)
 
             bedp='{}/dbedflank.bed'.format(cfg['datad'])
             fastap='{}/dbedflank.fa'.format(cfg['datad'])
