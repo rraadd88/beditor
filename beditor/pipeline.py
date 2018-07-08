@@ -8,7 +8,10 @@ from os.path import exists,splitext,dirname,splitext,basename,realpath
 from os import makedirs
 import argparse
 import pkg_resources
+
+import pandas as pd
 from multiprocessing import Pool
+
 from beditor.lib.io_strs import get_logger
 logging=get_logger()
 
@@ -77,6 +80,13 @@ def get_genomes(cfg):
     return cfg
 
 def pipeline_chunks(cfgp):
+    from beditor.configure import get_deps
+    from beditor.lib.get_seq import din2dseq
+    from beditor.lib.get_mutations import dseq2dmutagenesis 
+    from beditor.lib.make_guides import dseq2dguides
+    from beditor.lib.get_specificity import dguides2offtargets
+
+    logging.info('processing: '+cfgp)
     import yaml
     cfg=yaml.load(open(cfgp, 'r'))
 
@@ -93,6 +103,11 @@ def pipeline_chunks(cfgp):
     cfg[2]=cfg['prjd']+'/02_mutagenesis/'
     cfg[3]=cfg['prjd']+'/03_guides/'
     cfg[4]=cfg['prjd']+'/04_offtargets/'
+
+    #make dirs
+    for i in range(5):
+        if not exists(cfg[i]):
+            makedirs(cfg[i])
     
     #backup inputs
     cfgoutp='{}/cfg.yml'.format(cfg[0])    
@@ -109,26 +124,27 @@ def pipeline_chunks(cfgp):
         makedirs(cfg['prjd'])
     for i in range(0,4+1,1):
         if not exists(cfg[i]):
-            makedirs(cfg[i])
-    if step==1 or step==None:
-        cfg=get_deps(cfg)
+            makedirs(cfg[i])            
+    if cfg['step']==None:
+        stepall=True
+    if cfg['step']==1 or stepall:
         cfg['step']=1
+        cfg=get_deps(cfg)
         din2dseq(cfg)
-    if step==2 or step==None:
+    if cfg['step']==2 or stepall:
         cfg['step']=2
         dseq2dmutagenesis(cfg)
-    if step==3 or step==None:
+    if cfg['step']==3 or stepall:
         cfg['step']=3
         dseq2dguides(cfg)
-    if step==4 or step==None:
+    if cfg['step']==4 or stepall:
+        cfg['step']=4
         from beditor.configure import get_deps
         cfg=get_deps(cfg)
-        cfg['step']=4
         dguides2offtargets(cfg)
     if 'datad' in cfg.keys():
         logging.info("Location of output data: {}".format(cfg['datad']))
         logging.info("Location of output plot: {}".format(cfg['plotd']))
-
 
 def main():
     """
@@ -162,27 +178,44 @@ def main():
         test=args.test,force=args.force)
 
 def pipeline(cfgp,step=None,test=False,force=False):        
-    from beditor.lib.get_seq import din2dseq
-    from beditor.lib.get_mutations import dseq2dmutagenesis 
-    from beditor.lib.make_guides import dseq2dguides
-    from beditor.lib.get_specificity import dguides2offtargets
-    from glob import glob
 
     import yaml
     cfg=yaml.load(open(cfgp, 'r'))
+    #project dir
+    cfg['prj']=splitext(basename(cfgp))[0]
+    if dirname(cfgp)!='':
+        cfg['prjd']=dirname(cfgp)+'/'+cfg['prj']
+    else:
+        cfg['prjd']=cfg['prj']
+
+    #step
+    cfg['step']=step
     # basics
     cfg['test']=test
     cfg['force']=force
     cfg['cfgp']=cfgp
     
     cfg=get_genomes(cfg)
-    
+
+    #datads
+    cfg[0]=cfg['prjd']+'/00_input/'
+    cfg[1]=cfg['prjd']+'/01_sequences/'
+    cfg[2]=cfg['prjd']+'/02_mutagenesis/'
+    cfg[3]=cfg['prjd']+'/03_guides/'
+    cfg[4]=cfg['prjd']+'/04_offtargets/'
+
+    #make dirs
+    for i in range(5):
+        if not exists(cfg[i]):
+            makedirs(cfg[i])
     #backup combo inputs
     cfgoutp='{}/cfg.yml'.format(cfg[0])    
     dinoutp='{}/din.tsv'.format(cfg[0])    
     if not exists(cfgoutp) or cfg['force']:
         with open(cfgoutp, 'w') as f:
-            yaml.dump(cfg, f, default_flow_style=False) 
+            yaml.dump(cfg, f
+#                       default_flow_style=False
+                     ) 
     if not exists(dinoutp) or cfg['force']:
         from shutil import copyfile
         copyfile(cfg['dinp'], dinoutp)
@@ -207,13 +240,13 @@ def pipeline(cfgp,step=None,test=False,force=False):
         
     if len(chunkps)!=0:
         if cfg['test']:
-            pooled(chunkps[0])
+            pipeline_chunks(chunkcfgps[0])
         else:
             pool=Pool(processes=cfg['cores']) # T : get it from xls
             pool.map(pipeline_chunks, chunkps)
             pool.close(); pool.join()         
 
-    pipeline_chunks(cfgp)
+#     pipeline_chunks(cfgp)
     logging.shutdown()
 
 if __name__ == '__main__':
