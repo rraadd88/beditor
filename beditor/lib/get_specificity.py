@@ -124,11 +124,6 @@ def dguides2offtargets(cfg):
     # the BWA queue size is 2M by default. We derive the queue size from MAXOCC
     MFAC = 2000000/MAXOCC
 
-    #FIXME prepare genome
-    # bwa index pub/release-92/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna_sm.toplevel.fa
-    # samtools faidx pub/release-92/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna_sm.toplevel.fa    
-    # cut pub/release-92/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna_sm.toplevel.fa faidx   
-
     genomep=cfg['genomep']
     genomed = dirname(genomep) # make var local, see below
     genomegffp=cfg['genomegffp']
@@ -139,13 +134,13 @@ def dguides2offtargets(cfg):
     logging.info(basename(guidessap))
     if not exists(guidessap) or cfg['force']:
         # cmd = "bwa aln -t %(cfg['cores'])s -o 0 -m %(bwaM)s -n %(cfg['mismatches_max'])d -k %(cfg['mismatches_max'])d -N -l %(guidel)d %(genomep)s %(guidesfap)s > %(guidessap)s" % locals()
-        cmd = "bwa aln -t {} -o 0 -m {} -n {} -k {} -N -l {} {} {} > {}".format(cfg['cores'],bwaM,cfg['mismatches_max'],cfg['mismatches_max'],cfg['guidel'],genomep,guidesfap,guidessap)
+        cmd="{} aln -t {} -o 0 -m {} -n {} -k {} -N -l {} {} {} > {}".format(cfg['bwa'],cfg['cores'],bwaM,cfg['mismatches_max'],cfg['mismatches_max'],cfg['guidel'],genomep,guidesfap,guidessap)
         runbashcmd(cmd)
 
     guidessamp = '{}/guides.sam'.format(datatmpd)
     logging.info(basename(guidessamp))        
     if not exists(guidessamp) or cfg['force']:
-        cmd = "bwa samse -n %(MAXOCC)d %(genomep)s %(guidessap)s %(guidesfap)s > %(guidessamp)s" % locals()
+        cmd="{} samse -n {} {} {} {} > {}".format(cfg['bwa'],MAXOCC,genomep,guidessap,guidesfap,guidessamp)
         runbashcmd(cmd)
     
     #----make tables-----------
@@ -211,19 +206,19 @@ def dguides2offtargets(cfg):
     alignmentbedsortedp=alignmentbedp+'.sorted.bed'
     logging.info(basename(alignmentbedsortedp))
     if not exists(alignmentbedsortedp) or cfg['force']:
-        cmd='bedtools sort -i {} > {}'.format(alignmentbedp,alignmentbedsortedp)
+        cmd='{} sort -i {} > {}'.format(cfg['bedtools'],alignmentbedp,alignmentbedsortedp)
         runbashcmd(cmd)
     
     genomegffsortedp=genomegffp+'.sorted.gff3.gz'
     logging.info(basename(genomegffsortedp))
     if not exists(genomegffsortedp) or cfg['force']:    
-        cmd='bedtools sort -i {} > {}'.format(genomegffp,genomegffsortedp)
+        cmd='{} sort -i {} > {}'.format(cfg['bedtools'],genomegffp,genomegffsortedp)
         runbashcmd(cmd)
         
     annotationsbedp='{}/annotations.bed'.format(datatmpd)
     logging.info(basename(annotationsbedp))
     if not exists(annotationsbedp) or cfg['force']:    
-        cmd='bedtools intersect -wa -wb -loj -a {} -b {} > {}'.format(alignmentbedsortedp,genomegffsortedp,annotationsbedp)
+        cmd='{} intersect -wa -wb -loj -a {} -b {} > {}'.format(cfg['bedtools'],alignmentbedsortedp,genomegffsortedp,annotationsbedp)
         runbashcmd(cmd)
 #     if the error in human, use: `cut -f 1 data/alignment.bed.sorted.bed | sort| uniq -c | grep -v CHR | grep -v GL | grep -v KI`
     dalignbedguidesp='{}/dalignbedguides.tsv'.format(datatmpd)
@@ -243,7 +238,7 @@ def dguides2offtargets(cfg):
     if not exists(dalignedfastap) or cfg['force']:
         alignedfastap='{}/alignment.fa'.format(datatmpd)
         if not exists(alignedfastap) or cfg['force']:
-            cmd='bedtools getfasta -s -name -fi {} -bed {} -fo {}'.format(genomep,alignmentbedp,alignedfastap)
+            cmd='{} getfasta -s -name -fi {} -bed {} -fo {}'.format(cfg['bedtools'],genomep,alignmentbedp,alignedfastap)
             runbashcmd(cmd)
 
         dalignedfasta=fa2df(alignedfastap)

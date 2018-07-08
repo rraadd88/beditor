@@ -90,10 +90,10 @@ def pipeline(cfgp,step=None,test=False,force=False):
                 cmd='gunzip {}*.fa.gz;cat {}/*.fa > {}/genome.fa;'.format(genome_fastad,genome_fastad,genome_fastad)
                 runbashcmd(cmd,test=cfg['test'])
             if not exists(cfg['genomep']+'.bwt') or cfg['force']:
-                cmd='bwa index {}'.format(cfg['genomep'])
+                cmd='{} index {}'.format(cfg['bwa'],cfg['genomep'])
                 runbashcmd(cmd,test=cfg['test'])
             if not exists(cfg['genomep']+'.fai') or cfg['force']:
-                cmd='samtools faidx {}'.format(cfg['genomep'])
+                cmd='{} faidx {}'.format(cfg['samtools'],cfg['genomep'])
                 runbashcmd(cmd,test=cfg['test'])
             if not exists(cfg['genomep']+'.sizes') or cfg['force']:
                 cmd='cut -f1,2 {}.fai > {}.sizes'.format(cfg['genomep'],cfg['genomep'])            
@@ -136,6 +136,7 @@ def pipeline(cfgp,step=None,test=False,force=False):
         if not exists(cfg[i]):
             makedirs(cfg[i])
     if step==1 or step==None:
+        cfg=get_deps(cfg)
         cfg['step']=1
         din2dseq(cfg)
     if step==2 or step==None:

@@ -217,7 +217,7 @@ def din2dseq(cfg):
 
             bedp='{}/dbedflank.bed'.format(cfg['datad'])
             fastap='{}/dbedflank.fa'.format(cfg['datad'])
-            cmd='bedtools getfasta -s -name -fi {} -bed {} -fo {}'.format(cfg['genomep'],bedp,fastap)
+            cmd='{} getfasta -s -name -fi {} -bed {} -fo {}'.format(cfg['bedtools'],cfg['genomep'],bedp,fastap)
             runbashcmd(cmd)
 
             dflankfa=fa2df(fastap,ids2cols=True)
