@@ -133,8 +133,7 @@ def dguides2offtargets(cfg):
     guidessap = '{}/guides.sa'.format(datatmpd)
     logging.info(basename(guidessap))
     if not exists(guidessap) or cfg['force']:
-        # cmd = "bwa aln -t %(cfg['cores'])s -o 0 -m %(bwaM)s -n %(cfg['mismatches_max'])d -k %(cfg['mismatches_max'])d -N -l %(guidel)d %(genomep)s %(guidesfap)s > %(guidessap)s" % locals()
-        cmd="{} aln -t {} -o 0 -m {} -n {} -k {} -N -l {} {} {} > {}".format(cfg['bwa'],cfg['cores'],bwaM,cfg['mismatches_max'],cfg['mismatches_max'],cfg['guidel'],genomep,guidesfap,guidessap)
+        cmd="{} aln -t {} -o 0 -m {} -n {} -k {} -N -l {} {} {} > {}".format(cfg['bwa'],1,bwaM,cfg['mismatches_max'],cfg['mismatches_max'],cfg['guidel'],genomep,guidesfap,guidessap)
         runbashcmd(cmd)
 
     guidessamp = '{}/guides.sam'.format(datatmpd)

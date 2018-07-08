@@ -189,3 +189,34 @@ def lambda2cols(df,lambdaf,in_coln,to_colns):
     df_.columns=to_colns
     df=df.join(df_)        
     return df
+
+def df2chucks(din,chunksize,outd,fn,return_fmt='\t'):
+    """
+    :param return_fmt: '\t': tab-sep file, lly, '.', 'list': returns a list
+    """
+    din.index=range(0,len(din),1)
+
+    chunkrange=list(np.arange(0,len(din),chunksize))
+    chunkrange=list(zip([c+1 if ci!=0 else 0 for ci,c in enumerate(chunkrange)],chunkrange[1:]+[len(din)-1]))
+
+    chunk2range={}
+    for ri,r in enumerate(chunkrange):    
+        chunk2range[ri+1]=r
+
+    if not exists(outd):
+        makedirs(outd)
+    chunks=[]
+    chunkps=[]
+    for chunk in chunk2range:
+        rnge=chunk2range[chunk]
+        din_=din.loc[rnge[0]:rnge[1],:]
+        chunkp='{}/{}_chunk{:03d}.tsv'.format(outd,fn,chunk)
+        din_.to_csv(chunkp,sep='\t')
+        if return_fmt=='list':
+            chunks.append(din_)
+        chunkps.append(chunkp)
+        del din_
+    if return_fmt=='list':
+        return chunks
+    else:
+        return chunkps        

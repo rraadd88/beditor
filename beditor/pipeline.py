@@ -8,61 +8,13 @@ from os.path import exists,splitext,dirname,splitext,basename,realpath
 from os import makedirs
 import argparse
 import pkg_resources
+from multiprocessing import Pool
 from beditor.lib.io_strs import get_logger
 logging=get_logger()
 
-# GET INPTS    
-def main():
-    """
-    This runs all analysis steps in tandem.
-
-    From bash command line,
-
-    .. code-block:: text
-
-        python path/to/beditor/pipeline.py cfg.json
-        
-    :param cfg.json: path to configurations.
-
-    """
-    version_info='%(prog)s v{version}'.format(version=pkg_resources.require("beditor")[0].version)
-    parser = argparse.ArgumentParser(description=version_info)
-    parser.add_argument("cfg", help="path to project directory", 
-                        action="store", default=False)    
-    parser.add_argument("--step", help="1: get seqeucnces,\n2: get possible strategies,\n3: make guides,\n 4: identify offtargets", dest="step", 
-                        type=float,action="store", choices=[1,2,3,4],default=None)  
-    parser.add_argument("--test", help="Debug mode on", dest="test", 
-                        action='store_true', default=False)    
-    parser.add_argument("--force", help="Debug mode on", dest="force", 
-                        action='store_true', default=False)    
-    parser.add_argument('-v','--version', action='version',version=version_info)
-#    parser.add_argument('-h', '--help', action='help', #default=argparse.SUPPRESS,
-#                    help='Show this help message and exit. \n Version info: %s' % version_info)
-    args = parser.parse_args()
-    logging.info("start")
-    pipeline(args.cfg,step=args.step,
-        test=args.test,force=args.force)
-
-def pipeline(cfgp,step=None,test=False,force=False):        
-    from beditor.lib.get_seq import din2dseq
-    from beditor.lib.get_mutations import dseq2dmutagenesis 
-    from beditor.lib.make_guides import dseq2dguides
-    from beditor.lib.get_specificity import dguides2offtargets
-    from glob import glob
-
-    import yaml
-    cfg=yaml.load(open(cfgp, 'r'))
-    # basics
-    cfg['prj']=splitext(basename(cfgp))[0]
-    if dirname(cfgp)!='':
-        cfg['prjd']=dirname(cfgp)+'/'+cfg['prj']
-    else:
-        cfg['prjd']=cfg['prj']
-    cfg['test']=test
-    cfg['force']=force
-    cfg['cfgp']=cfgp
-
-# refs
+# GET INPTS 
+def get_genomes(cfg):
+        # refs
     if 'human' in cfg['host'].lower():
         cfg['host']='homo_sapiens'
     if 'yeast' in cfg['host'].lower():
@@ -122,14 +74,37 @@ def pipeline(cfgp,step=None,test=False,force=False):
 
         else:
             sys.exit(1)
-   
+    return cfg
+
+def pipeline_chunks(cfgp):
+    import yaml
+    cfg=yaml.load(open(cfgp, 'r'))
+
+    #project dir
+    cfg['prj']=splitext(basename(cfgp))[0]
+    if dirname(cfgp)!='':
+        cfg['prjd']=dirname(cfgp)+'/'+cfg['prj']
+    else:
+        cfg['prjd']=cfg['prj']
+
     #datads
     cfg[0]=cfg['prjd']+'/00_input/'
     cfg[1]=cfg['prjd']+'/01_sequences/'
     cfg[2]=cfg['prjd']+'/02_mutagenesis/'
     cfg[3]=cfg['prjd']+'/03_guides/'
     cfg[4]=cfg['prjd']+'/04_offtargets/'
-
+    
+    #backup inputs
+    cfgoutp='{}/cfg.yml'.format(cfg[0])    
+    dinoutp='{}/din.tsv'.format(cfg[0])    
+    if not exists(cfgoutp) or cfg['force']:
+        with open(cfgoutp, 'w') as f:
+            yaml.dump(cfg, f, default_flow_style=False) 
+    if not exists(dinoutp) or cfg['force']:
+        from shutil import copyfile
+        copyfile(cfg['dinp'], dinoutp)
+#         din.to_csv(dinoutp,sep='\t')
+    
     if not exists(cfg['prjd']):
         makedirs(cfg['prjd'])
     for i in range(0,4+1,1):
@@ -154,6 +129,91 @@ def pipeline(cfgp,step=None,test=False,force=False):
         logging.info("Location of output data: {}".format(cfg['datad']))
         logging.info("Location of output plot: {}".format(cfg['plotd']))
 
+
+def main():
+    """
+    This runs all analysis steps in tandem.
+
+    From bash command line,
+
+    .. code-block:: text
+
+        python path/to/beditor/pipeline.py cfg.json
+        
+    :param cfg.json: path to configurations.
+
+    """
+    version_info='%(prog)s v{version}'.format(version=pkg_resources.require("beditor")[0].version)
+    parser = argparse.ArgumentParser(description=version_info)
+    parser.add_argument("cfg", help="path to project directory", 
+                        action="store", default=False)    
+    parser.add_argument("--step", help="1: get seqeucnces,\n2: get possible strategies,\n3: make guides,\n 4: identify offtargets", dest="step", 
+                        type=float,action="store", choices=[1,2,3,4],default=None)  
+    parser.add_argument("--test", help="Debug mode on", dest="test", 
+                        action='store_true', default=False)    
+    parser.add_argument("--force", help="Debug mode on", dest="force", 
+                        action='store_true', default=False)    
+    parser.add_argument('-v','--version', action='version',version=version_info)
+#    parser.add_argument('-h', '--help', action='help', #default=argparse.SUPPRESS,
+#                    help='Show this help message and exit. \n Version info: %s' % version_info)
+    args = parser.parse_args()
+    logging.info("start")
+    pipeline(args.cfg,step=args.step,
+        test=args.test,force=args.force)
+
+def pipeline(cfgp,step=None,test=False,force=False):        
+    from beditor.lib.get_seq import din2dseq
+    from beditor.lib.get_mutations import dseq2dmutagenesis 
+    from beditor.lib.make_guides import dseq2dguides
+    from beditor.lib.get_specificity import dguides2offtargets
+    from glob import glob
+
+    import yaml
+    cfg=yaml.load(open(cfgp, 'r'))
+    # basics
+    cfg['test']=test
+    cfg['force']=force
+    cfg['cfgp']=cfgp
+    
+    cfg=get_genomes(cfg)
+    
+    #backup combo inputs
+    cfgoutp='{}/cfg.yml'.format(cfg[0])    
+    dinoutp='{}/din.tsv'.format(cfg[0])    
+    if not exists(cfgoutp) or cfg['force']:
+        with open(cfgoutp, 'w') as f:
+            yaml.dump(cfg, f, default_flow_style=False) 
+    if not exists(dinoutp) or cfg['force']:
+        from shutil import copyfile
+        copyfile(cfg['dinp'], dinoutp)
+        
+    from beditor.lib.io_dfs import df2chucks
+    din=pd.read_csv(cfg['dinp'],sep='\t')
+    din=din.loc[:,['aminoacid: position','transcript: id']].drop_duplicates()
+
+    chunkps=df2chucks(din,chunksize=20,
+                      outd='{}/chunks'.format(cfg['prjd']),
+                      fn='din',return_fmt='\t')
+
+    chunkcfgps=[]
+    for ci,cp in enumerate(chunkps):
+        cfg_=cfg.copy()
+        cfg_['dinp']=cp
+        cfgp='{}/chunk{:03d}.yml'.format(cfg['prjd'],ci+1)    
+        cfg_['cfgp']=cfgp
+        with open(cfgp, 'w') as f:
+            yaml.dump(cfg_, f, default_flow_style=False) 
+        chunkcfgps.append(cfgp)
+        
+    if len(chunkps)!=0:
+        if cfg['test']:
+            pooled(chunkps[0])
+        else:
+            pool=Pool(processes=cfg['cores']) # T : get it from xls
+            pool.map(pipeline_chunks, chunkps)
+            pool.close(); pool.join()         
+
+    pipeline_chunks(cfgp)
     logging.shutdown()
 
 if __name__ == '__main__':
