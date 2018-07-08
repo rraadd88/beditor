@@ -145,11 +145,13 @@ def pipeline(cfgp,step=None,test=False,force=False):
         cfg['step']=3
         dseq2dguides(cfg)
     if step==4 or step==None:
+        from beditor.configure import get_deps
+        cfg=get_deps(cfg)
         cfg['step']=4
         dguides2offtargets(cfg)
-
-    logging.info("Location of output data: {}".format(cfg['datad']))
-    logging.info("Location of output plot: {}".format(cfg['plotd']))
+    if 'datad' in cfg.keys():
+        logging.info("Location of output data: {}".format(cfg['datad']))
+        logging.info("Location of output plot: {}".format(cfg['plotd']))
 
     logging.shutdown()
 

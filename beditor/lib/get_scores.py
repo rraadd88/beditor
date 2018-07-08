@@ -20,7 +20,7 @@ def get_beditorscore_per_alignment(NM,mismatches_max,genic,alignment,
     """
     if not pd.isnull(alignment):
         if NM!=0:            
-            pentalty_hamming_distance=(mismatches_max-NM)/mismatches_max
+            pentalty_hamming_distance=(mismatches_max+1-NM)/float(mismatches_max)
 
             pentalty_region_of_alignment=pentalty_genic if genic else pentalty_intergenic 
 
@@ -28,16 +28,18 @@ def get_beditorscore_per_alignment(NM,mismatches_max,genic,alignment,
             dist_from_pam_penalties=np.arange(start=pentalty_dist_from_pam,stop=1+(1-pentalty_dist_from_pam)/len(alignment),step=(1-pentalty_dist_from_pam)/(len(alignment)-1))[::-1]
             mutations_penalties_multi=mutations_penalties*dist_from_pam_penalties
             mutations_penalties_multi=mutations_penalties_multi[mutations_penalties_multi != 0]
-            if test:
-                print(list(mutations_penalties))
-                print(list(dist_from_pam_penalties))
-                print(list(mutations_penalties_multi))
+#             if test:
+#                 print(list(mutations_penalties))
+#                 print(list(dist_from_pam_penalties))
+#                 print(list(mutations_penalties_multi))
             penality_cum_dist_from_pam=np.prod(mutations_penalties_multi)
             if test:
+                print(mismatches_max,NM,mismatches_max)
                 print(pentalty_hamming_distance,
                       pentalty_region_of_alignment,
                       penality_cum_dist_from_pam)
-                
+                print(pentalty_hamming_distance*pentalty_region_of_alignment*penality_cum_dist_from_pam)
+                print(sfd)
             return pentalty_hamming_distance*pentalty_region_of_alignment*penality_cum_dist_from_pam
         else:
             return 1
@@ -46,12 +48,17 @@ def get_beditorscore_per_alignment(NM,mismatches_max,genic,alignment,
 def get_beditorscore_per_guide(guide_seq, strategy,
                                align_seqs_scores,
                               penalty_activity_window=0.5,
+                               test=False,
                               ):
     from beditor.lib.global_vars import pos_muts
     pos_mut=int(strategy.split(';')[-2].split('=')[1])
     method=strategy.split('; ')[1].split(':')[0]
     penalty_activity_window=1 if (pos_muts.loc[method,'Position of mutation from PAM: minimum']<=pos_mut<=pos_muts.loc[method,'Position of mutation from PAM: maximum']) else penalty_activity_window
     penalty_align_seqs_scores=np.prod(align_seqs_scores)
+    if test:
+        print(list(align_seqs_scores))
+        print(penalty_align_seqs_scores)
+#         print(sdf)
     return penalty_activity_window*penalty_align_seqs_scores
 
         

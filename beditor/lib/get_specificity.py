@@ -351,7 +351,12 @@ def dguides2offtargets(cfg):
     logging.info(basename(dofftargetsp))
     if not exists(dofftargetsp) or cfg['force']:
         from beditor.lib.get_scores import get_beditorscore_per_guide,get_beditorscore_per_alignment
-        dalignbedannot['beditor score']=dalignbedannot.apply(lambda x : get_beditorscore_per_alignment(x['NM'], cfg['mismatches_max'], True if x['region']=='genic' else False, x['alignment']), axis=1) 
+        dalignbedannot['beditor score']=dalignbedannot.apply(lambda x : get_beditorscore_per_alignment(x['NM'],
+                                                                                                       cfg['mismatches_max'],
+                                                                                                       True if x['region']=='genic' else False,
+                                                                                                       x['alignment'],
+#                                                                                                        test=cfg['test'],
+                                                                                                      ),axis=1) 
 
         daggbyguide=dalignbedannot.loc[(dalignbedannot['NM']==0),['guide: id','guide sequence+PAM','id','gene names', 'gene ids','transcript ids']].drop_duplicates(subset=['guide: id'])
 
@@ -360,12 +365,18 @@ def dguides2offtargets(cfg):
         for guideid in daggbyguide.index:
             dalignbedannotguide=dalignbedannot.loc[(dalignbedannot['guide: id']==guideid),:]
             daggbyguide.loc[guideid,'beditor score']=get_beditorscore_per_guide(guide_seq=dalignbedannotguide['guide sequence+PAM'].unique()[0], 
-                                   strategy=dalignbedannotguide['strategy'].unique()[0],
+                                       strategy=dalignbedannotguide['strategy'].unique()[0],
                                        align_seqs_scores=dalignbedannotguide['beditor score'],
+#                                        test=cfg['test']
                                       )
+            
+        daggbyguide['beditor score (log10)']=daggbyguide['beditor score'].apply(np.log10)
+        dalignbedannot['offtargets count']=1
+        daggbyguide=daggbyguide.join(pd.DataFrame(dalignbedannot.groupby('guide: id')['offtargets count'].agg('sum'))-1)
 #     daggbyguide.to_csv('{}/dofftargets.tsv'.format(cfg['datad']),sep='\t')            
-    daggbyguide.to_csv('{}/dofftargets.tsv'.format(cfg['datad']),sep='\t')
+        daggbyguide.loc[:,['guide sequence+PAM','beditor score','beditor score (log10)','offtargets count',
+                     'id',
+                     'gene names',
+                     'gene ids',
+                     'transcript ids']].to_csv('{}/dofftargets.tsv'.format(cfg['datad']),sep='\t')
 
-
-# if __name__ == '__main__':
-#     main()
