@@ -141,6 +141,8 @@ def din2dseq(cfg):
     dseqtmpp='{}/dseqtmp.csv'.format(cfg['datad'])
     if not exists(dseqp) or cfg['force']:
         din=pd.read_csv(cfg['dinp'],sep='\t')
+#         drop dups
+        din=din.drop_duplicates(subset=['transcript: id','aminoacid: position'])
 #         din=pd.read_csv(cfg['dinp'])    
         if cfg['host']=='homo_sapiens':
             import pyensembl

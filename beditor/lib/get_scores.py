@@ -1,39 +1,59 @@
 import numpy as np
 import pandas as pd
 
-def get_beditorscore(NM,mismatches_max,genic,alignment,
+def get_beditorscore_per_alignment(NM,mismatches_max,genic,alignment,
                     pentalty_genic=0.5,
                     pentalty_intergenic=0.9,
                     pentalty_dist_from_pam=0.1,
                     test=False
                 ):
-#     Hamming distance (0 1)
-#     intergenic or not (0 1)+0.5
-#     distance from PAM (0 1)+0.5
-# NM=1
-# mismatches_max=3
-# intergenic=True
-# alignment='|||||.||||||||||.||||.|'   
+    """
+    Calculates beditor score.
+    :param NM: Hamming distance
+    :param mismatches_max: Maximum mismatches allowed in alignment
+    :param genic: True if guide aligns to genic regions, else (intergenic) False.
+    :param alignment: Symbol '|' means a match, '.' means mismatch and ' ' means gap. e.g. |||||.||||||||||.||||.| 
+    :param pentalty_genic: penalty for genic alignment
+    :param pentalty_intergenic: penalty for intergenic alignment
+    :param pentalty_dist_from_pam: maximum pentalty for a mismatch at PAM () 
+    :returns: beditor score.
+    """
     if not pd.isnull(alignment):
-        if NM!=0:
-            hamming_distance=(mismatches_max-NM)/mismatches_max
+        if NM!=0:            
+            pentalty_hamming_distance=(mismatches_max-NM)/mismatches_max
 
-            genic=pentalty_genic if genic else pentalty_intergenic 
+            pentalty_region_of_alignment=pentalty_genic if genic else pentalty_intergenic 
 
             mutations_penalties=np.array([1 if s!='|' else 0 for s in alignment])
             dist_from_pam_penalties=np.arange(start=pentalty_dist_from_pam,stop=1+(1-pentalty_dist_from_pam)/len(alignment),step=(1-pentalty_dist_from_pam)/(len(alignment)-1))[::-1]
-    #     dist_from_pam_penalties=(np.arange(1,len(alignment)+1)/len(alignment))[::-1]
+            mutations_penalties_multi=mutations_penalties*dist_from_pam_penalties
+            mutations_penalties_multi=mutations_penalties_multi[mutations_penalties_multi != 0]
             if test:
                 print(list(mutations_penalties))
                 print(list(dist_from_pam_penalties))
-                print(sum(mutations_penalties*dist_from_pam_penalties))
-                print(sum(dist_from_pam_penalties))
-            dist_from_pam=sum(mutations_penalties*dist_from_pam_penalties)#/sum(dist_from_pam_penalties)
-            return hamming_distance*genic*dist_from_pam
+                print(list(mutations_penalties_multi))
+            penality_cum_dist_from_pam=np.prod(mutations_penalties_multi)
+            if test:
+                print(pentalty_hamming_distance,
+                      pentalty_region_of_alignment,
+                      penality_cum_dist_from_pam)
+                
+            return pentalty_hamming_distance*pentalty_region_of_alignment*penality_cum_dist_from_pam
         else:
             return 1
     else:
         return np.nan
+def get_beditorscore_per_guide(guide_seq, strategy,
+                               align_seqs_scores,
+                              penalty_activity_window=0.5,
+                              ):
+    from beditor.lib.global_vars import pos_muts
+    pos_mut=int(strategy.split(';')[-2].split('=')[1])
+    method=strategy.split('; ')[1].split(':')[0]
+    penalty_activity_window=1 if (pos_muts.loc[method,'Position of mutation from PAM: minimum']<=pos_mut<=pos_muts.loc[method,'Position of mutation from PAM: maximum']) else penalty_activity_window
+    penalty_align_seqs_scores=np.prod(align_seqs_scores)
+    return penalty_activity_window*penalty_align_seqs_scores
+
         
 #Calculates the Cutting Frequency Determination score
 #Requirements: 1. Pickle file with mismatch scores in working directory

@@ -12,6 +12,7 @@ from os.path import join, basename, dirname, abspath, exists
 from os import makedirs
 
 import pandas as pd
+# import modin.pandas as pd
 from Bio import SeqIO
 
 import pysam
@@ -316,7 +317,7 @@ def dguides2offtargets(cfg):
         dannotsagg.loc[dannotsagg['annotations count']!=0,'region']='genic'
 
         dannots=dannots.reset_index()
-        alignids=dannots['id'].unique()[:15]
+        alignids=dannots['id'].unique()#[:15]
         
         for alignidi in trange(len(alignids)):
             alignid=alignids[alignidi]
@@ -353,29 +354,29 @@ def dguides2offtargets(cfg):
         dalignbedannot['beditor score']=dalignbedannot.apply(lambda x : get_beditorscore(x['NM'], cfg['mismatches_max'], True if x['region']=='genic' else False, x['alignment']), axis=1) 
         dalignbedannot['CFD score']=dalignbedannot.apply(lambda x : get_CFDscore(x['guide sequence+PAM'].upper(), x['aligned sequence'].upper()), axis=1) 
         dalignbedannot.loc[:,['id',
- 'guide: id',
-#  'NM',
-#  'chromosome',
-#  'end',
-#  'start',
-#  'strand',
-#  'Unnamed: 0',
-#  'strategy',
- 'guide sequence+PAM',
- 'aligned sequence',
- 'alignment',
-#  'alignment: score',
- 'annotations count',
- 'region',
- 'types',
-#  'gene names',
-#  'gene ids',
-#  'transcript ids',
-#  'protein ids',
-#  'exon ids',
-#  'annotation coordinates',
- 'beditor score',
- 'CFD score']].to_csv(dofftargetsp,sep='\t')
+                             'guide: id',
+                            #  'NM',
+                            #  'chromosome',
+                            #  'end',
+                            #  'start',
+                            #  'strand',
+                            #  'Unnamed: 0',
+                            #  'strategy',
+                             'guide sequence+PAM',
+                             'aligned sequence',
+                             'alignment',
+                            #  'alignment: score',
+                             'annotations count',
+                             'region',
+                             'types',
+                            #  'gene names',
+                            #  'gene ids',
+                            #  'transcript ids',
+                            #  'protein ids',
+                            #  'exon ids',
+                            #  'annotation coordinates',
+                             'beditor score',
+                             'CFD score']].to_csv(dofftargetsp,sep='\t')
         
     # print('{}/dofftargets.tsv'.format(cfg['datad']))
     # dcombo.to_csv('{}/dofftargets.tsv'.format(cfg['datad']),sep='\t')
