@@ -350,36 +350,21 @@ def dguides2offtargets(cfg):
     dofftargetsp='{}/dofftargets.tsv'.format(cfg['datad'])  
     logging.info(basename(dofftargetsp))
     if not exists(dofftargetsp) or cfg['force']:
-        from beditor.lib.get_scores import get_beditorscore,get_CFDscore
-        dalignbedannot['beditor score']=dalignbedannot.apply(lambda x : get_beditorscore(x['NM'], cfg['mismatches_max'], True if x['region']=='genic' else False, x['alignment']), axis=1) 
-        dalignbedannot['CFD score']=dalignbedannot.apply(lambda x : get_CFDscore(x['guide sequence+PAM'].upper(), x['aligned sequence'].upper()), axis=1) 
-        dalignbedannot.loc[:,['id',
-                             'guide: id',
-                            #  'NM',
-                            #  'chromosome',
-                            #  'end',
-                            #  'start',
-                            #  'strand',
-                            #  'Unnamed: 0',
-                            #  'strategy',
-                             'guide sequence+PAM',
-                             'aligned sequence',
-                             'alignment',
-                            #  'alignment: score',
-                             'annotations count',
-                             'region',
-                             'types',
-                            #  'gene names',
-                            #  'gene ids',
-                            #  'transcript ids',
-                            #  'protein ids',
-                            #  'exon ids',
-                            #  'annotation coordinates',
-                             'beditor score',
-                             'CFD score']].to_csv(dofftargetsp,sep='\t')
-        
-    # print('{}/dofftargets.tsv'.format(cfg['datad']))
-    # dcombo.to_csv('{}/dofftargets.tsv'.format(cfg['datad']),sep='\t')
+        from beditor.lib.get_scores import get_beditorscore_per_guide,get_beditorscore_per_alignment
+        dalignbedannot['beditor score']=dalignbedannot.apply(lambda x : get_beditorscore_per_alignment(x['NM'], cfg['mismatches_max'], True if x['region']=='genic' else False, x['alignment']), axis=1) 
+
+        daggbyguide=dalignbedannot.loc[(dalignbedannot['NM']==0),['guide: id','guide sequence+PAM','id','gene names', 'gene ids','transcript ids']].drop_duplicates(subset=['guide: id'])
+
+        daggbyguide=set_index(daggbyguide,'guide: id')
+
+        for guideid in daggbyguide.index:
+            dalignbedannotguide=dalignbedannot.loc[(dalignbedannot['guide: id']==guideid),:]
+            daggbyguide.loc[guideid,'beditor score']=get_beditorscore_per_guide(guide_seq=dalignbedannotguide['guide sequence+PAM'].unique()[0], 
+                                   strategy=dalignbedannotguide['strategy'].unique()[0],
+                                       align_seqs_scores=dalignbedannotguide['beditor score'],
+                                      )
+#     daggbyguide.to_csv('{}/dofftargets.tsv'.format(cfg['datad']),sep='\t')            
+    daggbyguide.to_csv('{}/dofftargets.tsv'.format(cfg['datad']),sep='\t')
 
 
 # if __name__ == '__main__':
