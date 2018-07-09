@@ -14,6 +14,7 @@ from multiprocessing import Pool
 
 from beditor.lib.io_strs import get_logger
 logging=get_logger()
+from beditor.configure import get_deps
 
 # GET INPTS 
 def get_genomes(cfg):
@@ -44,17 +45,23 @@ def get_genomes(cfg):
             if not exists(cfg['genomep']) or cfg['force']:
                 cmd='gunzip {}*.fa.gz;cat {}/*.fa > {}/genome.fa;'.format(genome_fastad,genome_fastad,genome_fastad)
                 runbashcmd(cmd,test=cfg['test'])
-            if not exists(cfg['genomep']+'.bwt') or cfg['force']:
-                cmd='{} index {}'.format(cfg['bwa'],cfg['genomep'])
-                runbashcmd(cmd,test=cfg['test'])
-            if not exists(cfg['genomep']+'.fai') or cfg['force']:
-                cmd='{} faidx {}'.format(cfg['samtools'],cfg['genomep'])
-                runbashcmd(cmd,test=cfg['test'])
-            if not exists(cfg['genomep']+'.sizes') or cfg['force']:
-                cmd='cut -f1,2 {}.fai > {}.sizes'.format(cfg['genomep'],cfg['genomep'])            
-                runbashcmd(cmd,test=cfg['test'])
         else:
             sys.exit(1)
+    if not exists(cfg['genomep']+'.bwt') or cfg['force']:
+        cmd='{} index {}'.format(cfg['bwa'],cfg['genomep'])
+        runbashcmd(cmd,test=cfg['test'])
+    else:
+        sys.exit(1)
+    if not exists(cfg['genomep']+'.fai') or cfg['force']:
+        cmd='{} faidx {}'.format(cfg['samtools'],cfg['genomep'])
+        runbashcmd(cmd,test=cfg['test'])
+    else:
+        sys.exit(1)
+    if not exists(cfg['genomep']+'.sizes') or cfg['force']:
+        cmd='cut -f1,2 {}.fai > {}.sizes'.format(cfg['genomep'],cfg['genomep'])            
+        runbashcmd(cmd,test=cfg['test'])
+    else:
+        sys.exit(1)
 
     ensembl_gff3d='pub/release-{}/gff3/{}/'.format(cfg['genomerelease'],cfg['host'])    
     genome_gff3d='{}/{}'.format(dirname(realpath(__file__)),ensembl_gff3d)
@@ -80,7 +87,6 @@ def get_genomes(cfg):
     return cfg
 
 def pipeline_chunks(cfgp):
-    from beditor.configure import get_deps
     from beditor.lib.get_seq import din2dseq
     from beditor.lib.get_mutations import dseq2dmutagenesis 
     from beditor.lib.make_guides import dseq2dguides
@@ -197,6 +203,7 @@ def pipeline(cfgp,step=None,test=False,force=False):
     cfg['force']=force
     cfg['cfgp']=cfgp
     
+    cfg=get_deps(cfg)
     cfg=get_genomes(cfg)
 
     #datads
