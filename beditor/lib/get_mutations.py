@@ -392,10 +392,11 @@ def filterdmutagenesis(dmutagenesis,cfg):
         logging.info('dmutagenesis.shape: '+str(dmutagenesis.shape))    
 
     # filter non interchageables
-    if not cfg['non_intermutables'] is None:
-        non_intermutables=list(itertools.permutations(''.join(cfg['non_intermutables']),2))
-        dmutagenesis.loc[(dmutagenesis.apply(lambda row: not (row['amino acid'], row['amino acid mutation']) in non_intermutables, axis=1)),:]    
-        logging.info('dmutagenesis.shape: '+str(dmutagenesis.shape))    
+    if 'non_intermutables' in cfg.keys():
+        if not cfg['non_intermutables'] is None:
+            non_intermutables=list(itertools.permutations(''.join(cfg['non_intermutables']),2))
+            dmutagenesis.loc[(dmutagenesis.apply(lambda row: not (row['amino acid'], row['amino acid mutation']) in non_intermutables, axis=1)),:]    
+            logging.info('dmutagenesis.shape: '+str(dmutagenesis.shape))    
     return dmutagenesis
 
 from beditor.lib.global_vars import BEs,pos_muts

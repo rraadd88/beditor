@@ -116,7 +116,7 @@ def fhs2data_combo(fhs,cols,index,labels=None,col_sep=': '):
     else:
         logging.error('no fhs found: len(fhs)=0')
 
-def fhs2data_combo_appended(fhs, cols=None,labels=None,labels_coln='labels'):
+def fhs2data_combo_appended(fhs, cols=None,labels=None,labels_coln='labels',sep=','):
     """
     Collates data from multiple csv files vertically
 
@@ -129,7 +129,7 @@ def fhs2data_combo_appended(fhs, cols=None,labels=None,labels_coln='labels'):
         data_all=pd.DataFrame(columns=cols)
         for fhi,fh in enumerate(fhs):
             label=labels[fhi]
-            data=pd.read_csv(fh)
+            data=pd.read_csv(fh,sep=sep)
             data.loc[:,labels_coln]=label
             if not cols is None:
                 data=data.loc[:,cols]
@@ -190,7 +190,7 @@ def lambda2cols(df,lambdaf,in_coln,to_colns):
     df=df.join(df_)        
     return df
 
-def df2chucks(din,chunksize,outd,fn,return_fmt='\t'):
+def df2chucks(din,chunksize,outd,fn,return_fmt='\t',force=False):
     """
     :param return_fmt: '\t': tab-sep file, lly, '.', 'list': returns a list
     """
@@ -210,14 +210,15 @@ def df2chucks(din,chunksize,outd,fn,return_fmt='\t'):
     chunks=[]
     chunkps=[]
     for chunk in chunk2range:
+        chunkp='{}/{}_chunk{:08d}.tsv'.format(outd,fn,chunk)
         rnge=chunk2range[chunk]
         din_=din.loc[rnge[0]:rnge[1],:]
-        chunkp='{}/{}_chunk{:03d}.tsv'.format(outd,fn,chunk)
-        din_.to_csv(chunkp,sep='\t')
-        if return_fmt=='list':
-            chunks.append(din_)
+        if not exists(chunkp) or force:
+            din_.to_csv(chunkp,sep='\t')
+            if return_fmt=='list':
+                chunks.append(din_)
+            del din_
         chunkps.append(chunkp)
-        del din_
     if return_fmt=='list':
         return chunks
     else:

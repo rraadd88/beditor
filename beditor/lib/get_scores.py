@@ -8,7 +8,7 @@ def get_beditorscore_per_alignment(NM,mismatches_max,genic,alignment,
                     test=False
                 ):
     """
-    Calculates beditor score.
+    Calculates beditor score per alignment between guide and genomic DNA.
     :param NM: Hamming distance
     :param mismatches_max: Maximum mismatches allowed in alignment
     :param genic: True if guide aligns to genic regions, else (intergenic) False.
@@ -16,7 +16,7 @@ def get_beditorscore_per_alignment(NM,mismatches_max,genic,alignment,
     :param pentalty_genic: penalty for genic alignment
     :param pentalty_intergenic: penalty for intergenic alignment
     :param pentalty_dist_from_pam: maximum pentalty for a mismatch at PAM () 
-    :returns: beditor score.
+    :returns: beditor score per alignment.
     """
     if not pd.isnull(alignment):
         if NM!=0:            
@@ -28,10 +28,6 @@ def get_beditorscore_per_alignment(NM,mismatches_max,genic,alignment,
             dist_from_pam_penalties=np.arange(start=pentalty_dist_from_pam,stop=1+(1-pentalty_dist_from_pam)/len(alignment),step=(1-pentalty_dist_from_pam)/(len(alignment)-1))[::-1]
             mutations_penalties_multi=mutations_penalties*dist_from_pam_penalties
             mutations_penalties_multi=mutations_penalties_multi[mutations_penalties_multi != 0]
-#             if test:
-#                 print(list(mutations_penalties))
-#                 print(list(dist_from_pam_penalties))
-#                 print(list(mutations_penalties_multi))
             penality_cum_dist_from_pam=np.prod(mutations_penalties_multi)
             if test:
                 print(mismatches_max,NM,mismatches_max)
@@ -50,6 +46,14 @@ def get_beditorscore_per_guide(guide_seq, strategy,
                               penalty_activity_window=0.5,
                                test=False,
                               ):
+    """
+    Calculates beditor score per guide.
+    :param guide_seq: guide seqeunce 23nts
+    :param strategy: strategy string eg. '- strand; Target-AID: GCT to ACT; A to T, codon position=-19; mutation position=-17;'
+    :param align_seqs_scores: list of beditor scores per alignments for all the alignments between guide and genomic DNA
+    :param penalty_activity_window: if editable base is not in activity window, penalty_activity_window=0.5
+    :returns: beditor score per guide.
+    """
     from beditor.lib.global_vars import pos_muts
     pos_mut=int(strategy.split(';')[-2].split('=')[1])
     method=strategy.split('; ')[1].split(':')[0]

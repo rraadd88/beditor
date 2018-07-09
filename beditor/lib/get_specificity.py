@@ -326,6 +326,7 @@ def dguides2offtargets(cfg):
             for col in ['type','gene name','gene id','transcript id','protein id','exon id']:    
         #         print(";".join(dannoti[col].fillna('nan').tolist()))
                 dannotsagg.loc[alignid,col+'s']=";".join(np.unique(dannoti[col].fillna('nan').tolist()))
+        del dannots    
         dannotsagg.to_csv(dannotsaggp,sep='\t')
     else:
         dannotsagg=pd.read_csv(dannotsaggp,sep='\t',low_memory=False)

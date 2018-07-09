@@ -226,19 +226,21 @@ def pipeline(cfgp,step=None,test=False,force=False):
     din=pd.read_csv(cfg['dinp'],sep='\t')
     din=din.loc[:,['aminoacid: position','transcript: id']].drop_duplicates()
 
-    chunkps=df2chucks(din,chunksize=20,
+    chunkps=df2chucks(din,chunksize=100,
                       outd='{}/chunks'.format(cfg['prjd']),
-                      fn='din',return_fmt='\t')
+                      fn='din',return_fmt='\t',
+                      force=cfg['force'])
 
     chunkcfgps=[]
     for ci,cp in enumerate(chunkps):
         cfg_=cfg.copy()
         cfg_['dinp']=cp
-        cfgp='{}/chunk{:03d}.yml'.format(cfg['prjd'],ci+1)    
+        cfgp='{}/chunk{:08d}.yml'.format(cfg['prjd'],ci+1)    
         cfg_['cfgp']=cfgp
-        with open(cfgp, 'w') as f:
-            yaml.dump(cfg_, f, default_flow_style=False) 
-        chunkcfgps.append(cfgp)
+        if not exists(cfgp):
+            with open(cfgp, 'w') as f:
+                yaml.dump(cfg_, f, default_flow_style=False) 
+            chunkcfgps.append(cfgp)
         
     if len(chunkps)!=0:
         if cfg['test']:
