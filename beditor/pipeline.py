@@ -15,6 +15,7 @@ from multiprocessing import Pool
 from beditor.lib.io_strs import get_logger
 logging=get_logger()
 from beditor.configure import get_deps
+from beditor.lib.io_sys import runbashcmd
 
 # GET INPTS 
 def get_genomes(cfg):
@@ -33,7 +34,6 @@ def get_genomes(cfg):
         if ifdlref=='Y':
         # #FIXME download contigs and cat and get index, sizes
             from beditor.lib.global_vars import host2contigs
-            from beditor.lib.io_sys import runbashcmd
             for contig in host2contigs[cfg['host']]:
                 fn='{}.{}.dna_sm.chromosome.{}.fa.gz'.format(cfg['host'].capitalize(),cfg['genomeassembly'],contig)
                 fp='{}/{}'.format(ensembl_fastad,fn)
@@ -72,7 +72,6 @@ def get_genomes(cfg):
         if ifdlref=='Y':
         # #FIXME download contigs and cat and get index, sizes
             from beditor.lib.global_vars import host2contigs
-            from beditor.lib.io_sys import runbashcmd
             fn='{}.{}.{}.gff3.gz'.format(cfg['host'].capitalize(),cfg['genomeassembly'],cfg['genomerelease'])
             fp='{}/{}'.format(ensembl_gff3d,fn)
             if not exists(fp) or cfg['force']:

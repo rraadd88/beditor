@@ -29,7 +29,7 @@ def get_deps(cfg):
     dep='samtools'
     ddeps.loc[dep,'download link']='https://github.com/samtools/samtools/releases/download/1.7/samtools-1.7.tar.bz2'
     ddeps.loc[dep,'executable']='{}/samtools-1.7/samtools'.format(ddeps.loc[dep,'local path'])
-    ddeps.loc[dep,'install']='cd {};make;'.format(dirname(ddeps.loc[dep,'executable']))
+    ddeps.loc[dep,'install']='cd {};./configure;make;'.format(dirname(ddeps.loc[dep,'executable']))
 
     dep='bedtools'
     ddeps.loc[dep,'download link']='https://github.com/arq5x/bedtools2/releases/download/v2.27.1/bedtools-2.27.1.tar.gz'
