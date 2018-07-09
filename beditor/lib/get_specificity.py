@@ -23,7 +23,7 @@ from tqdm import trange
 
 from beditor.lib.io_sys import runbashcmd
 from beditor.lib.io_seqs import fa2df 
-from beditor.lib.io_dfs import set_index,del_Unnamed 
+from beditor.lib.io_dfs import set_index,del_Unnamed,df2info 
 
 def str2num(x):
     """
@@ -210,7 +210,7 @@ def dguides2offtargets(cfg):
     
     genomegffsortedp=genomegffp+'.sorted.gff3.gz'
     logging.info(basename(genomegffsortedp))
-    if not exists(genomegffsortedp) or cfg['force']:    
+    if not exists(genomegffsortedp):    
         cmd='{} sort -i {} > {}'.format(cfg['bedtools'],genomegffp,genomegffsortedp)
         runbashcmd(cmd)
         
@@ -323,9 +323,9 @@ def dguides2offtargets(cfg):
 #             if cfg['test']:
 # #                 print(alignid)
 #                 print(dannoti.shape)
-            for col in ['type','gene name','gene id','transcript id','protein id','exon id','annotation coordinate']:    
+            for col in ['type','gene name','gene id','transcript id','protein id','exon id']:    
         #         print(";".join(dannoti[col].fillna('nan').tolist()))
-                dannotsagg.loc[alignid,col+'s']=";".join(dannoti[col].fillna('nan').tolist())
+                dannotsagg.loc[alignid,col+'s']=";".join(np.unique(dannoti[col].fillna('nan').tolist()))
         dannotsagg.to_csv(dannotsaggp,sep='\t')
     else:
         dannotsagg=pd.read_csv(dannotsaggp,sep='\t',low_memory=False)
@@ -341,9 +341,11 @@ def dguides2offtargets(cfg):
         dalignbedannot=pd.read_csv(dalignbedannotp,sep='\t',low_memory=False)
         dalignbedannot=del_Unnamed(dalignbedannot)
 
-    dofftargetsp='{}/dofftargets.tsv'.format(cfg['datad'])  
-    logging.info(basename(dofftargetsp))
-    if not exists(dofftargetsp) or cfg['force']:
+#     dofftargetsp='{}/dofftargets.tsv'.format(cfg['datad'])  
+    daggbyguidep='{}/daggbyguide.tsv'.format(datatmpd)      
+    logging.info(basename(daggbyguidep))
+    dalignbedannot['NM']=dalignbedannot['NM'].apply(int)
+    if not exists(daggbyguidep) or cfg['force']:
         from beditor.lib.get_scores import get_beditorscore_per_guide,get_beditorscore_per_alignment
         dalignbedannot['beditor score']=dalignbedannot.apply(lambda x : get_beditorscore_per_alignment(x['NM'],
                                                                                                        cfg['mismatches_max'],
@@ -352,9 +354,30 @@ def dguides2offtargets(cfg):
 #                                                                                                        test=cfg['test'],
                                                                                                       ),axis=1) 
 
-        daggbyguide=dalignbedannot.loc[(dalignbedannot['NM']==0),['guide: id','guide sequence+PAM','id','gene names', 'gene ids','transcript ids']].drop_duplicates(subset=['guide: id'])
-
-        daggbyguide=set_index(daggbyguide,'guide: id')
+        daggbyguide=dalignbedannot.loc[(dalignbedannot['NM']==0),['guide: id','guide sequence+PAM','gene names', 'gene ids','transcript ids']].drop_duplicates(subset=['guide: id'])
+        if cfg['test']:
+            df2info(daggbyguide)
+        daggbyguide=set_index(daggbyguide,'guide: id')            
+#---
+        guideids=daggbyguide.index.tolist()
+#         if cfg['test']:
+#             print(guideids)
+#             print(dalignbedannot['guide: id'].unique())
+        for gi in trange(len(guideids)):
+            gid=guideids[gi]
+            
+            dalignbedannoti=dalignbedannot.loc[dalignbedannot['guide: id']==gid,:]
+            if len(dalignbedannoti.shape)==1:
+                dalignbedannoti=pd.DataFrame(dalignbedannoti).T
+#             if cfg['test']:
+#                 df2info(dalignbedannoti)
+#                 print(cdhb)
+            for col in ['types','gene names','gene ids','transcript ids','protein ids','exon ids']:    
+        #         print(";".join(dannoti[col].fillna('nan').tolist()))
+                daggbyguide.loc[gid,col]=";".join(np.unique(dalignbedannoti[col].fillna('nan').tolist()))
+#---
+        if cfg['test']:
+            df2info(daggbyguide)
 
         for guideid in daggbyguide.index:
             dalignbedannotguide=dalignbedannot.loc[(dalignbedannot['guide: id']==guideid),:]
@@ -365,12 +388,14 @@ def dguides2offtargets(cfg):
                                       )
             
         daggbyguide['beditor score (log10)']=daggbyguide['beditor score'].apply(np.log10)
-        dalignbedannot['offtargets count']=1
-        daggbyguide=daggbyguide.join(pd.DataFrame(dalignbedannot.groupby('guide: id')['offtargets count'].agg('sum'))-1)
+        dalignbedannot['alternate alignments count']=1
+        daggbyguide=daggbyguide.join(pd.DataFrame(dalignbedannot.groupby('guide: id')['alternate alignments count'].agg('sum'))-1)
 #     daggbyguide.to_csv('{}/dofftargets.tsv'.format(cfg['datad']),sep='\t')            
-        daggbyguide.loc[:,['guide sequence+PAM','beditor score','beditor score (log10)','offtargets count',
+        daggbyguide.to_csv(daggbyguidep,sep='\t')
+        dofftargetsp='{}/dofftargets.tsv'.format(cfg['datad'])  
+        daggbyguide.loc[:,['guide sequence+PAM','beditor score','beditor score (log10)','alternate alignments count',
                      'id',
                      'gene names',
                      'gene ids',
-                     'transcript ids']].to_csv('{}/dofftargets.tsv'.format(cfg['datad']),sep='\t')
+                     'transcript ids']].to_csv(dofftargetsp,sep='\t')
 

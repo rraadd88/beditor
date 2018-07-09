@@ -127,6 +127,8 @@ def pipeline_chunks(cfgp):
             makedirs(cfg[i])            
     if cfg['step']==None:
         stepall=True
+    else:
+        stepall=False
     if cfg['step']==1 or stepall:
         cfg['step']=1
         cfg=get_deps(cfg)
@@ -243,7 +245,7 @@ def pipeline(cfgp,step=None,test=False,force=False):
             pipeline_chunks(chunkcfgps[0])
         else:
             pool=Pool(processes=cfg['cores']) # T : get it from xls
-            pool.map(pipeline_chunks, chunkps)
+            pool.map(pipeline_chunks, chunkcfgps)
             pool.close(); pool.join()         
 
 #     pipeline_chunks(cfgp)

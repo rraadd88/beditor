@@ -8,6 +8,7 @@ from Bio import motifs,Seq,AlignIO
 
 #lib modules
 import logging
+from beditor.lib.io_dfs import set_index,df2info
 from beditor.lib.global_vars import hosts
 
 import json
@@ -220,10 +221,12 @@ def din2dseq(cfg):
             cmd='{} getfasta -s -name -fi {} -bed {} -fo {}'.format(cfg['bedtools'],cfg['genomep'],bedp,fastap)
             runbashcmd(cmd)
 
-            dflankfa=fa2df(fastap,ids2cols=True)
+            dflankfa=fa2df(fastap,ids2cols=True)                
             dflankfa.loc[:,'sequence']=dflankfa.loc[:,'sequence'].apply(lambda x : x.upper())
             dflankfa.loc[:,'sequence: length']=[len(s) for s in dflankfa['sequence']]
-            dseq=dbed.set_index('id').join(dflankfa,rsuffix='.1')
+            dflankfa.index=[idx.split('(')[0] for idx in dflankfa.index]
+            dflankfa.index.name='id'
+            dseq=set_index(dbed,'id').join(set_index(dflankfa,'id'),rsuffix='.1')
             dseq.to_csv(dseqtmpp)
             dseq2compatible={'aminoacid: position':'aminoacid: position',
              'gene: id':'gene: id',

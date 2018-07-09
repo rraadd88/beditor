@@ -34,6 +34,7 @@ def make_guides(dseq,dmutagenesis,
                     print('pos_codon is wrong')
                     break
             if strand=='- strand':
+                print(seq)
                 seq=str(Seq.Seq(seq,Alphabet.generic_dna).reverse_complement())
                 codon=str(Seq.Seq(codon,Alphabet.generic_dna).reverse_complement())
                 pos_codon=len(seq)-(pos_codon)-3

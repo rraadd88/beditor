@@ -194,6 +194,8 @@ def df2chucks(din,chunksize,outd,fn,return_fmt='\t'):
     """
     :param return_fmt: '\t': tab-sep file, lly, '.', 'list': returns a list
     """
+    from os.path import exists#,splitext,dirname,splitext,basename,realpath
+    from os import makedirs
     din.index=range(0,len(din),1)
 
     chunkrange=list(np.arange(0,len(din),chunksize))
