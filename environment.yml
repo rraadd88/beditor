@@ -22,10 +22,10 @@ dependencies:
   # - ncurses=6.1
   - numpy #=1.14.5
   # - numpy-base=1.14.5
-  - openssl=1.0.2o
+  # - openssl=1.0.2o
   # - pip=10.0.1
   - python=3.6.5
-  - readline=7.0
+  # - readline=7.0
   - setuptools=39.2.0
   # - sqlite=3.23.1
   - tk=8.6.7
@@ -34,51 +34,51 @@ dependencies:
   - yaml=0.1.7
   # - zlib=1.2.11
   - pip:
-    - agate==1.6.1
-    - agate-dbf==0.2.0
-    - agate-excel==0.2.2
-    - agate-sql==0.5.3
-    - appdirs==1.4.3
-    - babel==2.6.0
-    - beditor==0.0.1
-    - chardet==3.0.4
-    - csvkit==1.0.3
-    - cycler==0.10.0
-    - datacache==0.5.5
-    - dbfread==2.0.7
-    - et-xmlfile==1.0.1
-    - future==0.16.0
-    - gtfparse==1.0.7
-    - idna==2.7
-    - isodate==0.6.0
-    - jdcal==1.4
-    - kiwisolver==1.0.1
-    - leather==0.3.3
+    # - agate==1.6.1
+    # - agate-dbf==0.2.0
+    # - agate-excel==0.2.2
+    # - agate-sql==0.5.3
+    # - appdirs==1.4.3
+    # - babel==2.6.0
+    # - beditor==0.0.1
+    # - chardet==3.0.4
+    # - csvkit==1.0.3
+    # - cycler==0.10.0
+    # - datacache==0.5.5
+    # - dbfread==2.0.7
+    # - et-xmlfile==1.0.1
+    # - future==0.16.0
+    # - gtfparse==1.0.7
+    # - idna==2.7
+    # - isodate==0.6.0
+    # - jdcal==1.4
+    # - kiwisolver==1.0.1
+    # - leather==0.3.3
     - matplotlib==2.2.2
-    - memoized-property==1.0.3
-    - mock==2.0.0
-    - openpyxl==2.5.4
-    - pandas==0.23.1
-    - parsedatetime==2.4
-    - pbr==4.0.4
-    - progressbar33==2.4
-    - pyensembl==1.2.6
-    - pyparsing==2.2.0
+    # - memoized-property==1.0.3
+    # - mock==2.0.0
+    # - openpyxl==2.5.4
+    # - pandas==0.23.1
+    # - parsedatetime==2.4
+    # - pbr==4.0.4
+    # - progressbar33==2.4
+    # - pyensembl==1.2.6
+    # - pyparsing==2.2.0
     - pysam==0.14.1
-    - python-dateutil==2.7.3
-    - python-slugify==1.2.5
-    - pytimeparse==1.1.8
+    # - python-dateutil==2.7.3
+    # - python-slugify==1.2.5
+    # - pytimeparse==1.1.8
     # - pytz==2018.4
-    - pyyaml==3.12
+    # - pyyaml==3.12
     - requests==2.19.1
     - scipy==1.1.0
-    - serializable==0.1.1
-    - simplejson==3.15.0
-    - six==1.11.0
-    - sqlalchemy==1.2.8
-    - tinytimer==0.0.0
+    # - serializable==0.1.1
+    # - simplejson==3.15.0
+    # - six==1.11.0
+    # - sqlalchemy==1.2.8
+    # - tinytimer==0.0.0
     - tqdm==4.23.4
-    - typechecks==0.1.0
-    - unidecode==1.0.22
+    # - typechecks==0.1.0
+    # - unidecode==1.0.22
     # - urllib3==1.23
-    - xlrd==1.1.0
+    # - xlrd==1.1.0
