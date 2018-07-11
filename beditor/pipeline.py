@@ -24,6 +24,7 @@ def pipeline_chunks(cfgp):
     from beditor.lib.get_mutations import dseq2dmutagenesis 
     from beditor.lib.make_guides import dseq2dguides
     from beditor.lib.get_specificity import dguides2offtargets
+    # from beditor.configure import get_deps
 
     logging.info('processing: '+cfgp)
     import yaml
@@ -80,7 +81,6 @@ def pipeline_chunks(cfgp):
         dseq2dguides(cfg)
     if cfg['step']==4 or stepall:
         cfg['step']=4
-        from beditor.configure import get_deps
         cfg=get_deps(cfg)
         dguides2offtargets(cfg)
     if 'datad' in cfg.keys():
