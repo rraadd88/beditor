@@ -68,3 +68,73 @@ def get_deps(cfg):
     for dep in ddeps.index:
         cfg[dep]=ddeps.loc[dep,'executable']
     return cfg
+
+def get_genomes(cfg):
+        # refs
+    if 'human' in cfg['host'].lower():
+        cfg['host']='homo_sapiens'
+    if 'yeast' in cfg['host'].lower():
+        cfg['host']='saccharomyces_cerevisiae'
+    host_="_".join(s for s in cfg['host'].split('_')).capitalize()
+    ensembl_fastad='pub/release-{}/fasta/{}/dna/'.format(cfg['genomerelease'],cfg['host'])
+    genome_fastad='{}/{}'.format(dirname(realpath(__file__)),ensembl_fastad)
+    cfg['genomep']='{}/genome.fa'.format(genome_fastad)
+    if not exists(cfg['genomep']):
+        logging.error('not found: {}'.format(cfg['genomep']))
+        ifdlref = input("\nDownload genome at {}?[Y/n]: ".format(genome_fastad))
+        if ifdlref=='Y':
+        # #FIXME download contigs and cat and get index, sizes
+            from beditor.lib.global_vars import host2contigs
+            for contig in host2contigs[cfg['host']]:
+                fn='{}.{}.dna_sm.chromosome.{}.fa.gz'.format(cfg['host'].capitalize(),cfg['genomeassembly'],contig)
+                fp='{}/{}'.format(ensembl_fastad,fn)
+                if not exists(fp) or cfg['force']:
+                    cmd='wget -x -nH ftp://ftp.ensembl.org/{} -P {}'.format(fp,dirname(realpath(__file__)))
+                    runbashcmd(cmd,test=cfg['test'])
+#                 break
+            # make the fa ready
+            if not exists(cfg['genomep']) or cfg['force']:
+                cmd='gunzip {}*.fa.gz;cat {}/*.fa > {}/genome.fa;'.format(genome_fastad,genome_fastad,genome_fastad)
+                runbashcmd(cmd,test=cfg['test'])
+        else:
+            logging.error('abort')
+            sys.exit(1)
+    if not exists(cfg['genomep']+'.bwt') or cfg['force']:
+        cmd='{} index {}'.format(cfg['bwa'],cfg['genomep'])
+        runbashcmd(cmd,test=cfg['test'])
+    else:        
+        logging.info('bwa index is present')
+    if not exists(cfg['genomep']+'.fai') or cfg['force']:
+        cmd='{} faidx {}'.format(cfg['samtools'],cfg['genomep'])
+        runbashcmd(cmd,test=cfg['test'])
+    else:
+        logging.info('samtools index is present')
+    if not exists(cfg['genomep']+'.sizes') or cfg['force']:
+        cmd='cut -f1,2 {}.fai > {}.sizes'.format(cfg['genomep'],cfg['genomep'])            
+        runbashcmd(cmd,test=cfg['test'])
+    else:
+        logging.info('sizes of contigs are present')
+
+    ensembl_gff3d='pub/release-{}/gff3/{}/'.format(cfg['genomerelease'],cfg['host'])    
+    genome_gff3d='{}/{}'.format(dirname(realpath(__file__)),ensembl_gff3d)
+    cfg['genomegffp']='{}/genome.gff3'.format(genome_gff3d)
+    if not exists(cfg['genomegffp']):
+        logging.error('not found: {}'.format(cfg['genomegffp']))
+        ifdlref = input("\nDownload genome annotations at {}?[Y/n]: ".format(genome_gff3d))
+        if ifdlref=='Y':
+        # #FIXME download contigs and cat and get index, sizes
+            from beditor.lib.global_vars import host2contigs
+            fn='{}.{}.{}.gff3.gz'.format(cfg['host'].capitalize(),cfg['genomeassembly'],cfg['genomerelease'])
+            fp='{}/{}'.format(ensembl_gff3d,fn)
+            if not exists(fp) or cfg['force']:
+                cmd='wget -x -nH ftp://ftp.ensembl.org/{} -P {}'.format(fp,dirname(realpath(__file__)))
+                runbashcmd(cmd,test=cfg['test'])
+            # move to genome.gff3
+                cmd='cp {}/{} {}'.format(genome_gff3d,fn,cfg['genomegffp'])
+                runbashcmd(cmd,test=cfg['test'])
+
+        else:
+            logging.error('abort')
+            sys.exit(1)
+
+    return cfg
