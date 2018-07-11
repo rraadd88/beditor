@@ -13,7 +13,6 @@ from os import makedirs
 
 import pandas as pd
 # import modin.pandas as pd
-from Bio import SeqIO
 
 import pysam
 import numpy as np
@@ -25,66 +24,9 @@ from beditor.lib.io_sys import runbashcmd
 from beditor.lib.io_seqs import fa2df 
 from beditor.lib.io_dfs import set_index,del_Unnamed,df2info 
 
-def str2num(x):
-    """
-    This extracts numbers from strings. eg. 114 from M114R.
-    :param x: string
-    """
-    return int(''.join(ele for ele in x if ele.isdigit()))
-
-def hamming_distance(s1, s2):
-    """Return the Hamming distance between equal-length sequences"""
-#     print(s1,s2)
-    if len(s1) != len(s2):
-        raise ValueError("Undefined for sequences of unequal length")
-    return sum(el1 != el2 for el1, el2 in zip(s1.upper(), s2.upper()))
-def align(s1,s2,test=False):
-    """
-    Creates pairwise local alignment between seqeunces.
-    Get the visualization and alignment scores.
-    :param s1: seqeunce 1
-    :param s2: seqeunce 2    
-    """
-    from Bio import pairwise2
-    alignments = pairwise2.align.localms(s1.upper(),s2.upper(),1,-1,-5,-5)
-    if test:
-        print(alignments)
-    alignsymb=np.nan
-    score=np.nan
-    sorted_alignments = sorted(alignments, key=operator.itemgetter(2))
-    for a in alignments:
-        alignstr=pairwise2.format_alignment(*a)
-        alignsymb=alignstr.split('\n')[1]
-        score=a[2]
-        if test:
-            print(alignstr)
-        break
-    return alignsymb,score
-def gffatributes2ids(s):
-    """
-    Deconvolutes ids from `attributes` column in GFF3 to seprate columns.
-    :param s: attribute string.
-    :returns: tuple of ids
-    """
-    Name,gene_id,transcript_id,protein_id,exon_id=np.nan,np.nan,np.nan,np.nan,np.nan
-    if '=' in s:
-        d=dict([i.split('=') for i in s.split(';')])
-        if 'Parent' in d:
-            d[d['Parent'].split(':')[0]+'_id']=d['Parent'].split(':')[1]
-        Name,gene_id,transcript_id,protein_id,exon_id=np.nan,np.nan,np.nan,np.nan,np.nan
-        if 'Name' in d:    
-            Name=d['Name']
-        if 'gene_id' in d:    
-            gene_id=d['gene_id']
-        if 'transcript_id' in d:    
-            transcript_id=d['transcript_id']
-        if 'protein_id' in d:    
-            protein_id=d['protein_id']
-        if 'exon_id' in d:    
-            exon_id=d['exon_id']
-    return Name,gene_id,transcript_id,protein_id,exon_id
-#--------------------------------------------
 from beditor.lib.io_dfs import lambda2cols
+from beditor.lib.io_nums import str2num
+from beditor.lib.io_seqs import gffatributes2ids,hamming_distance,align
 
 def dguides2offtargets(cfg):
     """
