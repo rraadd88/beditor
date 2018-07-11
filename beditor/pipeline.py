@@ -46,22 +46,23 @@ def get_genomes(cfg):
                 cmd='gunzip {}*.fa.gz;cat {}/*.fa > {}/genome.fa;'.format(genome_fastad,genome_fastad,genome_fastad)
                 runbashcmd(cmd,test=cfg['test'])
         else:
+            logging.error('abort')
             sys.exit(1)
     if not exists(cfg['genomep']+'.bwt') or cfg['force']:
         cmd='{} index {}'.format(cfg['bwa'],cfg['genomep'])
         runbashcmd(cmd,test=cfg['test'])
-    else:
-        sys.exit(1)
+    else:        
+        logging.info('bwa index is present')
     if not exists(cfg['genomep']+'.fai') or cfg['force']:
         cmd='{} faidx {}'.format(cfg['samtools'],cfg['genomep'])
         runbashcmd(cmd,test=cfg['test'])
     else:
-        sys.exit(1)
+        logging.info('samtools index is present')
     if not exists(cfg['genomep']+'.sizes') or cfg['force']:
         cmd='cut -f1,2 {}.fai > {}.sizes'.format(cfg['genomep'],cfg['genomep'])            
         runbashcmd(cmd,test=cfg['test'])
     else:
-        sys.exit(1)
+        logging.info('sizes of contigs are present')
 
     ensembl_gff3d='pub/release-{}/gff3/{}/'.format(cfg['genomerelease'],cfg['host'])    
     genome_gff3d='{}/{}'.format(dirname(realpath(__file__)),ensembl_gff3d)
@@ -82,7 +83,9 @@ def get_genomes(cfg):
                 runbashcmd(cmd,test=cfg['test'])
 
         else:
+            logging.error('abort')
             sys.exit(1)
+
     return cfg
 
 def pipeline_chunks(cfgp):
