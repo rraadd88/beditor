@@ -5,7 +5,6 @@ import subprocess
 import re
 import sys
 import logging 
-import operator
 
 from collections import defaultdict
 from os.path import join, basename, dirname, abspath, exists

@@ -63,6 +63,7 @@ def align(s1,s2,test=False):
     :param s1: seqeunce 1
     :param s2: seqeunce 2    
     """
+    import operator
     from Bio import pairwise2
     alignments = pairwise2.align.localms(s1.upper(),s2.upper(),1,-1,-5,-5)
     if test:
