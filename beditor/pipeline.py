@@ -10,6 +10,8 @@ import argparse
 import pkg_resources
 
 import pandas as pd
+import numpy as np
+
 from multiprocessing import Pool
 
 from beditor.lib.io_strs import get_logger
@@ -159,7 +161,8 @@ def pipeline(cfgp,step=None,test=False,force=False):
             chunkcfgps.append(chunkcfgp)
     else:
         chunkcfgps=glob('{}/chunk*.yml'.format(cfg['prjd']))
-    
+
+    chunkcfgps=np.sort(chunkcfgps)
     if len(chunkcfgps)!=0:
         if cfg['test']:
             pipeline_chunks(chunkcfgps[0])
