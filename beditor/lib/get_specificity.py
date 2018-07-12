@@ -44,301 +44,302 @@ def dguides2offtargets(cfg):
         if not exists(dp):
             makedirs(dp)
 
-    dguides=pd.read_csv(dguidesp)
-#     dguides.to_csv('{}/{}'.format(cfg['datad'],basename(dguidesp)),sep='\t')
-    dguides=dguides.set_index('guide: id')
+    dofftargetsp='{}/dofftargets.tsv'.format(cfg['datad'])  
+    if not exists(dofftargetsp) or cfg['force']:
 
-    guidesfap = '{}/guides.fa'.format(datatmpd)
-    logging.info(basename(guidesfap))
-    if not exists(guidesfap) or cfg['force']:
-        with open(guidesfap,'w') as f:
-            for gi in dguides.index:
-                f.write('>{}\n{}\n'.format(gi.replace(' ','_'),dguides.loc[gi,'guide sequence+PAM']))
+        dguides=pd.read_csv(dguidesp)
+    #     dguides.to_csv('{}/{}'.format(cfg['datad'],basename(dguidesp)),sep='\t')
+        dguides=dguides.set_index('guide: id')
 
-    # BWA: allow up to X mismatches
-    # cfg['cores']=8
+        guidesfap = '{}/guides.fa'.format(datatmpd)
+        logging.info(basename(guidesfap))
+        if not exists(guidesfap) or cfg['force']:
+            with open(guidesfap,'w') as f:
+                for gi in dguides.index:
+                    f.write('>{}\n{}\n'.format(gi.replace(' ','_'),dguides.loc[gi,'guide sequence+PAM']))
 
-    # maximum number of occurences in the genome to get flagged as repeats. 
-    # This is used in bwa samse, when converting the sam file
-    # and for warnings in the table output.
-    MAXOCC = 60000
+        # BWA: allow up to X mismatches
+        # cfg['cores']=8
 
-    # the BWA queue size is 2M by default. We derive the queue size from MAXOCC
-    MFAC = 2000000/MAXOCC
+        # maximum number of occurences in the genome to get flagged as repeats. 
+        # This is used in bwa samse, when converting the sam file
+        # and for warnings in the table output.
+        MAXOCC = 60000
 
-    genomep=cfg['genomep']
-    genomed = dirname(genomep) # make var local, see below
-    genomegffp=cfg['genomegffp']
-    
-    # increase MAXOCC if there is only a single query, but only in CGI mode
-    bwaM = MFAC*MAXOCC # -m is queue size in bwa
-    guidessap = '{}/guides.sa'.format(datatmpd)
-    logging.info(basename(guidessap))
-    if not exists(guidessap) or cfg['force']:
-        cmd="{} aln -t {} -o 0 -m {} -n {} -k {} -N -l {} {} {} > {}".format(cfg['bwa'],1,bwaM,cfg['mismatches_max'],cfg['mismatches_max'],cfg['guidel'],genomep,guidesfap,guidessap)
-        runbashcmd(cmd)
+        # the BWA queue size is 2M by default. We derive the queue size from MAXOCC
+        MFAC = 2000000/MAXOCC
 
-    guidessamp = '{}/guides.sam'.format(datatmpd)
-    logging.info(basename(guidessamp))        
-    if not exists(guidessamp) or cfg['force']:
-        cmd="{} samse -n {} {} {} {} > {}".format(cfg['bwa'],MAXOCC,genomep,guidessap,guidesfap,guidessamp)
-        runbashcmd(cmd)
-    
-    #----make tables-----------
-    from beditor.lib.global_vars import bed_colns,gff_colns    
+        genomep=cfg['genomep']
+        genomed = dirname(genomep) # make var local, see below
+        genomegffp=cfg['genomegffp']
 
-    alignmentbedp='{}/alignment.bed'.format(datatmpd)
-    dalignbedp='{}/dalignbed.tsv'.format(datatmpd)
-    logging.info(basename(dalignbedp))
-    if not exists(alignmentbedp) or cfg['force']:
-        samfile=pysam.AlignmentFile(guidessamp, "rb")
-        dalignbed=pd.DataFrame(columns=bed_colns)
-        for read in samfile.fetch():
-            algnids=[]
-            algnids.append('{}|{}{}|{}|{}'.format(read.reference_name,
-                     ('-' if read.is_reverse else '+'),read.positions[0],read.cigarstring,read.get_tag('NM')))
-            if read.has_tag('XA'):
-                algnids+=['|'.join(s.split(',')) for s in read.get_tag('XA').split(';') if len(s.split(','))>1]
-            chroms=[]
-            starts=[]
-            ends=[]
-            ids=algnids
-            NMs=[]
-            strands=[]    
-            for a in algnids:
-                strand=a.split('|')[1][0]
-                chroms.append(a.split('|')[0])
-                if strand=='+':
-                    offset=0
-                elif strand=='-':
-                    offset=0                    
-                starts.append(int(a.split('|')[1][1:])+offset)
-                ends.append(int(a.split('|')[1][1:])+str2num(a.split('|')[2])+offset)
-                NMs.append(a.split('|')[3])
-                strands.append(strand)
-                del strand,offset
-            col2dalignbed={'chromosome':chroms,
-                           'start':starts,
-                           'end':ends,
-                           'id':ids,
-                           'NM':NMs,
-                           'strand':strands}
-        #     col2dalignbed=dict(zip(cols,[a.split('|')[0],a.split('|')[1],a.split('|')[2],a,a.split('|')[3],a.split('|')[4] for a in algnids]))
-            dalignbed_=pd.DataFrame(col2dalignbed)
-            dalignbed_['guide: id']=read.qname.replace('_',' ')
-            dalignbed = dalignbed.append(dalignbed_,ignore_index=True)
-        #     break
-        samfile.close()
-
-        # filter bad asssembly junk genmomes
-#         from beditor.lib.global_vars import host2contigs
-#         dalignbed=dalignbed.loc[dalignbed['chromosome'].isin(host2contigs[cfg['host']]),:]
-        dalignbed.to_csv(dalignbedp,sep='\t')
-        from beditor.lib.io_nums import str2numorstr
-        dalignbed['chromosome']=dalignbed.apply(lambda x : str2numorstr(x['chromosome']),axis=1)
-        dalignbed=dalignbed.sort_values(['chromosome','start','end'], ascending=[True, True, True])
-        dalignbed.loc[:,bed_colns].to_csv(alignmentbedp,sep='\t',
-                        header=False,index=False,
-                        chunksize=5000)
-    else:
-        dalignbed=pd.read_csv(dalignbedp,sep='\t')
-        dalignbed=dalignbed.drop([c for c in dalignbed if 'Unnamed' in c],axis=1)
-        
-    alignmentbedsortedp=alignmentbedp+'.sorted.bed'
-    logging.info(basename(alignmentbedsortedp))
-    if not exists(alignmentbedsortedp) or cfg['force']:
-        cmd='{} sort -i {} > {}'.format(cfg['bedtools'],alignmentbedp,alignmentbedsortedp)
-        runbashcmd(cmd)
-    
-    genomegffsortedp=genomegffp+'.sorted.gff3.gz'
-    logging.info(basename(genomegffsortedp))
-    if not exists(genomegffsortedp):    
-        cmd='{} sort -i {} > {}'.format(cfg['bedtools'],genomegffp,genomegffsortedp)
-        runbashcmd(cmd)
-        
-    annotationsbedp='{}/annotations.bed'.format(datatmpd)
-    logging.info(basename(annotationsbedp))
-    if not exists(annotationsbedp) or cfg['force']:    
-        cmd='{} intersect -wa -wb -loj -a {} -b {} > {}'.format(cfg['bedtools'],alignmentbedsortedp,genomegffsortedp,annotationsbedp)
-        runbashcmd(cmd)
-#     if the error in human, use: `cut -f 1 data/alignment.bed.sorted.bed | sort| uniq -c | grep -v CHR | grep -v GL | grep -v KI`
-    dalignbedguidesp='{}/dalignbedguides.tsv'.format(datatmpd)
-    logging.info(basename(dalignbedguidesp))
-    if not exists(dalignbedguidesp) or cfg['force']:
-        dalignbed=set_index(dalignbed,'guide: id').join(dguides)
-        dalignbed=set_index(dalignbed,'guide: id')
-        dalignbed.to_csv(dalignbedguidesp,'\t')
-    else:
-        dalignbed=pd.read_csv(dalignbedguidesp,'\t')
-        dalignbed=del_Unnamed(dalignbed)
-        
-    # dalignid2seq=pd.DataFrame(columns=['sequence'])
-    # dalignid2seq.index.name='id'
-    dalignedfastap='{}/dalignedfasta.tsv'.format(datatmpd)
-    logging.info(basename(dalignedfastap))
-    if not exists(dalignedfastap) or cfg['force']:
-        alignedfastap='{}/alignment.fa'.format(datatmpd)
-        if not exists(alignedfastap) or cfg['force']:
-            cmd='{} getfasta -s -name -fi {} -bed {} -fo {}'.format(cfg['bedtools'],genomep,alignmentbedp,alignedfastap)
+        # increase MAXOCC if there is only a single query, but only in CGI mode
+        bwaM = MFAC*MAXOCC # -m is queue size in bwa
+        guidessap = '{}/guides.sa'.format(datatmpd)
+        logging.info(basename(guidessap))
+        if not exists(guidessap) or cfg['force']:
+            cmd="{} aln -t {} -o 0 -m {} -n {} -k {} -N -l {} {} {} > {}".format(cfg['bwa'],1,bwaM,cfg['mismatches_max'],cfg['mismatches_max'],cfg['guidel'],genomep,guidesfap,guidessap)
             runbashcmd(cmd)
 
-        dalignedfasta=fa2df(alignedfastap)
-        dalignedfasta.columns=['aligned sequence']        
-#         dalignedfasta=dalignedfasta.loc[[False if np.unique(list(s.upper()))=='N' else True for s in dalignedfasta['aligned sequence']],:]
-        dalignedfasta.index=[i.split('(')[0] for i in dalignedfasta.index] # for bedtools 2.27, the fasta header now has hanging (+) or (-)
-        dalignedfasta.index.name='id'
-        dalignedfasta.to_csv(dalignedfastap,sep='\t')
-    else:
-        dalignedfasta=pd.read_csv(dalignedfastap,sep='\t')        
-        dalignedfasta=dalignedfasta.drop([c for c in dalignbed if 'Unnamed' in c],axis=1)
-        dalignedfasta=del_Unnamed(dalignedfasta)
-        
-    dalignbedguidesseqp='{}/dalignbedguidesseq.tsv'.format(datatmpd)
-    logging.info(basename(dalignbedguidesseqp))
-    if not exists(dalignbedguidesseqp) or cfg['force']:        
-#         from beditor.lib.io_dfs import df2info
-#         if cfg['test']:
-#             df2info(dalignbed)
-#             df2info(dalignedfasta)
-            
-#         dalignedfasta['guide: id']=dalignedfasta.apply(lambda x : x['guide: id'].replace('_',' '),axis=1)
-        dalignbed=set_index(dalignbed,'id').join(set_index(dalignedfasta,'id'))
-        dalignbed.index.name='id'
-        dalignbed=dalignbed.drop_duplicates()
-        dalignbed.to_csv(dalignbedguidesseqp,sep='\t')
-    else:
-        dalignbed=pd.read_csv(dalignbedguidesseqp,sep='\t',low_memory=False)
-        dalignbed=del_Unnamed(dalignbed)
+        guidessamp = '{}/guides.sam'.format(datatmpd)
+        logging.info(basename(guidessamp))        
+        if not exists(guidessamp) or cfg['force']:
+            cmd="{} samse -n {} {} {} {} > {}".format(cfg['bwa'],MAXOCC,genomep,guidessap,guidesfap,guidessamp)
+            runbashcmd(cmd)
 
-    dalignbedstatsp='{}/dalignbedstats.tsv'.format(datatmpd)  
-    logging.info(basename(dalignbedstatsp))
-    if not exists(dalignbedstatsp) or cfg['force']:
-#         dalignbed['Hamming distance']=dalignbed.apply(lambda x : hamming_distance(x['guide sequence+PAM'], x['aligned sequence']),axis=1)
-        df=dalignbed.apply(lambda x: align(x['guide sequence+PAM'],x['aligned sequence']),
-                           axis=1).apply(pd.Series)
-        df.columns=['alignment','alignment: score']
-        dalignbed=dalignbed.join(df)
-        del df
-        dalignbed.to_csv(dalignbedstatsp,sep='\t')
-    else:
-        dalignbed=pd.read_csv(dalignbedstatsp,sep='\t',low_memory=False)
-        dalignbed=del_Unnamed(dalignbed)
-            
-    daannotp='{}/dannot.tsv'.format(datatmpd)  
-    dannotsaggp='{}/dannotsagg.tsv'.format(datatmpd)  
-    logging.info(basename(daannotp))
-    if (not exists(daannotp)) or (not exists(dannotsaggp)) or cfg['force']:
-        dannots=pd.read_csv('{}/annotations.bed'.format(datatmpd),sep='\t',
-                   names=bed_colns+[c+' annotation' if c in set(bed_colns).intersection(gff_colns) else c for c in gff_colns ],
-                           low_memory=False)
-        dannots=del_Unnamed(dannots)
+        #----make tables-----------
+        from beditor.lib.global_vars import bed_colns,gff_colns    
 
-        dannots=dannots.set_index('id')
-        dannots['annotations count']=1
-        # separate ids from attribute columns
-        dannots=lambda2cols(dannots,lambdaf=gffatributes2ids,
-                    in_coln='attributes',
-                to_colns=['gene name','gene id','transcript id','protein id','exon id'])
+        alignmentbedp='{}/alignment.bed'.format(datatmpd)
+        dalignbedp='{}/dalignbed.tsv'.format(datatmpd)
+        logging.info(basename(dalignbedp))
+        if not exists(alignmentbedp) or cfg['force']:
+            samfile=pysam.AlignmentFile(guidessamp, "rb")
+            dalignbed=pd.DataFrame(columns=bed_colns)
+            for read in samfile.fetch():
+                algnids=[]
+                algnids.append('{}|{}{}|{}|{}'.format(read.reference_name,
+                         ('-' if read.is_reverse else '+'),read.positions[0],read.cigarstring,read.get_tag('NM')))
+                if read.has_tag('XA'):
+                    algnids+=['|'.join(s.split(',')) for s in read.get_tag('XA').split(';') if len(s.split(','))>1]
+                chroms=[]
+                starts=[]
+                ends=[]
+                ids=algnids
+                NMs=[]
+                strands=[]    
+                for a in algnids:
+                    strand=a.split('|')[1][0]
+                    chroms.append(a.split('|')[0])
+                    if strand=='+':
+                        offset=0
+                    elif strand=='-':
+                        offset=0                    
+                    starts.append(int(a.split('|')[1][1:])+offset)
+                    ends.append(int(a.split('|')[1][1:])+str2num(a.split('|')[2])+offset)
+                    NMs.append(a.split('|')[3])
+                    strands.append(strand)
+                    del strand,offset
+                col2dalignbed={'chromosome':chroms,
+                               'start':starts,
+                               'end':ends,
+                               'id':ids,
+                               'NM':NMs,
+                               'strand':strands}
+            #     col2dalignbed=dict(zip(cols,[a.split('|')[0],a.split('|')[1],a.split('|')[2],a,a.split('|')[3],a.split('|')[4] for a in algnids]))
+                dalignbed_=pd.DataFrame(col2dalignbed)
+                dalignbed_['guide: id']=read.qname.replace('_',' ')
+                dalignbed = dalignbed.append(dalignbed_,ignore_index=True)
+            #     break
+            samfile.close()
 
-        dannots['annotation coordinate']=dannots.apply(lambda x: '{}:{}-{}({})'.format(x['chromosome annotation'],x['start annotation'],x['end annotation'], x['strand annotation']),axis=1)
-        dannots.to_csv(daannotp,sep='\t')
-    else:
-        dannots=pd.read_csv(daannotp,sep='\t',low_memory=False)
-        dannots=del_Unnamed(dannots)
+            # filter bad asssembly junk genmomes
+    #         from beditor.lib.global_vars import host2contigs
+    #         dalignbed=dalignbed.loc[dalignbed['chromosome'].isin(host2contigs[cfg['host']]),:]
+            dalignbed.to_csv(dalignbedp,sep='\t')
+            from beditor.lib.io_nums import str2numorstr
+            dalignbed['chromosome']=dalignbed.apply(lambda x : str2numorstr(x['chromosome']),axis=1)
+            dalignbed=dalignbed.sort_values(['chromosome','start','end'], ascending=[True, True, True])
+            dalignbed.loc[:,bed_colns].to_csv(alignmentbedp,sep='\t',
+                            header=False,index=False,
+                            chunksize=5000)
+        else:
+            dalignbed=pd.read_csv(dalignbedp,sep='\t')
+            dalignbed=dalignbed.drop([c for c in dalignbed if 'Unnamed' in c],axis=1)
 
-    logging.info(basename(dannotsaggp))
-    if not exists(dannotsaggp) or cfg['force']:
-        dannotsagg=pd.DataFrame(dannots.groupby('id')['annotations count'].agg('sum'))-1
-        dannotsagg.loc[dannotsagg['annotations count']==0,'region']='intergenic'
-        dannotsagg.loc[dannotsagg['annotations count']!=0,'region']='genic'
+        alignmentbedsortedp=alignmentbedp+'.sorted.bed'
+        logging.info(basename(alignmentbedsortedp))
+        if not exists(alignmentbedsortedp) or cfg['force']:
+            cmd='{} sort -i {} > {}'.format(cfg['bedtools'],alignmentbedp,alignmentbedsortedp)
+            runbashcmd(cmd)
 
-        dannots=dannots.reset_index()
-        alignids=dannots['id'].unique()#[:15]
-        
-        for alignidi in trange(len(alignids)):
-            alignid=alignids[alignidi]
-        #     if dannots.loc[i,'type'].value_counts().sum()==1:
-            dannoti=dannots.loc[dannots['id']==alignid,:]
-            if len(dannoti.shape)==1:
-                dannoti=pd.DataFrame(dannoti).T
-            dannoti=dannoti.loc[dannoti['type']!='chromosome',:].drop_duplicates(subset=['start annotation','end annotation'])
-#             if cfg['test']:
-# #                 print(alignid)
-#                 print(dannoti.shape)
-            for col in ['type','gene name','gene id','transcript id','protein id','exon id']:    
-        #         print(";".join(dannoti[col].fillna('nan').tolist()))
-                dannotsagg.loc[alignid,col+'s']=";".join(np.unique(dannoti[col].fillna('nan').tolist()))
-        del dannots    
-        dannotsagg.to_csv(dannotsaggp,sep='\t')
-    else:
-        dannotsagg=pd.read_csv(dannotsaggp,sep='\t',low_memory=False)
-        dannotsagg=del_Unnamed(dannotsagg)
-        
-    dalignbedannotp='{}/dalignbedannot.tsv'.format(datatmpd)  
-    logging.info(basename(dalignbedannotp))
-    if not exists(dalignbedannotp) or cfg['force']:
-        dalignbedannot=set_index(dalignbed,'id').join(set_index(dannotsagg,'id'),
-                                              rsuffix=' annotation')
-        dalignbedannot.to_csv(dalignbedannotp,sep='\t')
-    else:
-        dalignbedannot=pd.read_csv(dalignbedannotp,sep='\t',low_memory=False)
-        dalignbedannot=del_Unnamed(dalignbedannot)
+        genomegffsortedp=genomegffp+'.sorted.gff3.gz'
+        logging.info(basename(genomegffsortedp))
+        if not exists(genomegffsortedp):    
+            cmd='{} sort -i {} > {}'.format(cfg['bedtools'],genomegffp,genomegffsortedp)
+            runbashcmd(cmd)
 
-#     dofftargetsp='{}/dofftargets.tsv'.format(cfg['datad'])  
-    daggbyguidep='{}/daggbyguide.tsv'.format(datatmpd)      
-    logging.info(basename(daggbyguidep))
-    dalignbedannot['NM']=dalignbedannot['NM'].apply(int)
-    if not exists(daggbyguidep) or cfg['force']:
-        from beditor.lib.get_scores import get_beditorscore_per_guide,get_beditorscore_per_alignment
-        dalignbedannot['beditor score']=dalignbedannot.apply(lambda x : get_beditorscore_per_alignment(x['NM'],
-                                                                                                       cfg['mismatches_max'],
-                                                                                                       True if x['region']=='genic' else False,
-                                                                                                       x['alignment'],
-#                                                                                                        test=cfg['test'],
-                                                                                                      ),axis=1) 
+        annotationsbedp='{}/annotations.bed'.format(datatmpd)
+        logging.info(basename(annotationsbedp))
+        if not exists(annotationsbedp) or cfg['force']:    
+            cmd='{} intersect -wa -wb -loj -a {} -b {} > {}'.format(cfg['bedtools'],alignmentbedsortedp,genomegffsortedp,annotationsbedp)
+            runbashcmd(cmd)
+    #     if the error in human, use: `cut -f 1 data/alignment.bed.sorted.bed | sort| uniq -c | grep -v CHR | grep -v GL | grep -v KI`
+        dalignbedguidesp='{}/dalignbedguides.tsv'.format(datatmpd)
+        logging.info(basename(dalignbedguidesp))
+        if not exists(dalignbedguidesp) or cfg['force']:
+            dalignbed=set_index(dalignbed,'guide: id').join(dguides)
+            dalignbed=set_index(dalignbed,'guide: id')
+            dalignbed.to_csv(dalignbedguidesp,'\t')
+        else:
+            dalignbed=pd.read_csv(dalignbedguidesp,'\t')
+            dalignbed=del_Unnamed(dalignbed)
 
-        daggbyguide=dalignbedannot.loc[(dalignbedannot['NM']==0),['guide: id','guide sequence+PAM','gene names', 'gene ids','transcript ids']].drop_duplicates(subset=['guide: id'])
-        if cfg['test']:
-            df2info(daggbyguide)
-        daggbyguide=set_index(daggbyguide,'guide: id')            
-#---
-        guideids=daggbyguide.index.tolist()
-#         if cfg['test']:
-#             print(guideids)
-#             print(dalignbedannot['guide: id'].unique())
-        for gi in trange(len(guideids)):
-            gid=guideids[gi]
-            
-            dalignbedannoti=dalignbedannot.loc[dalignbedannot['guide: id']==gid,:]
-            if len(dalignbedannoti.shape)==1:
-                dalignbedannoti=pd.DataFrame(dalignbedannoti).T
-#             if cfg['test']:
-#                 df2info(dalignbedannoti)
-#                 print(cdhb)
-            for col in ['types','gene names','gene ids','transcript ids','protein ids','exon ids']:    
-        #         print(";".join(dannoti[col].fillna('nan').tolist()))
-                daggbyguide.loc[gid,col]=";".join(np.unique(dalignbedannoti[col].fillna('nan').tolist()))
-#---
-        if cfg['test']:
-            df2info(daggbyguide)
+        # dalignid2seq=pd.DataFrame(columns=['sequence'])
+        # dalignid2seq.index.name='id'
+        dalignedfastap='{}/dalignedfasta.tsv'.format(datatmpd)
+        logging.info(basename(dalignedfastap))
+        if not exists(dalignedfastap) or cfg['force']:
+            alignedfastap='{}/alignment.fa'.format(datatmpd)
+            if not exists(alignedfastap) or cfg['force']:
+                cmd='{} getfasta -s -name -fi {} -bed {} -fo {}'.format(cfg['bedtools'],genomep,alignmentbedp,alignedfastap)
+                runbashcmd(cmd)
 
-        for guideid in daggbyguide.index:
-            dalignbedannotguide=dalignbedannot.loc[(dalignbedannot['guide: id']==guideid),:]
-            daggbyguide.loc[guideid,'beditor score']=get_beditorscore_per_guide(guide_seq=dalignbedannotguide['guide sequence+PAM'].unique()[0], 
-                                       strategy=dalignbedannotguide['strategy'].unique()[0],
-                                       align_seqs_scores=dalignbedannotguide['beditor score'],
-#                                        test=cfg['test']
-                                      )
-            
-        daggbyguide['beditor score (log10)']=daggbyguide['beditor score'].apply(np.log10)
-        dalignbedannot['alternate alignments count']=1
-        daggbyguide=daggbyguide.join(pd.DataFrame(dalignbedannot.groupby('guide: id')['alternate alignments count'].agg('sum'))-1)
-#     daggbyguide.to_csv('{}/dofftargets.tsv'.format(cfg['datad']),sep='\t')            
-        daggbyguide.to_csv(daggbyguidep,sep='\t')
-        dofftargetsp='{}/dofftargets.tsv'.format(cfg['datad'])  
-        daggbyguide.loc[:,['guide sequence+PAM','beditor score','beditor score (log10)','alternate alignments count',
-                     'id',
-                     'gene names',
-                     'gene ids',
-                     'transcript ids']].to_csv(dofftargetsp,sep='\t')
+            dalignedfasta=fa2df(alignedfastap)
+            dalignedfasta.columns=['aligned sequence']        
+    #         dalignedfasta=dalignedfasta.loc[[False if np.unique(list(s.upper()))=='N' else True for s in dalignedfasta['aligned sequence']],:]
+            dalignedfasta.index=[i.split('(')[0] for i in dalignedfasta.index] # for bedtools 2.27, the fasta header now has hanging (+) or (-)
+            dalignedfasta.index.name='id'
+            dalignedfasta.to_csv(dalignedfastap,sep='\t')
+        else:
+            dalignedfasta=pd.read_csv(dalignedfastap,sep='\t')        
+            dalignedfasta=dalignedfasta.drop([c for c in dalignbed if 'Unnamed' in c],axis=1)
+            dalignedfasta=del_Unnamed(dalignedfasta)
+
+        dalignbedguidesseqp='{}/dalignbedguidesseq.tsv'.format(datatmpd)
+        logging.info(basename(dalignbedguidesseqp))
+        if not exists(dalignbedguidesseqp) or cfg['force']:        
+    #         from beditor.lib.io_dfs import df2info
+    #         if cfg['test']:
+    #             df2info(dalignbed)
+    #             df2info(dalignedfasta)
+
+    #         dalignedfasta['guide: id']=dalignedfasta.apply(lambda x : x['guide: id'].replace('_',' '),axis=1)
+            dalignbed=set_index(dalignbed,'id').join(set_index(dalignedfasta,'id'))
+            dalignbed.index.name='id'
+            dalignbed=dalignbed.drop_duplicates()
+            dalignbed.to_csv(dalignbedguidesseqp,sep='\t')
+        else:
+            dalignbed=pd.read_csv(dalignbedguidesseqp,sep='\t',low_memory=False)
+            dalignbed=del_Unnamed(dalignbed)
+
+        dalignbedstatsp='{}/dalignbedstats.tsv'.format(datatmpd)  
+        logging.info(basename(dalignbedstatsp))
+        if not exists(dalignbedstatsp) or cfg['force']:
+    #         dalignbed['Hamming distance']=dalignbed.apply(lambda x : hamming_distance(x['guide sequence+PAM'], x['aligned sequence']),axis=1)
+            df=dalignbed.apply(lambda x: align(x['guide sequence+PAM'],x['aligned sequence']),
+                               axis=1).apply(pd.Series)
+            df.columns=['alignment','alignment: score']
+            dalignbed=dalignbed.join(df)
+            del df
+            dalignbed.to_csv(dalignbedstatsp,sep='\t')
+        else:
+            dalignbed=pd.read_csv(dalignbedstatsp,sep='\t',low_memory=False)
+            dalignbed=del_Unnamed(dalignbed)
+
+        daannotp='{}/dannot.tsv'.format(datatmpd)  
+        dannotsaggp='{}/dannotsagg.tsv'.format(datatmpd)  
+        logging.info(basename(daannotp))
+        if (not exists(daannotp)) or (not exists(dannotsaggp)) or cfg['force']:
+            dannots=pd.read_csv('{}/annotations.bed'.format(datatmpd),sep='\t',
+                       names=bed_colns+[c+' annotation' if c in set(bed_colns).intersection(gff_colns) else c for c in gff_colns ],
+                               low_memory=False)
+            dannots=del_Unnamed(dannots)
+
+            dannots=dannots.set_index('id')
+            dannots['annotations count']=1
+            # separate ids from attribute columns
+            dannots=lambda2cols(dannots,lambdaf=gffatributes2ids,
+                        in_coln='attributes',
+                    to_colns=['gene name','gene id','transcript id','protein id','exon id'])
+
+            dannots['annotation coordinate']=dannots.apply(lambda x: '{}:{}-{}({})'.format(x['chromosome annotation'],x['start annotation'],x['end annotation'], x['strand annotation']),axis=1)
+            dannots.to_csv(daannotp,sep='\t')
+        else:
+            dannots=pd.read_csv(daannotp,sep='\t',low_memory=False)
+            dannots=del_Unnamed(dannots)
+
+        logging.info(basename(dannotsaggp))
+        if not exists(dannotsaggp) or cfg['force']:
+            dannotsagg=pd.DataFrame(dannots.groupby('id')['annotations count'].agg('sum'))-1
+            dannotsagg.loc[dannotsagg['annotations count']==0,'region']='intergenic'
+            dannotsagg.loc[dannotsagg['annotations count']!=0,'region']='genic'
+
+            dannots=dannots.reset_index()
+            alignids=dannots['id'].unique()#[:15]
+
+            for alignidi in trange(len(alignids)):
+                alignid=alignids[alignidi]
+            #     if dannots.loc[i,'type'].value_counts().sum()==1:
+                dannoti=dannots.loc[dannots['id']==alignid,:]
+                if len(dannoti.shape)==1:
+                    dannoti=pd.DataFrame(dannoti).T
+                dannoti=dannoti.loc[dannoti['type']!='chromosome',:].drop_duplicates(subset=['start annotation','end annotation'])
+    #             if cfg['test']:
+    # #                 print(alignid)
+    #                 print(dannoti.shape)
+                for col in ['type','gene name','gene id','transcript id','protein id','exon id']:    
+            #         print(";".join(dannoti[col].fillna('nan').tolist()))
+                    dannotsagg.loc[alignid,col+'s']=";".join(np.unique(dannoti[col].fillna('nan').tolist()))
+            del dannots    
+            dannotsagg.to_csv(dannotsaggp,sep='\t')
+        else:
+            dannotsagg=pd.read_csv(dannotsaggp,sep='\t',low_memory=False)
+            dannotsagg=del_Unnamed(dannotsagg)
+
+        dalignbedannotp='{}/dalignbedannot.tsv'.format(datatmpd)  
+        logging.info(basename(dalignbedannotp))
+        if not exists(dalignbedannotp) or cfg['force']:
+            dalignbedannot=set_index(dalignbed,'id').join(set_index(dannotsagg,'id'),
+                                                  rsuffix=' annotation')
+            dalignbedannot.to_csv(dalignbedannotp,sep='\t')
+        else:
+            dalignbedannot=pd.read_csv(dalignbedannotp,sep='\t',low_memory=False)
+            dalignbedannot=del_Unnamed(dalignbedannot)
+
+        daggbyguidep='{}/daggbyguide.tsv'.format(datatmpd)      
+        logging.info(basename(daggbyguidep))
+        dalignbedannot['NM']=dalignbedannot['NM'].apply(int)
+        if not exists(daggbyguidep) or cfg['force']:
+            from beditor.lib.get_scores import get_beditorscore_per_guide,get_beditorscore_per_alignment
+            dalignbedannot['beditor score']=dalignbedannot.apply(lambda x : get_beditorscore_per_alignment(x['NM'],
+                                                                                                           cfg['mismatches_max'],
+                                                                                                           True if x['region']=='genic' else False,
+                                                                                                           x['alignment'],
+    #                                                                                                        test=cfg['test'],
+                                                                                                          ),axis=1) 
+
+            daggbyguide=dalignbedannot.loc[(dalignbedannot['NM']==0),['guide: id','guide sequence+PAM','gene names', 'gene ids','transcript ids']].drop_duplicates(subset=['guide: id'])
+            if cfg['test']:
+                df2info(daggbyguide)
+            daggbyguide=set_index(daggbyguide,'guide: id')            
+    #---
+            guideids=daggbyguide.index.tolist()
+    #         if cfg['test']:
+    #             print(guideids)
+    #             print(dalignbedannot['guide: id'].unique())
+            for gi in trange(len(guideids)):
+                gid=guideids[gi]
+
+                dalignbedannoti=dalignbedannot.loc[dalignbedannot['guide: id']==gid,:]
+                if len(dalignbedannoti.shape)==1:
+                    dalignbedannoti=pd.DataFrame(dalignbedannoti).T
+    #             if cfg['test']:
+    #                 df2info(dalignbedannoti)
+    #                 print(cdhb)
+                for col in ['types','gene names','gene ids','transcript ids','protein ids','exon ids']:    
+            #         print(";".join(dannoti[col].fillna('nan').tolist()))
+                    daggbyguide.loc[gid,col]=";".join(np.unique(dalignbedannoti[col].fillna('nan').tolist()))
+    #---
+            if cfg['test']:
+                df2info(daggbyguide)
+
+            for guideid in daggbyguide.index:
+                dalignbedannotguide=dalignbedannot.loc[(dalignbedannot['guide: id']==guideid),:]
+                daggbyguide.loc[guideid,'beditor score']=get_beditorscore_per_guide(guide_seq=dalignbedannotguide['guide sequence+PAM'].unique()[0], 
+                                           strategy=dalignbedannotguide['strategy'].unique()[0],
+                                           align_seqs_scores=dalignbedannotguide['beditor score'],
+    #                                        test=cfg['test']
+                                          )
+
+            daggbyguide['beditor score (log10)']=daggbyguide['beditor score'].apply(np.log10)
+            dalignbedannot['alternate alignments count']=1
+            daggbyguide=daggbyguide.join(pd.DataFrame(dalignbedannot.groupby('guide: id')['alternate alignments count'].agg('sum'))-1)
+    #     daggbyguide.to_csv('{}/dofftargets.tsv'.format(cfg['datad']),sep='\t')            
+            daggbyguide.to_csv(daggbyguidep,sep='\t')        
+            daggbyguide.loc[:,['guide sequence+PAM','beditor score','beditor score (log10)','alternate alignments count',
+                         'id',
+                         'gene names',
+                         'gene ids',
+                         'transcript ids']].to_csv(dofftargetsp,sep='\t')
 

@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 
 def fa2df(alignedfastap,ids2cols=False):
     dtmp=pd.read_csv(alignedfastap,names=["c"])
