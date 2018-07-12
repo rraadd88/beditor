@@ -214,9 +214,10 @@ def df2chucks(din,chunksize,outd,fn,return_fmt='\t',force=False):
         rnge=chunk2range[chunk]
         din_=din.loc[rnge[0]:rnge[1],:]
         if not exists(chunkp) or force:
-            din_.to_csv(chunkp,sep='\t')
             if return_fmt=='list':
                 chunks.append(din_)
+            else:
+                din_.to_csv(chunkp,sep=return_fmt)
             del din_
         chunkps.append(chunkp)
     if return_fmt=='list':

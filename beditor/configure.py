@@ -88,28 +88,28 @@ def get_genomes(cfg):
             for contig in host2contigs[cfg['host']]:
                 fn='{}.{}.dna_sm.chromosome.{}.fa.gz'.format(cfg['host'].capitalize(),cfg['genomeassembly'],contig)
                 fp='{}/{}'.format(ensembl_fastad,fn)
-                if not exists(fp) or cfg['force']:
+                if not exists(fp):
                     cmd='wget -x -nH ftp://ftp.ensembl.org/{} -P {}'.format(fp,dirname(realpath(__file__)))
                     runbashcmd(cmd,test=cfg['test'])
 #                 break
             # make the fa ready
-            if not exists(cfg['genomep']) or cfg['force']:
+            if not exists(cfg['genomep']):
                 cmd='gunzip {}*.fa.gz;cat {}/*.fa > {}/genome.fa;'.format(genome_fastad,genome_fastad,genome_fastad)
                 runbashcmd(cmd,test=cfg['test'])
         else:
             logging.error('abort')
             sys.exit(1)
-    if not exists(cfg['genomep']+'.bwt') or cfg['force']:
+    if not exists(cfg['genomep']+'.bwt'):
         cmd='{} index {}'.format(cfg['bwa'],cfg['genomep'])
         runbashcmd(cmd,test=cfg['test'])
     else:        
         logging.info('bwa index is present')
-    if not exists(cfg['genomep']+'.fai') or cfg['force']:
+    if not exists(cfg['genomep']+'.fai'):
         cmd='{} faidx {}'.format(cfg['samtools'],cfg['genomep'])
         runbashcmd(cmd,test=cfg['test'])
     else:
         logging.info('samtools index is present')
-    if not exists(cfg['genomep']+'.sizes') or cfg['force']:
+    if not exists(cfg['genomep']+'.sizes'):
         cmd='cut -f1,2 {}.fai > {}.sizes'.format(cfg['genomep'],cfg['genomep'])            
         runbashcmd(cmd,test=cfg['test'])
     else:
@@ -126,7 +126,7 @@ def get_genomes(cfg):
             from beditor.lib.global_vars import host2contigs
             fn='{}.{}.{}.gff3.gz'.format(cfg['host'].capitalize(),cfg['genomeassembly'],cfg['genomerelease'])
             fp='{}/{}'.format(ensembl_gff3d,fn)
-            if not exists(fp) or cfg['force']:
+            if not exists(fp):
                 cmd='wget -x -nH ftp://ftp.ensembl.org/{} -P {}'.format(fp,dirname(realpath(__file__)))
                 runbashcmd(cmd,test=cfg['test'])
             # move to genome.gff3

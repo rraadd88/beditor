@@ -30,6 +30,9 @@ def pipeline_chunks(cfgp):
     import yaml
     cfg=yaml.load(open(cfgp, 'r'))
 
+    cfg=get_deps(cfg)
+    cfg=get_genomes(cfg)
+
     #project dir
     cfg['prj']=splitext(basename(cfgp))[0]
     if dirname(cfgp)!='':
@@ -54,11 +57,13 @@ def pipeline_chunks(cfgp):
     dinoutp='{}/din.tsv'.format(cfg[0])    
     if not exists(cfgoutp) or cfg['force']:
         with open(cfgoutp, 'w') as f:
-            yaml.dump(cfg, f, default_flow_style=False) 
-    if not exists(dinoutp) or cfg['force']:
-        from shutil import copyfile
-        copyfile(cfg['dinp'], dinoutp)
-#         din.to_csv(dinoutp,sep='\t')
+            yaml.dump(cfg, f, default_flow_style=False)
+    print(cfg)
+    if cfg['step']==None or cfg['step']==1:
+        if not exists(dinoutp) or cfg['force']:
+            from shutil import copyfile
+            copyfile(cfg['dinp'], dinoutp)
+    #         din.to_csv(dinoutp,sep='\t')
     
     if not exists(cfg['prjd']):
         makedirs(cfg['prjd'])
@@ -71,7 +76,6 @@ def pipeline_chunks(cfgp):
         stepall=False
     if cfg['step']==1 or stepall:
         cfg['step']=1
-        cfg=get_deps(cfg)
         din2dseq(cfg)
     if cfg['step']==2 or stepall:
         cfg['step']=2
@@ -81,7 +85,6 @@ def pipeline_chunks(cfgp):
         dseq2dguides(cfg)
     if cfg['step']==4 or stepall:
         cfg['step']=4
-        cfg=get_deps(cfg)
         dguides2offtargets(cfg)
     if 'datad' in cfg.keys():
         logging.info("Location of output data: {}".format(cfg['datad']))
@@ -91,6 +94,8 @@ def pipeline_chunks(cfgp):
 def pipeline(cfgp,step=None,test=False,force=False):        
 
     import yaml
+    from glob import glob
+    
     cfg=yaml.load(open(cfgp, 'r'))
     #project dir
     cfg['prj']=splitext(basename(cfgp))[0]
@@ -128,38 +133,42 @@ def pipeline(cfgp,step=None,test=False,force=False):
             yaml.dump(cfg, f
 #                       default_flow_style=False
                      ) 
-    if not exists(dinoutp) or cfg['force']:
-        from shutil import copyfile
-        copyfile(cfg['dinp'], dinoutp)
+    if step==1 or step is None:
+        if not exists(dinoutp) or cfg['force']:
+            from shutil import copyfile
+            copyfile(cfg['dinp'], dinoutp)
         
-    from beditor.lib.io_dfs import df2chucks
-    din=pd.read_csv(cfg['dinp'],sep='\t')
-    din=din.loc[:,['aminoacid: position','transcript: id']].drop_duplicates()
+        from beditor.lib.io_dfs import df2chucks
+        din=pd.read_csv(cfg['dinp'],sep='\t')
+        din=din.loc[:,['aminoacid: position','transcript: id']].drop_duplicates()
 
-    chunkps=df2chucks(din,chunksize=100,
-                      outd='{}/chunks'.format(cfg['prjd']),
-                      fn='din',return_fmt='\t',
-                      force=cfg['force'])
+        chunkps=df2chucks(din,chunksize=100,
+                          outd='{}/chunks'.format(cfg['prjd']),
+                          fn='din',return_fmt='\t',
+                          force=cfg['force'])
 
-    chunkcfgps=[]
-    for ci,cp in enumerate(chunkps):
-        cfg_=cfg.copy()
-        cfg_['dinp']=cp
-        cfgp='{}/chunk{:08d}.yml'.format(cfg['prjd'],ci+1)    
-        cfg_['cfgp']=cfgp
-        if not exists(cfgp):
-            with open(cfgp, 'w') as f:
-                yaml.dump(cfg_, f, default_flow_style=False) 
-        chunkcfgps.append(cfgp)
-        
-    if len(chunkps)!=0:
+        chunkcfgps=[]
+        for ci,cp in enumerate(chunkps):
+            cfg_=cfg.copy()
+            cfg_['dinp']=cp
+            chunkcfgp='{}/chunk{:08d}.yml'.format(cfg['prjd'],ci+1)    
+            cfg_['cfgp']=chunkcfgp
+            if not exists(chunkcfgp):
+                with open(chunkcfgp, 'w') as f:
+                    yaml.dump(chunkcfg_, f, default_flow_style=False) 
+            chunkcfgps.append(chunkcfgp)
+    else:
+        chunkcfgps=glob('{}/chunk*.yml'.format(cfg['prjd']))
+    
+    if len(chunkcfgps)!=0:
         if cfg['test']:
             pipeline_chunks(chunkcfgps[0])
         else:
             pool=Pool(processes=cfg['cores']) # T : get it from xls
             pool.map(pipeline_chunks, chunkcfgps)
             pool.close(); pool.join()         
-
+    else:
+        pipeline_chunks(cfgp)
 #     pipeline_chunks(cfgp)
     logging.shutdown()
 

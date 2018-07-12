@@ -45,12 +45,16 @@ def dguides2offtargets(cfg):
 
     dofftargetsp='{}/dofftargets.tsv'.format(cfg['datad'])  
     if not exists(dofftargetsp) or cfg['force']:
-
+        step2dscr={1: 'align_guides',
+                   2: 'align_guides',
+                   3: 'align_guides',
+                  }
+        
         dguides=pd.read_csv(dguidesp)
     #     dguides.to_csv('{}/{}'.format(cfg['datad'],basename(dguidesp)),sep='\t')
         dguides=dguides.set_index('guide: id')
 
-        guidesfap = '{}/guides.fa'.format(datatmpd)
+        guidesfap = '{}/01_guides.fa'.format(datatmpd)
         logging.info(basename(guidesfap))
         if not exists(guidesfap) or cfg['force']:
             with open(guidesfap,'w') as f:
@@ -74,13 +78,13 @@ def dguides2offtargets(cfg):
 
         # increase MAXOCC if there is only a single query, but only in CGI mode
         bwaM = MFAC*MAXOCC # -m is queue size in bwa
-        guidessap = '{}/guides.sa'.format(datatmpd)
+        guidessap = '{}/01_guides.sa'.format(datatmpd)
         logging.info(basename(guidessap))
         if not exists(guidessap) or cfg['force']:
             cmd="{} aln -t {} -o 0 -m {} -n {} -k {} -N -l {} {} {} > {}".format(cfg['bwa'],1,bwaM,cfg['mismatches_max'],cfg['mismatches_max'],cfg['guidel'],genomep,guidesfap,guidessap)
             runbashcmd(cmd)
 
-        guidessamp = '{}/guides.sam'.format(datatmpd)
+        guidessamp = '{}/01_guides.sam'.format(datatmpd)
         logging.info(basename(guidessamp))        
         if not exists(guidessamp) or cfg['force']:
             cmd="{} samse -n {} {} {} {} > {}".format(cfg['bwa'],MAXOCC,genomep,guidessap,guidesfap,guidessamp)
@@ -89,8 +93,8 @@ def dguides2offtargets(cfg):
         #----make tables-----------
         from beditor.lib.global_vars import bed_colns,gff_colns    
 
-        alignmentbedp='{}/alignment.bed'.format(datatmpd)
-        dalignbedp='{}/dalignbed.tsv'.format(datatmpd)
+        alignmentbedp='{}/02_alignment.bed'.format(datatmpd)
+        dalignbedp='{}/02_dalignbed.tsv'.format(datatmpd)
         logging.info(basename(dalignbedp))
         if not exists(alignmentbedp) or cfg['force']:
             samfile=pysam.AlignmentFile(guidessamp, "rb")
@@ -158,13 +162,13 @@ def dguides2offtargets(cfg):
             cmd='{} sort -i {} > {}'.format(cfg['bedtools'],genomegffp,genomegffsortedp)
             runbashcmd(cmd)
 
-        annotationsbedp='{}/annotations.bed'.format(datatmpd)
+        annotationsbedp='{}/03_annotations.bed'.format(datatmpd)
         logging.info(basename(annotationsbedp))
         if not exists(annotationsbedp) or cfg['force']:    
             cmd='{} intersect -wa -wb -loj -a {} -b {} > {}'.format(cfg['bedtools'],alignmentbedsortedp,genomegffsortedp,annotationsbedp)
             runbashcmd(cmd)
     #     if the error in human, use: `cut -f 1 data/alignment.bed.sorted.bed | sort| uniq -c | grep -v CHR | grep -v GL | grep -v KI`
-        dalignbedguidesp='{}/dalignbedguides.tsv'.format(datatmpd)
+        dalignbedguidesp='{}/04_dalignbedguides.tsv'.format(datatmpd)
         logging.info(basename(dalignbedguidesp))
         if not exists(dalignbedguidesp) or cfg['force']:
             dalignbed=set_index(dalignbed,'guide: id').join(dguides)
@@ -176,10 +180,10 @@ def dguides2offtargets(cfg):
 
         # dalignid2seq=pd.DataFrame(columns=['sequence'])
         # dalignid2seq.index.name='id'
-        dalignedfastap='{}/dalignedfasta.tsv'.format(datatmpd)
+        dalignedfastap='{}/05_dalignedfasta.tsv'.format(datatmpd)
         logging.info(basename(dalignedfastap))
         if not exists(dalignedfastap) or cfg['force']:
-            alignedfastap='{}/alignment.fa'.format(datatmpd)
+            alignedfastap='{}/05_alignment.fa'.format(datatmpd)
             if not exists(alignedfastap) or cfg['force']:
                 cmd='{} getfasta -s -name -fi {} -bed {} -fo {}'.format(cfg['bedtools'],genomep,alignmentbedp,alignedfastap)
                 runbashcmd(cmd)
@@ -195,7 +199,7 @@ def dguides2offtargets(cfg):
             dalignedfasta=dalignedfasta.drop([c for c in dalignbed if 'Unnamed' in c],axis=1)
             dalignedfasta=del_Unnamed(dalignedfasta)
 
-        dalignbedguidesseqp='{}/dalignbedguidesseq.tsv'.format(datatmpd)
+        dalignbedguidesseqp='{}/06_dalignbedguidesseq.tsv'.format(datatmpd)
         logging.info(basename(dalignbedguidesseqp))
         if not exists(dalignbedguidesseqp) or cfg['force']:        
     #         from beditor.lib.io_dfs import df2info
@@ -212,7 +216,7 @@ def dguides2offtargets(cfg):
             dalignbed=pd.read_csv(dalignbedguidesseqp,sep='\t',low_memory=False)
             dalignbed=del_Unnamed(dalignbed)
 
-        dalignbedstatsp='{}/dalignbedstats.tsv'.format(datatmpd)  
+        dalignbedstatsp='{}/07_dalignbedstats.tsv'.format(datatmpd)  
         logging.info(basename(dalignbedstatsp))
         if not exists(dalignbedstatsp) or cfg['force']:
     #         dalignbed['Hamming distance']=dalignbed.apply(lambda x : hamming_distance(x['guide sequence+PAM'], x['aligned sequence']),axis=1)
@@ -226,11 +230,11 @@ def dguides2offtargets(cfg):
             dalignbed=pd.read_csv(dalignbedstatsp,sep='\t',low_memory=False)
             dalignbed=del_Unnamed(dalignbed)
 
-        daannotp='{}/dannot.tsv'.format(datatmpd)  
-        dannotsaggp='{}/dannotsagg.tsv'.format(datatmpd)  
+        daannotp='{}/08_dannot.tsv'.format(datatmpd)  
+        dannotsaggp='{}/08_dannotsagg.tsv'.format(datatmpd)  
         logging.info(basename(daannotp))
         if (not exists(daannotp)) or (not exists(dannotsaggp)) or cfg['force']:
-            dannots=pd.read_csv('{}/annotations.bed'.format(datatmpd),sep='\t',
+            dannots=pd.read_csv(annotationsbedp,sep='\t',
                        names=bed_colns+[c+' annotation' if c in set(bed_colns).intersection(gff_colns) else c for c in gff_colns ],
                                low_memory=False)
             dannots=del_Unnamed(dannots)
@@ -276,7 +280,7 @@ def dguides2offtargets(cfg):
             dannotsagg=pd.read_csv(dannotsaggp,sep='\t',low_memory=False)
             dannotsagg=del_Unnamed(dannotsagg)
 
-        dalignbedannotp='{}/dalignbedannot.tsv'.format(datatmpd)  
+        dalignbedannotp='{}/09_dalignbedannot.tsv'.format(datatmpd)  
         logging.info(basename(dalignbedannotp))
         if not exists(dalignbedannotp) or cfg['force']:
             dalignbedannot=set_index(dalignbed,'id').join(set_index(dannotsagg,'id'),
@@ -286,7 +290,7 @@ def dguides2offtargets(cfg):
             dalignbedannot=pd.read_csv(dalignbedannotp,sep='\t',low_memory=False)
             dalignbedannot=del_Unnamed(dalignbedannot)
 
-        daggbyguidep='{}/daggbyguide.tsv'.format(datatmpd)      
+        daggbyguidep='{}/10_daggbyguide.tsv'.format(datatmpd)      
         logging.info(basename(daggbyguidep))
         dalignbedannot['NM']=dalignbedannot['NM'].apply(int)
         if not exists(daggbyguidep) or cfg['force']:
