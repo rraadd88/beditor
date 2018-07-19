@@ -27,6 +27,16 @@ pos_muts.loc['Target-AID','Position of mutation from PAM: maximum']=-17
 pos_muts['Position of codon start from PAM: minimum']=pos_muts['Position of mutation from PAM: minimum']-2
 pos_muts['Position of codon start from PAM: maximum']=pos_muts['Position of mutation from PAM: maximum']
 
+# regex
+
+multint2reg={'N':'[ATGC]',
+'R':'[AG]',
+'M':'[AC]',
+'K':'[GT]',
+'Y':'[CT]',
+'V':'[ACG]',
+ }
+
 # EXT 
 import beditor 
 dirs2ps={'pyp':str(subprocess.check_output('which python3'.split(' '))).replace("b'",'').replace("\\n'",''),

@@ -10,6 +10,11 @@
 """
 import logging
 
+def s2re(s,ss2re):
+    for ss in ss2re:
+        s=s.replace(ss,ss2re[ss])
+    return s
+
 def get_logger(argv=None):
     """
     Initiates logging information in a pre-defined format. 

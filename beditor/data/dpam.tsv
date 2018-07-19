@@ -1,0 +1,17 @@
+	PAM	position	guide length	Description
+0	NGG	down	20	20bp-NGG - Sp Cas9 SpCas9-HF1 eSpCas9 1.1
+1	TTN	up	23	TTN-23bp - Cpf1 F. Novicida
+2	NGA	down	20	20bp-NGA - Cas9 S. Pyogenes mutant VQR
+3	NGCG	down	20	20bp-NGCG - Cas9 S. Pyogenes mutant VRER
+4	NNAGAA	down	20	20bp-NNAGAA - Cas9 S. Thermophilus
+5	NGGNG	down	20	20bp-NGGNG - Cas9 S. Thermophilus
+6	NNGRRT	down	21	21bp-NNG(A/G)(A/G)T - Cas9 S. Aureus
+7	NNNRRT	down	21	21bp-NNN(A/G)(A/G)T - KKH SaCas9
+8	NNNNGMTT	down	20	20bp-NNNNG(A/C)TT - Cas9 N. Meningitidis
+9	NNNNACA	down	20	20bp-NNNNACA - Cas9 Campylobacter jejuni
+10	TTTN	up	23	TTTN-23bp - Cpf1 Acidaminococcus / Lachnospiraceae 
+11	NGK	down	20	20bp-NG(G/T) - xCas9 only high efficiency PAMs
+12	NGN	down	20	20bp-NGN or GA(A/T) - xCas9
+13	TYCV	up	23	T(C/T)C(A/C/G)-23bp - TYCV As-Cpf1 K607R 
+14	TATV	up	23	TAT(A/C/G)-23bp - TATV As-Cpf1 K548V 
+15	NG	down	20	undefined
