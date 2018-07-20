@@ -1,6 +1,39 @@
 import pandas as pd
 import numpy as np
 
+
+
+
+
+def reverse_complement_multintseq(seq,nt2complement):
+    complement=[]
+    for s in list(seq):
+        for ss in nt2complement:
+            if ss==s:
+#                 print(nt2complement[s],s)
+                complement.append(nt2complement[s])
+                break
+    return "".join(complement[::-1]    )
+def reverse_complement_multintseqreg(seq,multint2regcomplement,nt2complement):
+    complement=[]
+    for s in list(seq):
+        if s in multint2regcomplement.keys():
+            for ss in multint2regcomplement:
+                if ss==s:
+    #                 print(nt2complement[s],s)
+                    complement.append(multint2regcomplement[s])
+                    break
+        elif s in nt2complement.keys():
+            for ss in nt2complement:
+                if ss==s:
+                    complement.append(nt2complement[s])
+                    break            
+        else:
+            logging.error(f'odd character {s} in seq {seq}')
+        
+    return "".join(complement[::-1]    )
+
+
 def fa2df(alignedfastap,ids2cols=False):
     dtmp=pd.read_csv(alignedfastap,names=["c"])
     dtmp=dtmp.iloc[::2].reset_index(drop=True).join(dtmp.iloc[1::2].reset_index(drop=True),rsuffix='r')

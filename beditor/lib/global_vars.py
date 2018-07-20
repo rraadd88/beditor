@@ -29,13 +29,44 @@ pos_muts['Position of codon start from PAM: maximum']=pos_muts['Position of muta
 
 # regex
 
-multint2reg={'N':'[ATGC]',
-'R':'[AG]',
-'M':'[AC]',
-'K':'[GT]',
+multint2reg={'R':'[AG]',
 'Y':'[CT]',
+'S':'[GC]',
+'W':'[AT]',
+'K':'[GT]',
+'M':'[AC]',
+'B':'[CGT]',
+'D':'[AGT]',
+'H':'[ACT]',
 'V':'[ACG]',
- }
+'N':'[ATGC]',}
+multint2regcomplement={'R':'[TC]',
+'Y':'[GA]',
+'S':'[GC]',
+'W':'[AT]',
+'K':'[CA]',
+'M':'[TG]',
+'B':'[^A]',
+'D':'[^C]',
+'H':'[^G]',
+'V':'[^T]',
+'N':'[ATGC]',}
+
+def get_nt2complement(): 
+    nt2complement={'A':'T',
+                  'G':'C',
+                  'N':'N',
+                  'R':'Y',
+                  'S':'W',
+                  'K':'M',
+                   'B':'b',
+                   'D':'d',
+                   'H':'h',
+                   'V':'v',
+                   'N':'N',
+                  }
+    return nt2complement.update(dict(zip(nt2complement.values(),nt2complement.keys())))
+nt2complement=get_nt2complement()
 
 # EXT 
 import beditor 
