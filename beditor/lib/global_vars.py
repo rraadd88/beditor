@@ -65,7 +65,8 @@ def get_nt2complement():
                    'V':'v',
                    'N':'N',
                   }
-    return nt2complement.update(dict(zip(nt2complement.values(),nt2complement.keys())))
+    nt2complement.update(dict(zip(nt2complement.values(),nt2complement.keys())))
+    return nt2complement
 nt2complement=get_nt2complement()
 
 # EXT 

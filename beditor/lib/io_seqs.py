@@ -1,10 +1,6 @@
 import pandas as pd
 import numpy as np
 
-
-
-
-
 def reverse_complement_multintseq(seq,nt2complement):
     complement=[]
     for s in list(seq):
