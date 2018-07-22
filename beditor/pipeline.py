@@ -14,33 +14,33 @@ import numpy as np
 
 from multiprocessing import Pool
 
-from beditor.lib.io_strs import get_logger
-logging=get_logger()
+import logging
 from beditor.configure import get_deps,get_genomes
 from beditor.lib.io_sys import runbashcmd
 
 # GET INPTS 
 
 def pipeline_chunks(cfgp):
-    from beditor.lib.get_seq import din2dseq
-    from beditor.lib.get_mutations import dseq2dmutagenesis 
-    from beditor.lib.make_guides import dseq2dguides
-    from beditor.lib.get_specificity import dguides2offtargets
     # from beditor.configure import get_deps
 
     logging.info('processing: '+cfgp)
     import yaml
     cfg=yaml.load(open(cfgp, 'r'))
 
-    cfg=get_deps(cfg)
-    cfg=get_genomes(cfg)
+    print('processing: '+cfgp)
+#     print(cfg)    
+#     deps and genome are only needed if running step =1 or 4
+    cfg['step2ignoredl']=[2,3]
+    if not cfg['step'] in cfg['step2ignoredl']:
+        cfg=get_deps(cfg)
+        cfg=get_genomes(cfg)
 
-    #project dir
-    cfg['prj']=splitext(basename(cfgp))[0]
-    if dirname(cfgp)!='':
-        cfg['prjd']=dirname(cfgp)+'/'+cfg['prj']
-    else:
-        cfg['prjd']=cfg['prj']
+#     #project dir
+#     cfg['prj']=splitext(basename(cfgp))[0]
+#     if dirname(cfgp)=='':
+#         cfg['prjd']=dirname(cfgp)+'/'+cfg['prj']
+#     else:
+#         cfg['prjd']=cfg['prj']
 
     #datads
     cfg[0]=cfg['prjd']+'/00_input/'
@@ -60,7 +60,7 @@ def pipeline_chunks(cfgp):
     if not exists(cfgoutp) or cfg['force']:
         with open(cfgoutp, 'w') as f:
             yaml.dump(cfg, f, default_flow_style=False)
-    print(cfg)
+    logging.info(cfg)
     if cfg['step']==None or cfg['step']==1:
         if not exists(dinoutp) or cfg['force']:
             from shutil import copyfile
@@ -77,15 +77,19 @@ def pipeline_chunks(cfgp):
     else:
         stepall=False
     if cfg['step']==1 or stepall:
+        from beditor.lib.get_seq import din2dseq
         cfg['step']=1
         din2dseq(cfg)
     if cfg['step']==2 or stepall:
+        from beditor.lib.get_mutations import dseq2dmutagenesis 
         cfg['step']=2
         dseq2dmutagenesis(cfg)
     if cfg['step']==3 or stepall:
+        from beditor.lib.make_guides import dseq2dguides
         cfg['step']=3
         dseq2dguides(cfg)
     if cfg['step']==4 or stepall:
+        from beditor.lib.get_specificity import dguides2offtargets
         cfg['step']=4
         dguides2offtargets(cfg)
     if 'datad' in cfg.keys():
@@ -99,6 +103,7 @@ def pipeline(cfgp,step=None,test=False,force=False):
     from glob import glob
     
     cfg=yaml.load(open(cfgp, 'r'))
+    
     #project dir
     cfg['prj']=splitext(basename(cfgp))[0]
     if dirname(cfgp)!='':
@@ -113,8 +118,11 @@ def pipeline(cfgp,step=None,test=False,force=False):
     cfg['force']=force
     cfg['cfgp']=cfgp
     
-    cfg=get_deps(cfg)
-    cfg=get_genomes(cfg)
+#     deps and genome are only needed if running step =1 or 4
+    cfg['step2ignoredl']=[2,3]
+    if not cfg['step'] in cfg['step2ignoredl']:
+        cfg=get_deps(cfg)
+        cfg=get_genomes(cfg)
 
     #datads
     cfg[0]=cfg['prjd']+'/00_input/'
@@ -155,6 +163,14 @@ def pipeline(cfgp,step=None,test=False,force=False):
             cfg_['dinp']=cp
             chunkcfgp='{}/chunk{:08d}.yml'.format(cfg['prjd'],ci+1)    
             cfg_['cfgp']=chunkcfgp
+            
+            #project dir
+            cfg_['prj']=splitext(basename(cfg_['cfgp']))[0]
+            if dirname(cfgp)!='':
+                cfg_['prjd']=dirname(cfg_['cfgp'])+'/'+cfg_['prj']
+            else:
+                cfg_['prjd']=cfg_['prj']
+            
             if not exists(chunkcfgp):
                 with open(chunkcfgp, 'w') as f:
                     yaml.dump(chunkcfg_, f, default_flow_style=False) 
@@ -171,7 +187,7 @@ def pipeline(cfgp,step=None,test=False,force=False):
             pool.map(pipeline_chunks, chunkcfgps)
             pool.close(); pool.join()         
     else:
-        pipeline_chunks(cfgp)
+        pipeline_chunks(cfgoutp)
 #     pipeline_chunks(cfgp)
     logging.shutdown()
 
@@ -202,7 +218,16 @@ def main():
 #    parser.add_argument('-h', '--help', action='help', #default=argparse.SUPPRESS,
 #                    help='Show this help message and exit. \n Version info: %s' % version_info)
     args = parser.parse_args()
+
+    from beditor.lib.io_strs import get_logger
+    if args.test:
+        level=logging.INFO
+    else: 
+        level=logging.ERROR
+    get_logger(program='beditor',argv=list(vars(args).values()),level=level)
+    
     logging.info("start")
+    
     pipeline(args.cfg,step=args.step,
         test=args.test,force=args.force)
 
