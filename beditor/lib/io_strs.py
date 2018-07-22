@@ -15,28 +15,90 @@ def s2re(s,ss2re):
         s=s.replace(ss,ss2re[ss])
     return s
 
-def get_logger(argv=None):
-    """
-    Initiates logging information in a pre-defined format. 
-    """
-    import logging
+import logging
+import os.path
+
+def get_logger(program='program',argv=None,level=None):
+# def initialize_logger(output_dir):
     import datetime
+    date=make_pathable_string(str(datetime.datetime.now())).replace('-','_')
+    cmd='_'.join([str(s) for s in argv]).replace('/','|')
+    logp=f"log_{program}_{date}_{cmd}.log"
     log_format='[%(asctime)s] %(levelname)s\tfrom %(filename)s in %(funcName)s(..):%(lineno)d: %(message)s'
     #'[%(asctime)s] %(levelname)s\tfrom %(filename)s in %(funcName)s(..):%(lineno)d: %(message)s'
+    
+    logger = logging.getLogger()
+    logger.setLevel(logging.DEBUG)
+    
+    # create console handler and set level to info
+    handler = logging.StreamHandler()
+    handler.setLevel(level)
+    formatter = logging.Formatter(log_format)
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
 
-    logging.basicConfig(format=log_format,
-                        level=logging.DEBUG,)
-    if not argv is None:
-        log_fh="%s_%s" % (make_pathable_string(str(datetime.datetime.now())),'_'.join(argv).replace('/','|'))
-        print(log_fh)
-        logging.basicConfig(filename=log_fh)
-        console = logging.StreamHandler()
-        console.setLevel(logging.INFO)
-        formatter = logging.Formatter(log_format)
-        console.setFormatter(formatter)
-        logging.getLogger('').addHandler(console)
-    # logging.info('#START')
-    return logging
+#     # create error file handler and set level to error
+#     handler = logging.FileHandler(os.path.join(output_dir, "error.log"),"w", encoding=None, delay="true")
+#     handler.setLevel(logging.ERROR)
+#     formatter = logging.Formatter(log_format)
+#     handler.setFormatter(formatter)
+#     logger.addHandler(handler)
+
+    # create debug file handler and set level to debug
+    handler = logging.FileHandler(logp)
+    handler.setLevel(logging.DEBUG)
+    formatter = logging.Formatter(log_format)
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+    
+# def get_logger(argv=None,level=None):
+#     """
+#     Initiates logging information in a pre-defined format. 
+#     :param level:
+#     'debug': logging.DEBUG,
+#     'info': logging.INFO,
+#     'warning': logging.WARNING,
+#     'error': logging.ERROR,
+#     'critical': logging.CRITICAL    
+#     """
+#     import logging
+#     import logging.handlers
+#     import datetime
+#     log_format='[%(asctime)s] %(levelname)s\tfrom %(filename)s in %(funcName)s(..):%(lineno)d: %(message)s'
+#     #'[%(asctime)s] %(levelname)s\tfrom %(filename)s in %(funcName)s(..):%(lineno)d: %(message)s'
+#     if level is None:
+#         level=logging.INFO
+#     if not argv is None:
+#         logp=f"{make_pathable_string(str(datetime.datetime.now()))}_{'_'.join([str(s) for s in argv]).replace('/','|')}.log"
+#         logging.basicConfig(filename=logp,format=log_format,
+#                             level=level)
+        
+# #         my_logger = logging.getLogger('rraadd88')
+# #         my_logger.setLevel(level)
+
+# #         # Add the log message handler to the logger
+# #         handler = logging.handlers.RotatingFileHandler(
+# #                   logp, maxBytes=100000000000000)
+
+# #         handler.setLevel(level)
+
+# #         my_logger.addHandler(handler)
+        
+# #         print(log_fh)
+# #         logging.basicConfig(filename=log_fh)
+# #         console = logging.StreamHandler()
+# #         console.setLevel(logging.INFO)
+# #         formatter = logging.Formatter(log_format)
+# #         console.setFormatter(formatter)
+# #         logging.getLogger('').addHandler(console)
+
+# #         # Set up a specific logger with our desired output level
+#     # logging.info('#START')
+#     else:
+#         logging.basicConfig(format=log_format,
+#                 level=level)
+
+#     return logging
 
 
 def isstrallowed(s,form):

@@ -96,7 +96,6 @@ def get_codon_seq(dintseqflt01,test=False):
             print('{}:{}'.format(dintseqflt01.loc[subi,'P'],dintseqflt01.loc[subi,'P-codon']))
     return dintseqflt01
 
-from tqdm import trange
 
 from beditor.lib.global_vars import bed_colns
 from beditor.lib.io_seqs import fa2df 
@@ -156,7 +155,8 @@ def din2dseq(cfg):
             terrnotfound=[]
             terrnoncoding=[]
             bedrowi=0
-            for i in trange(len(din)-1,desc='get positions for bedtools'):                
+#             for i in trange(len(din)-1,desc='get positions for bedtools'):                
+            for i in din.index:                
                 if din.loc[i,'transcript: id'] in ensembl.transcript_ids():
                     t=ensembl.transcript_by_id(din.loc[i,'transcript: id'])
                     if t.is_protein_coding and t.contains_start_codon and t.contains_stop_codon:

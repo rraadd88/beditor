@@ -49,13 +49,13 @@ def get_beditorscore_per_guide(guide_seq, strategy,
     """
     Calculates beditor score per guide.
     :param guide_seq: guide seqeunce 23nts
-    :param strategy: strategy string eg. '- strand; Target-AID: GCT to ACT; A to T, codon position=-19; mutation position=-17;'
+    :param strategy: strategy string eg. ABE;+;@-14;ACT:GCT;T:A;
     :param align_seqs_scores: list of beditor scores per alignments for all the alignments between guide and genomic DNA
     :param penalty_activity_window: if editable base is not in activity window, penalty_activity_window=0.5
     :returns: beditor score per guide.
     """
     from beditor.lib.global_vars import pos_muts
-    pos_mut=int(strategy.split(';')[-2].split('=')[1])
+    pos_mut=int(strategy.split(';')[2].replace('@','')[1])
     method=strategy.split('; ')[1].split(':')[0]
     penalty_activity_window=1 if (pos_muts.loc[method,'Position of mutation from PAM: minimum']<=pos_mut<=pos_muts.loc[method,'Position of mutation from PAM: maximum']) else penalty_activity_window
     penalty_align_seqs_scores=np.prod(align_seqs_scores)

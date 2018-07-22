@@ -17,8 +17,6 @@ import pysam
 import numpy as np
 from glob import glob
 
-from tqdm import trange
-
 from beditor.lib.io_sys import runbashcmd
 from beditor.lib.io_seqs import fa2df 
 from beditor.lib.io_dfs import set_index,del_Unnamed,df2info 
@@ -260,7 +258,7 @@ def dguides2offtargets(cfg):
             dannots=dannots.reset_index()
             alignids=dannots['id'].unique()#[:15]
 
-            for alignidi in trange(len(alignids)):
+            for alignidi in range(len(alignids)):
                 alignid=alignids[alignidi]
             #     if dannots.loc[i,'type'].value_counts().sum()==1:
                 dannoti=dannots.loc[dannots['id']==alignid,:]
@@ -310,7 +308,7 @@ def dguides2offtargets(cfg):
         #         if cfg['test']:
         #             print(guideids)
         #             print(dalignbedannot['guide: id'].unique())
-                for gi in trange(len(guideids)):
+                for gi in range(len(guideids)):
                     gid=guideids[gi]
 
                     dalignbedannoti=dalignbedannot.loc[dalignbedannot['guide: id']==gid,:]

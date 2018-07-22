@@ -1,7 +1,8 @@
 import pandas as pd
 import numpy as np
 
-from os.path import exists
+import sys
+from os.path import exists,realpath,dirname
 
 from Bio import SeqIO, Alphabet, Data, Seq, SeqUtils
 from Bio import motifs,Seq,AlignIO
@@ -9,74 +10,102 @@ from Bio import motifs,Seq,AlignIO
 import logging
 from tqdm import trange
 
-def get_guide_seq(dguides,method):
-    seq_activity=seq_target[20+dmutagenesis.loc[muti,'Position of mutation from PAM: minimum']:20+1+dmutagenesis.loc[muti,'Position of mutation from PAM: maximum']]
-    if seq_activity.count(dmutagenesis.loc[muti,'nucleotide'])==1:
-        if (pos_codon_from_PAM>=dmutagenesis.loc[muti,'Position of codon start from PAM: minimum']) and (pos_codon_from_PAM<=dmutagenesis.loc[muti,'Position of codon start from PAM: maximum']):
-            if strand=='+ strand':
-                pos_mut_from_PAM=pos_codon_from_PAM-1+dmutagenesis.loc[muti,'position of mutation in codon']                    
-            elif strand=='- strand':
-                pos_mut_from_PAM=pos_codon_from_PAM-1+4-dmutagenesis.loc[muti,'position of mutation in codon']                    
-            if (pos_mut_from_PAM>=dmutagenesis.loc[muti,'Position of mutation from PAM: minimum']) and (pos_mut_from_PAM<=dmutagenesis.loc[muti,'Position of mutation from PAM: maximum']):
-                strategy='{}; {}: {} to {}; {} to {}, codon position={}; mutation position={};'.format(dmutagenesis.loc[muti,'mutation on strand'],
-                                                             method,
-                                                            dmutagenesis.loc[muti,'codon'],
-                                                            dmutagenesis.loc[muti,'codon mutation'],
-                                                            dmutagenesis.loc[muti,'amino acid'],
-                                                            dmutagenesis.loc[muti,'amino acid mutation'],
-                                                            pos_codon_from_PAM,
-                                                            pos_mut_from_PAM
-                                                            )        
-                codon_mut=dmutagenesis.loc[muti,'codon mutation']
-                if strand=='- strand':
-                    codon_mut=str(Seq.Seq(codon_mut,Alphabet.generic_dna).reverse_complement())
-#                                     dguides.loc[genei,'guide sequence ({0})'.format(strategy)]=seq_target
-                dguides.loc[genei,'guide sequence+PAM({0})'.format(strategy)]=seq_target+seq[pampos-1:pampos+2]
-                if test:
-                    print('{}:pos_mut_from_PAM={};pos_codon_from_PAM={};seq_activity={};{}'.format(gene,pos_mut_from_PAM,pos_codon_from_PAM,seq_activity,strategy))
-                if dbug:
-                    print(pampos)
-                    print(strand)
-                    print(codon)
-                    print(seq)
-                    print(seq_target)
-                    print(seq_activity)
-                    print(pos_codon_from_PAM)
-                    print(pos_mut_from_PAM)
-#                                     print(seq_guide)
-                    print(sdf)
-                    break
-    return dguides
+import pandas as pd
+import numpy as np
 
-def get_seq_codon(seq,codon,pos_codon):            
-    if strand=='- strand':
-        # print(seq)
-        seq=str(Seq.Seq(seq,Alphabet.generic_dna).reverse_complement())
-        codon=str(Seq.Seq(codon,Alphabet.generic_dna).reverse_complement())
-        pos_codon=len(seq)-(pos_codon)-3
-    if test:
-        if codon!=seq[(pos_codon):pos_codon+3]:
-            print('pos_codon is wrong')
-            break
-    return seq,codon,pos_codon
+from os.path import exists
 
-def get_pam_searches(pam,dpam,seq,pos_codon,
+from Bio import SeqIO, Alphabet, Data, Seq, SeqUtils
+from Bio import motifs,Seq,AlignIO
+import logging
+
+from beditor.lib.io_dfs import *
+from beditor.lib.global_vars import multint2reg,multint2regcomplement,nt2complement
+from beditor.lib.io_seqs import reverse_complement_multintseq,reverse_complement_multintseqreg,str2seq
+from beditor.lib.io_strs import s2re
+
+
+def get_pam_searches(dpam,seq,pos_codon,
                     test=False):
-    if dpam.loc[pam,'position']=='down':
-        pamposs=[match.start() for match in re.finditer(pam, seq)]
-    elif dpam.loc[pam,'position']=='up':
-        pamposs=[match.end() for match in re.finditer(pam, seq)]                    
-    for pamposi,pampos in enumerate(pamposs):
-        if dpam.loc[pam,'position']=='down':
-            seq_target=seq[pampos-dpam.loc[pam,'guide lendth']+1:pampos-1]
-            pos_codon_from_PAM=pos_codon-(pampos)+1
-        elif dpam.loc[pam,'position']=='up':
-            seq_target=seq[pampos+1:pampos+dpam.loc[pam,'guide lendth']+1]
-            pos_codon_from_PAM=pos_codon-(pampos)+1                        
+    import regex as re
+    def get_guide_pam(match,pam_stream,guidel,pos_codon):  
+        if pam_stream=='down':
+            # IIIIIIINGG
+            # 0123456789
+            seq_guidepam=seq[match.span()[0]-guidel:match.span()[1]]
+            seq_guide=seq[match.span()[0]-guidel:match.span()[0]]
+            seq_pam=seq[match.span()[0]:match.span()[1]]
+            dist_codon=pos_codon-match.span()[0]
+#             if test:
+#                 print(match.span()[0]-pos_codon)
+        elif pam_stream=='up':
+            # TTNIIIIIII
+            # 0123456789
+            seq_guidepam=seq[match.span()[0]:match.span()[1]+guidel]
+            seq_guide=seq[match.span()[1]:match.span()[1]+guidel]
+            seq_pam=seq[match.span()[0]:match.span()[1]]
+            dist_codon=pos_codon-match.span()[1]
+        if seq_pam!=match.group():
+            logging.error(f'indexing is wrong:seq_guidepam: {seq_guidepam}, seq_guide: {seq_guide}, seq_pam: {seq_pam},match.group(): {match.group()}')               
+        return seq_guidepam,seq_guide,seq_pam,abs(dist_codon)
+    pams=dpam.index.tolist()
+    dpamposs=pd.DataFrame(columns=['guide+PAM sequence','guide sequence','PAM sequence'])
+    pamposi=0
+    for pam in pams:
+#         if test:
+#             print(pam)
+#             print(pam in dpam.index)
+#             print('rPAM' in dpam.columns)
+#             print(dpam.loc[pam,'rPAM'], seq)        
+        matchesiter=re.finditer(dpam.loc[pam,'rPAM'], seq, overlapped=True)
+        for match in matchesiter:
+#             if test:
+#                 print(match)
+            dpamposs.loc[pamposi,'position of PAM ini'],dpamposs.loc[pamposi,'position of PAM end']=match.span() 
+            dpamposs.loc[pamposi,'position of PAM end']=dpamposs.loc[pamposi,'position of PAM end']-1
+            dpamposs.loc[pamposi,'guide+PAM sequence'],dpamposs.loc[pamposi,'guide sequence'],dpamposs.loc[pamposi,'PAM sequence'],dpamposs.loc[pamposi,'distance of codon from PAM']\
+            =get_guide_pam(match,dpam.loc[pam,'position'],dpam.loc[pam,'guide length'],pos_codon)
+#             if test:
+#                 print(dpamposs['distance of codon from PAM'])
+            dpamposs.loc[pamposi,'PAM']=pam
+            pamposi+=1
+#                 break
+#         break
+#     if test:
+#         print(dpamposs.shape)
+    dpamposs['codon']=seq[pos_codon:pos_codon+3]
+    dpamposs['guide sequence']=dpamposs['guide sequence'].fillna('')
+    dpamposs['guide sequence length']=dpamposs.apply(lambda x : len(x['guide sequence']),axis=1)
+    
+    dpamposs=dpam.join(set_index(dpamposs,'PAM'),how='right')
+    dpamposs.index.name='PAM'
+#     if test:
+#         print(dpamposs.shape)
+#     if test:
+#         print(dpamposs.shape)
     return dpamposs
 
+# if mutation is in the activity window
+def get_distance_of_mutation_in_codon_from_PAM(dist_codon,pos_pam,pos_mut):
+    if pos_pam=='up':
+        dist_mut=dist_codon+pos_mut
+    elif pos_pam=='down':
+        dist_mut=dist_codon-pos_mut
+    else:
+        logging.error(f'pam_pos {pam_pos} is wrong')
+    return dist_mut
+
+def get_activity_seq(guide_seq,pam_pos,pam_dist_min,pam_dist_max,dbug=False):
+    if dbug:
+        print(guide_seq,pam_pos,pam_dist_min,pam_dist_max)
+    if pam_pos=='up':
+        seq=guide_seq[pam_dist_min-1:pam_dist_max]
+    elif pam_pos=='down':
+        seq=guide_seq[len(guide_seq)-pam_dist_max:len(guide_seq)-pam_dist_min+1]
+    return seq
+
 def make_guides(dseq,dmutagenesis,
-                pams,dpam,
+                dpam,
                test=False,
                dbug=False):
     """
@@ -86,61 +115,151 @@ def make_guides(dseq,dmutagenesis,
     Finally generates a table.
     0-based indexing
     """
+    from beditor.lib.io_strs import s2re
     flankaas=7#FIXME if flank length changes
-    dguides=dseq.copy()
-    dguides=dguides.reset_index()
-    dguides.index=range(len(dguides))
-    dpam=set_index(dpam,'PAM')                
-    for pam in pams:
-        logging.info(f'working on {pam} PAM')
-        for strand in dmutagenesis.loc[:,'mutation on strand'].unique():
-            logging.info('working on {strand}')
-            for genei in range(len(dguides)):
-                gene=dguides.loc[genei,'gene: name']
-                logging.info('working on {gene}')
-                seq,codon,pos_codon=get_seq_codon(seq=dguides.loc[genei,'transcript: sequence'],
-                                    codon=dguides.loc[genei,'codon: wild-type'],
-                                    pos_codon=(flankaas)*3,test=test)
-                dpamposs=get_pam_searches(pam,dpam,seq,pos_codon,test=test)
-                for pamposi in dpamposs.index:
-                    for muti in dmutagenesis[(dmutagenesis['codon']==codon) & (dmutagenesis['mutation on strand']==strand)].index:
-                        method=dmutagenesis.loc[muti,'method']
-                        
-    return dguides
 
+    dseq=dseq.reset_index()
+    dseq.index=range(len(dseq))
+    dpam=set_index(dpam,'PAM')                
+#     for gi in trange(len(dseq),desc='designing guides'):
+    for gi in dseq.index:
+        dseqi=pd.DataFrame(dseq.loc[gi,['aminoacid: wild-type','codon: wild-type','id','aminoacid: position',]]).T
+        dmutagenesis_gi=pd.merge(dseqi,
+        dmutagenesis,
+        how='inner',
+        left_on=['aminoacid: wild-type','codon: wild-type'],
+        right_on=['amino acid','codon'])        
+        if len(dmutagenesis_gi)!=0:
+            logging.info(f"working on {dseq.loc[gi,'id']}")
+#             codon=dseq.loc[gi,'codon: wild-type']
+            pos_codon=(flankaas)*3
+            dpamsearches=get_pam_searches(dpam=dpam,
+             seq=dseq.loc[gi,'transcript: sequence'],
+             pos_codon=pos_codon,
+                test=test)
+#             if dbug:
+#                 print(dpamsearches.shape)
+#                 return dpamsearches 
+            if len(dpamsearches)!=0:
+                # filter by guide length
+                dpamsearchesflt=dpamsearches.loc[dpamsearches['guide length']==dpamsearches['guide sequence length'],:]
+#                 if dbug:
+#                     print(dmutagenesis_gi.head())
+                if len(dpamsearchesflt)!=0:
+#                     if dbug:
+#                         print('search',dpamsearchesflt['strand'].value_counts())
+#                         print('mutage',dmutagenesis_gi['strand'].value_counts())
+                    dpamsearches_strategy=pd.merge(dpamsearchesflt.reset_index(),dmutagenesis_gi.reset_index(),
+                             how='left',
+                             on=['codon','strand'])
+                    dpamsearches_strategy=dpamsearches_strategy.dropna(subset=[c for c in dpamsearches_strategy if 'sequence' in c],how='any',axis=0)
+                    if len(dpamsearches_strategy)!=0:
+                        # filter by mutation position 
+                        dpamsearches_strategy['distance of mutation in codon from PAM']=dpamsearches_strategy.apply(lambda x: get_distance_of_mutation_in_codon_from_PAM(x['distance of codon from PAM'],x['position'],x['position of mutation in codon']),axis=1)
+                        dpamsearches_strategy=dpamsearches_strategy.loc[dpamsearches_strategy.apply(lambda x : True if (x['distance of mutation from PAM: minimum']<=abs(x['distance of mutation in codon from PAM'])<=x['distance of mutation from PAM: maximum']) else False,axis=1),:]
+#                         if dbug:
+#                             print('combo',dpamsearches_strategy['strand'].value_counts())
+                        if len(dpamsearches_strategy)!=0:                                 
+                            dpamsearches_strategy['activity sequence']=dpamsearches_strategy.apply(lambda x: get_activity_seq(x['guide sequence'],x['position'],
+                                         int(x['distance of mutation from PAM: minimum']),
+                                         int(x['distance of mutation from PAM: maximum'])),axis=1)        
+                            if not 'dguides' in locals():
+                                dguides=dpamsearches_strategy.copy()
+                            else:
+                                dguides=dguides.append(dpamsearches_strategy)
+#                             if dbug:
+#                                 return dpamsearches_strategy        
+                            del dpamsearches_strategy
+                        else:
+                            if dbug:
+                                print(f"empty after filter by mutation position {dpamsearches_strategy['distance of mutation in codon from PAM'].tolist()}")
+                    else:
+                        if dbug:
+                            print('empty after removing nan seqs')
+                else:
+                    if dbug:
+                        print(f"empty after filtering by guide length. {dpamsearches['guide sequence length'].tolist()}")
+            else:
+                if dbug:
+                    print(f"no pam among {dpam.index.tolist()} were found {dseq.loc[gi,'transcript: sequence']}")
+        else:
+            if dbug:
+                print(f"can not mutate {dseqi['codon: wild-type'].tolist()}. its not in {dmutagenesis['codon'].tolist()}")
+    if 'dguides' in locals():        
+        logging.info('#reverse complement all the sequences')
+        dguides['PAM']=dguides.apply(lambda x : reverse_complement_multintseq(x['PAM'],nt2complement) if x['is a reverse complement'] else x['PAM'],axis=1)
+        for colseq in ['guide+PAM sequence','guide sequence','PAM sequence','activity sequence']:
+            dguides[colseq]=dguides.apply(lambda x : str(str2seq(x[colseq]).reverse_complement()) if x['is a reverse complement'] else x[colseq],axis=1)
+            
+        logging.info('filter by # editable nts in activity seq')
+        logging.info(dguides.shape)
+        dguides=dguides.loc[(dguides.apply(lambda x : np.sum([x['activity sequence'].count(nt) for nt in  x['nucleotide']])==len(x['nucleotide']),axis=1)),:]
+        logging.info(dguides.shape)
+    
+        dguides.loc[:,'strategy']=dguides.apply(lambda x: f"{x['method']};{x['strand']};@{int(x['distance of mutation in codon from PAM'])};x['PAM'];{x['codon']}:{x['codon mutation']};{x['amino acid']}:{x['amino acid mutation']};",axis=1)
+        dguides.loc[:,'guide: id']=dguides.apply(lambda x: f"{x['id']}|{int(x['aminoacid: position'])}|({x['strategy']})",axis=1)
+        return dguides
+    
 def dseq2dguides(cfg):
     """
     Wrapper around make guides function.
     :param cfg: conffguration settings given in yml file.    
     """
-    from beditor.lib.global_vars import BEs,pos_muts
-    from beditor.lib.io_dfs import df2unstack
-    from beditor.lib.plot_res import plot_nt_composition
-
     cfg['datad']=cfg[cfg['step']]
     cfg['plotd']=cfg['datad']
-    dguidesp='{}/dguides.csv'.format(cfg['datad'])
     dguideslinp='{}/dguideslin.csv'.format(cfg['datad'])
-    if not exists(dguidesp) or cfg['force']:
+    dmutagenesisp='{}/dmutagenesis.csv'.format(cfg['datad'])
+    dpam_strandsp='{}/dpam_strands.csv'.format(cfg['datad'])
+    if not exists(dguideslinp) or cfg['force']:
         dseq=pd.read_csv('{}/dseq.csv'.format(cfg[cfg['step']-2])) #FIXME if numbering of steps is changed, this is gonna blow
         dmutagenesis=pd.read_csv('{}/dmutagenesis.csv'.format(cfg[cfg['step']-1]))
 
-        dguides=make_guides(dseq,dmutagenesis)
+        # make pam table
+        dpam=pd.read_table('{}/../data/dpam.tsv'.format(dirname(realpath(__file__))))
+        if sum(dpam['PAM'].isin(cfg['pams']))!=len(cfg['pams']):
+            logging.error(f"PAM/s {cfg['pams']} are not supported {dpam['PAM'].tolist()}")
+            sys.exit(1)
+        dpam=del_Unnamed(dpam)
+        dpam['rPAM']=dpam.apply(lambda x : s2re(x['PAM'],multint2reg) ,axis=1)
+        dpam=set_index(dpam,'PAM')
+        dpam['strand']='+'
+        dpamr=pd.DataFrame(columns=dpam.columns)
+        dpam.loc[:,'reverse complement']=np.nan
+        dpam.loc[:,'original']=np.nan
+        for pam in dpam.index:
+            pamr=reverse_complement_multintseq(pam,nt2complement)
+            dpam.loc[pam,'reverse complement']=pamr
+            dpam.loc[pam,'original']=pam
+            dpamr.loc[pamr,'original']=pam
+            dpamr.loc[pamr,['position','guide length','Description']]=dpam.loc[pam,['position','guide length','Description']]
+            dpamr.loc[pamr,['rPAM']]=reverse_complement_multintseqreg(pam,multint2regcomplement,nt2complement)    
+        dpamr['position']= dpamr.apply(lambda x: 'up' if x['position']=='down' else 'down',axis=1)
+        dpamr['strand']='-'
+        dpam_strands=dpam.append(dpamr,sort=True)
+        dpam_strands.index.name='PAM'
+        dpam_strands.loc[:,'is a reverse complement']=pd.isnull(dpam_strands.loc[:,'reverse complement'])        
+        pams_strands=cfg['pams']+dpam_strands.loc[cfg['pams'],'reverse complement'].dropna().tolist()
+        dpam_strands=dpam_strands.loc[pams_strands,:]
+
+#         for col in ['Position of mutation from PAM: minimum','Position of mutation from PAM: maximum','Position of codon start from PAM: minimum','Position of codon start from PAM: maximum']:
+#             dmutagenesis[col.replace('Position','distance')]=dmutagenesis[col].apply(abs)
+        for col in ['Position of mutation from PAM: ','Position of mutation from PAM: ',
+                    'Position of codon start from PAM: ','Position of codon start from PAM: ']:    
+            mum1,mum2=('minimum','maximum')
+        #             for mum1,mum2 in zip(['minimum','maximum'],['minimum','maximum']):
+            dmutagenesis[col.replace('Position','distance')+mum1]=dmutagenesis.apply(lambda x : np.min([abs(x[col+'minimum']),abs(x[col+'maximum'])]),axis=1)
+            dmutagenesis[col.replace('Position','distance')+mum2]=dmutagenesis.apply(lambda x : np.max([abs(x[col+'minimum']),abs(x[col+'maximum'])]),axis=1)
+
+        dmutagenesis['strand']=dmutagenesis.apply(lambda x : x['mutation on strand'].replace(' strand',''),axis=1)        
+
+        dpam_strands.to_csv(dpam_strandsp,sep='\t')
+        dmutagenesis.to_csv(dmutagenesisp,sep='\t')
+#         sys.exist(1)
         
-        colns_guideseq=[c for c in dguides if c.startswith('guide sequence+PAM')]
-        genes_dguides=dguides.loc[:,colns_guideseq].dropna(how='all')
-        dguides=dguides.loc[genes_dguides.index,:]
-        print('Out of total {} sites, for {} sites,\nguides were designed.'.format(len(dseq),len(dguides)))
-        dguides.to_csv(dguidesp)
-
-
-        dguideslin=dguides.set_index('id').loc[:,colns_guideseq]
-        dguideslin.index.name='guide: id'
-
-        dguideslin=df2unstack(dguideslin,coln='strategy',col='guide sequence+PAM').dropna(axis=0,how='any')
-        dguideslin['guide: id']=dguideslin.apply(lambda x : x['guide: id']+'|'+x['strategy'],axis=1)
-        dguideslin.to_csv(dguideslinp)
-
-        plot_nt_composition(dguides,
-                        pos_muts,
-                        plotp='{}/nt_compositions_of_guides.png'.format(cfg['plotd']))
+        dguideslin=make_guides(dseq,
+                    dmutagenesis,
+                    dpam=dpam_strands,
+                       test=cfg['test'],
+        #                dbug=True,
+                     )
+        dguideslin.to_csv(dguideslinp,sep='\t')
