@@ -23,9 +23,9 @@ except ImportError:
     from distutils.core import setup, find_packages, Extension
 
 
-if (sys.version_info[0], sys.version_info[1]) != (3, 6):
-    raise RuntimeError('Python 3.6 required ')
-               
+if (sys.version_info[0], sys.version_info[1],sys.version_info[2]) != (3, 6 ,5):
+    raise RuntimeError('Python 3.6.5 required ')
+ 
 # main setup command
 setup(
 name='beditor',
@@ -38,12 +38,21 @@ version='0.0.1',
 # long_description='https://github.com/rraadd88/lrt/README.md',
 # keywords=['lab','rat','tools'],
 license='General Public License v. 3',
-install_requires=['biopython >= 1.69',
-                    'pandas >= 0.20.3',
-                    'scipy >= 0.17.0',
+install_requires=['biopython==1.71',
+                    'pandas == 0.23.3',
+                    'pyyaml==3.13',
                     'numpy',
-                    'matplotlib >= 2.0.2',
+                    'matplotlib==2.2.2',
+                    'pysam==0.14.1',
+                    'requests==2.19.1',
+                    'scipy==1.1.0',
+                    'tqdm==4.23.4',
+                    'seaborn==0.8.1',
                     'pyensembl'],
+
+
+
+    
 platforms='Tested on Ubuntu 16.04',
 packages=find_packages(),
 package_data={'': ['beditor/tmp','beditor/cfg']},

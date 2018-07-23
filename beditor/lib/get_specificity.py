@@ -51,9 +51,9 @@ def dguides2offtargets(cfg):
         dguides=pd.read_csv(dguidesp,sep='\t')
     #     dguides.to_csv('{}/{}'.format(cfg['datad'],basename(dguidesp)),sep='\t')
         dguides=dguides.set_index('guide: id')
-        guidels=dguides.loc[:,'guide sequence length'].unique()
+        guidels=dguides.loc[:,'guide+PAM length'].unique()
         for guidel in guidels:
-            logging.info(f"now aligning guides of length {guidel}")
+            logging.debug(f"now aligning guides of length {guidel}")
             guidesfap = f'{datatmpd}/01_guides_guidel{guidel:02}.fa'
             logging.info(basename(guidesfap))
             if not exists(guidesfap) or cfg['force']:
@@ -86,7 +86,7 @@ def dguides2offtargets(cfg):
                 cmd=f"{cfg['bwa']} aln -t 1 -o 0 -m {bwaM} -n {cfg['mismatches_max']} -k {cfg['mismatches_max']} -N -l {guidel} {genomep} {guidesfap} > {guidessap}"
                 runbashcmd(cmd)
 
-            guidessamp = 'f{datatmpd}/01_guides_guidel{guidel:02}.sam'
+            guidessamp = f'{datatmpd}/01_guides_guidel{guidel:02}.sam'
             logging.info(basename(guidessamp))        
             if not exists(guidessamp) or cfg['force']:
                 cmd=f"{cfg['bwa']} samse -n {MAXOCC} {genomep} {guidessap} {guidesfap} > {guidessamp}"
@@ -101,7 +101,7 @@ def dguides2offtargets(cfg):
         logging.info(basename(dalignbedp))
         if not exists(alignmentbedp) or cfg['force']:
             #input/s
-            guidessamps=glob('f{datatmpd}/01_guides_guidel*.sam')
+            guidessamps=glob(f'{datatmpd}/01_guides_guidel*.sam')
             for guidessamp in guidessamps:
                 samfile=pysam.AlignmentFile(guidessamp, "rb")
                 dalignbed=pd.DataFrame(columns=bed_colns)
@@ -138,7 +138,7 @@ def dguides2offtargets(cfg):
                 #     col2dalignbed=dict(zip(cols,[a.split('|')[0],a.split('|')[1],a.split('|')[2],a,a.split('|')[3],a.split('|')[4] for a in algnids]))
                     dalignbed_=pd.DataFrame(col2dalignbed)
                     dalignbed_['guide: id']=read.qname.replace('_',' ')
-                    dalignbed = dalignbed.append(dalignbed_,ignore_index=True)
+                    dalignbed = dalignbed.append(dalignbed_,ignore_index=True,sort=True)
                 #     break
                 samfile.close()
 
@@ -177,7 +177,7 @@ def dguides2offtargets(cfg):
         dalignbedguidesp='{}/04_dalignbedguides.tsv'.format(datatmpd)
         logging.info(basename(dalignbedguidesp))
         if not exists(dalignbedguidesp) or cfg['force']:
-            dalignbed=set_index(dalignbed,'guide: id').join(dguides)
+            dalignbed=set_index(dalignbed,'guide: id').join(dguides,rsuffix='.1')
             dalignbed=set_index(dalignbed,'guide: id')
             dalignbed.to_csv(dalignbedguidesp,'\t')
         else:
@@ -191,7 +191,7 @@ def dguides2offtargets(cfg):
         if not exists(dalignedfastap) or cfg['force']:
             alignedfastap='{}/05_alignment.fa'.format(datatmpd)
             if not exists(alignedfastap) or cfg['force']:
-                cmd='{} getfasta -s -name -fi {} -bed {} -fo {}'.format(cfg['bedtools'],genomep,alignmentbedp,alignedfastap)
+                cmd=f"{cfg['bedtools']} getfasta -s -name -fi {genomep} -bed {alignmentbedp} -fo {alignedfastap}"
                 runbashcmd(cmd)
 
             dalignedfasta=fa2df(alignedfastap)
@@ -253,6 +253,7 @@ def dguides2offtargets(cfg):
                     to_colns=['gene name','gene id','transcript id','protein id','exon id'])
 
             dannots['annotation coordinate']=dannots.apply(lambda x: '{}:{}-{}({})'.format(x['chromosome annotation'],x['start annotation'],x['end annotation'], x['strand annotation']),axis=1)
+            logging.debug('or this step takes more time?')
             dannots.to_csv(daannotp,sep='\t')
 
         logging.info(basename(dannotsaggp))
@@ -266,6 +267,7 @@ def dguides2offtargets(cfg):
             dannots=dannots.reset_index()
             alignids=dannots['id'].unique()#[:15]
 
+            logging.debug('start of the slowest step')
             for alignidi in range(len(alignids)):
                 alignid=alignids[alignidi]
             #     if dannots.loc[i,'type'].value_counts().sum()==1:
@@ -279,6 +281,8 @@ def dguides2offtargets(cfg):
                 for col in ['type','gene name','gene id','transcript id','protein id','exon id']:    
             #         print(";".join(dannoti[col].fillna('nan').tolist()))
                     dannotsagg.loc[alignid,col+'s']=";".join(np.unique(dannoti[col].fillna('nan').tolist()))
+            logging.debug('end of the slowest step')
+                
             del dannots    
             dannotsagg.to_csv(dannotsaggp,sep='\t')
         else:

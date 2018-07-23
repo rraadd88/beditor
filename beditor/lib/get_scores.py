@@ -55,8 +55,8 @@ def get_beditorscore_per_guide(guide_seq, strategy,
     :returns: beditor score per guide.
     """
     from beditor.lib.global_vars import pos_muts
-    pos_mut=int(strategy.split(';')[2].replace('@','')[1])
-    method=strategy.split('; ')[1].split(':')[0]
+    pos_mut=int(strategy.split(';')[2].replace('@',''))
+    method=strategy.split(';')[0]
     penalty_activity_window=1 if (pos_muts.loc[method,'Position of mutation from PAM: minimum']<=pos_mut<=pos_muts.loc[method,'Position of mutation from PAM: maximum']) else penalty_activity_window
     penalty_align_seqs_scores=np.prod(align_seqs_scores)
     if test:

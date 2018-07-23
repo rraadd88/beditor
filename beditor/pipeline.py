@@ -152,7 +152,7 @@ def pipeline(cfgp,step=None,test=False,force=False):
         din=pd.read_csv(cfg['dinp'],sep='\t')
         din=din.loc[:,['aminoacid: position','transcript: id']].drop_duplicates()
 
-        chunkps=df2chucks(din,chunksize=100,
+        chunkps=df2chucks(din,chunksize=cfg['chunksize'],
                           outd='{}/chunks'.format(cfg['prjd']),
                           fn='din',return_fmt='\t',
                           force=cfg['force'])
@@ -161,20 +161,21 @@ def pipeline(cfgp,step=None,test=False,force=False):
         for ci,cp in enumerate(chunkps):
             cfg_=cfg.copy()
             cfg_['dinp']=cp
-            chunkcfgp='{}/chunk{:08d}.yml'.format(cfg['prjd'],ci+1)    
+            chunkcfgp=f"{cfg['prjd']}/chunks/chunk{(ci+1):08}.yml"    
             cfg_['cfgp']=chunkcfgp
             
             #project dir
             cfg_['prj']=splitext(basename(cfg_['cfgp']))[0]
-            if dirname(cfgp)!='':
-                cfg_['prjd']=dirname(cfg_['cfgp'])+'/'+cfg_['prj']
-            else:
-                cfg_['prjd']=cfg_['prj']
+#             if dirname(chunkcfgp)!='':
+            cfg_['prjd']=f"{dirname(chunkcfgp)}/{cfg_['prj']}"
+#             else:
+#                 cfg_['prjd']=f"./chunks/{cfg_['prj']}"
             
-            if not exists(chunkcfgp):
+            if not exists(chunkcfgp) or cfg['force']:
                 with open(chunkcfgp, 'w') as f:
-                    yaml.dump(chunkcfg_, f, default_flow_style=False) 
+                    yaml.dump(cfg_, f, default_flow_style=False) 
             chunkcfgps.append(chunkcfgp)
+#             sys.exit(1)
     else:
         chunkcfgps=glob('{}/chunk*.yml'.format(cfg['prjd']))
 
@@ -224,7 +225,9 @@ def main():
         level=logging.INFO
     else: 
         level=logging.ERROR
-    get_logger(program='beditor',argv=list(vars(args).values()),level=level)
+    get_logger(program='beditor',
+               argv=list(vars(args).values()),
+               level=level)
     
     logging.info("start")
     

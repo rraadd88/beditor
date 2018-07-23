@@ -122,6 +122,11 @@ def make_guides(dseq,dmutagenesis,
     dseq.index=range(len(dseq))
     dpam=set_index(dpam,'PAM')                
 #     for gi in trange(len(dseq),desc='designing guides'):
+    gierrfltmutpos=[]
+    gierrdenan=[]
+    gierrfltguidel=[]
+    gierrpamnotfound=[]
+    gierrcannotmutate=[]
     for gi in dseq.index:
         dseqi=pd.DataFrame(dseq.loc[gi,['aminoacid: wild-type','codon: wild-type','id','aminoacid: position',]]).T
         dmutagenesis_gi=pd.merge(dseqi,
@@ -171,20 +176,39 @@ def make_guides(dseq,dmutagenesis,
 #                                 return dpamsearches_strategy        
                             del dpamsearches_strategy
                         else:
+                            gierrfltmutpos.append(gi)
                             if dbug:
                                 print(f"empty after filter by mutation position {dpamsearches_strategy['distance of mutation in codon from PAM'].tolist()}")
                     else:
+                        gierrdenan.append(gi)
                         if dbug:
                             print('empty after removing nan seqs')
                 else:
+                    gierrfltguidel.append(gi)
                     if dbug:
                         print(f"empty after filtering by guide length. {dpamsearches['guide sequence length'].tolist()}")
             else:
+                gierrpamnotfound.append(gi)
                 if dbug:
                     print(f"no pam among {dpam.index.tolist()} were found {dseq.loc[gi,'transcript: sequence']}")
         else:
+            gierrcannotmutate.append(gi)
             if dbug:
                 print(f"can not mutate {dseqi['codon: wild-type'].tolist()}. its not in {dmutagenesis['codon'].tolist()}")
+
+    gierrfltmutpos=[]
+    gierrdenan=[]
+    gierrfltguidel=[]
+    gierrpamnotfound=[]
+    gierrcannotmutate=[]
+
+    err2idxs={'gierrfltmutpos':gierrfltmutpos,
+              'gierrdenan':gierrdenan,
+              'gierrfltguidel':gierrfltguidel,
+              'gierrpamnotfound':gierrpamnotfound,
+              'gierrcannotmutate':gierrcannotmutate,
+             }
+
     if 'dguides' in locals():        
         logging.info('#reverse complement all the sequences')
         dguides['PAM']=dguides.apply(lambda x : reverse_complement_multintseq(x['PAM'],nt2complement) if x['is a reverse complement'] else x['PAM'],axis=1)
@@ -198,7 +222,8 @@ def make_guides(dseq,dmutagenesis,
     
         dguides.loc[:,'strategy']=dguides.apply(lambda x: f"{x['method']};{x['strand']};@{int(x['distance of mutation in codon from PAM'])};{x['PAM']};{x['codon']}:{x['codon mutation']};{x['amino acid']}:{x['amino acid mutation']};",axis=1)
         dguides.loc[:,'guide: id']=dguides.apply(lambda x: f"{x['id']}|{int(x['aminoacid: position'])}|({x['strategy']})",axis=1)
-        return dguides
+        dguides.loc[:,'guide+PAM length']=dguides.apply(lambda x: len(x['guide+PAM sequence']),axis=1)
+        return dguides,err2idxs
     
 def dseq2dguides(cfg):
     """
@@ -256,10 +281,16 @@ def dseq2dguides(cfg):
         dmutagenesis.to_csv(dmutagenesisp,sep='\t')
 #         sys.exist(1)
         
-        dguideslin=make_guides(dseq,
+        dguideslin,err2idxs=make_guides(dseq,
                     dmutagenesis,
                     dpam=dpam_strands,
                        test=cfg['test'],
         #                dbug=True,
                      )
+
         dguideslin.to_csv(dguideslinp,sep='\t')
+        if cfg['test']:
+            print(err2idxs)            
+        with open(dguideslinp+'.err.json', 'w') as f:
+            json.dump(err2idxs, f)
+        
