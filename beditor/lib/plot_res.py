@@ -44,11 +44,11 @@ def get_df4features(dguideslin,id,types=['guide+pam']):
         features+=features_guidepam
     return features
 
-from Bio.SeqFeature import SeqFeature, FeatureLocation
 def df2features(df):
     """
     cols= ini, end, name,sense
     """
+    from Bio.SeqFeature import SeqFeature, FeatureLocation
     from beditor.lib.io_dfs import set_index
     colini,colend,colname,colsense=df.columns
     df=set_index(df,colname)
@@ -64,14 +64,15 @@ def df2features(df):
                                    
                                   ))
     return features
-from Bio import SeqIO
-from Bio.Seq import Seq
-from Bio.SeqRecord import SeqRecord
-from Bio.Alphabet import IUPAC
+
 def make_gb(sequence_string,features=[],
             seqid='seqid',seqname='seqname',seqdesc='seqdesc',
             gbp=None,
            ):
+    from Bio import SeqIO
+    from Bio.Seq import Seq
+    from Bio.SeqRecord import SeqRecord
+    from Bio.Alphabet import IUPAC
     # thanks to https://caretdashcaret.com/2016/06/15/how-to-create-genbank-files-with-biopython/
 
     # Create a sequence
@@ -107,7 +108,7 @@ def plot_seq(record,annot_residuei=8,
                                )
     graphic_record.plot_sequence(ax=ax)
     graphic_record.plot_translation(ax=ax,location=[0,45])    
-    ax.plot([annot_residuei*3-2,annot_residuei*3-1],[-2,-2])
+    ax.plot([annot_residuei*3-3.5,annot_residuei*3-0.5],[-2,-2],lw=5,color='r')
     ax.set_title(title)
     ax.set_xlabel(xlabel)
 #     ax.plot([21,23],[-2,-2])
