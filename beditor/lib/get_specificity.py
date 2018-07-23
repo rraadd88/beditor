@@ -52,47 +52,49 @@ def dguides2offtargets(cfg):
     #     dguides.to_csv('{}/{}'.format(cfg['datad'],basename(dguidesp)),sep='\t')
         dguides=dguides.set_index('guide: id')
 
-        guidesfap = '{}/01_guides.fa'.format(datatmpd)
-        logging.info(basename(guidesfap))
-        if not exists(guidesfap) or cfg['force']:
-            with open(guidesfap,'w') as f:
-                for gi in dguides.index:
-                    f.write('>{}\n{}\n'.format(gi.replace(' ','_'),dguides.loc[gi,'guide sequence+PAM']))
+            guidesfap = '{}/01_guides.fa'.format(datatmpd)
+            logging.info(basename(guidesfap))
+            if not exists(guidesfap) or cfg['force']:
+                with open(guidesfap,'w') as f:
+                    for gi in dguides.index:
+                        f.write('>{}\n{}\n'.format(gi.replace(' ','_'),dguides.loc[gi,'guide sequence+PAM']))
 
-        # BWA: allow up to X mismatches
-        # cfg['cores']=8
+            # BWA: allow up to X mismatches
+            # cfg['cores']=8
 
-        # maximum number of occurences in the genome to get flagged as repeats. 
-        # This is used in bwa samse, when converting the sam file
-        # and for warnings in the table output.
-        MAXOCC = 60000
+            # maximum number of occurences in the genome to get flagged as repeats. 
+            # This is used in bwa samse, when converting the sam file
+            # and for warnings in the table output.
+            MAXOCC = 60000
 
-        # the BWA queue size is 2M by default. We derive the queue size from MAXOCC
-        MFAC = 2000000/MAXOCC
+            # the BWA queue size is 2M by default. We derive the queue size from MAXOCC
+            MFAC = 2000000/MAXOCC
 
-        genomep=cfg['genomep']
-        genomed = dirname(genomep) # make var local, see below
-        genomegffp=cfg['genomegffp']
+            genomep=cfg['genomep']
+            genomed = dirname(genomep) # make var local, see below
+            genomegffp=cfg['genomegffp']
 
-        # increase MAXOCC if there is only a single query, but only in CGI mode
-        bwaM = MFAC*MAXOCC # -m is queue size in bwa
-        guidessap = '{}/01_guides.sa'.format(datatmpd)
-        logging.info(basename(guidessap))
-        if not exists(guidessap) or cfg['force']:
-            cmd="{} aln -t {} -o 0 -m {} -n {} -k {} -N -l {} {} {} > {}".format(cfg['bwa'],1,bwaM,cfg['mismatches_max'],cfg['mismatches_max'],cfg['guidel'],genomep,guidesfap,guidessap)
-            runbashcmd(cmd)
+            # increase MAXOCC if there is only a single query, but only in CGI mode
+            bwaM = MFAC*MAXOCC # -m is queue size in bwa
+            guidessap = '{}/01_guides.sa'.format(datatmpd)
+            logging.info(basename(guidessap))
+            if not exists(guidessap) or cfg['force']:
+    #             cmd="{} aln -t {} -o 0 -m {} -n {} -k {} -N -l {} {} {} > {}".format(cfg['bwa'],1,bwaM,cfg['mismatches_max'],cfg['mismatches_max'],cfg['guidel'],genomep,guidesfap,guidessap)
+    #             runbashcmd(cmd)
+                cmd=f"{cfg['bwa']} aln -t 1 -o 0 -m {bwaM} -n {cfg['mismatches_max']} -k {cfg['mismatches_max']} -N -l {cfg['guidel']} {genomep} {guidesfap} > {guidessap}"
+                runbashcmd(cmd)
 
-        guidessamp = '{}/01_guides.sam'.format(datatmpd)
-        logging.info(basename(guidessamp))        
-        if not exists(guidessamp) or cfg['force']:
-            cmd="{} samse -n {} {} {} {} > {}".format(cfg['bwa'],MAXOCC,genomep,guidessap,guidesfap,guidessamp)
-            runbashcmd(cmd)
+            guidessamp = 'f{datatmpd}/01_guides.sam'
+            logging.info(basename(guidessamp))        
+            if not exists(guidessamp) or cfg['force']:
+                cmd=f"{cfg['bwa']} samse -n {MAXOCC} {genomep} {guidessap} {guidesfap} > {guidessamp}"
+                runbashcmd(cmd)
 
         #----make tables-----------
         from beditor.lib.global_vars import bed_colns,gff_colns    
 
-        alignmentbedp='{}/02_alignment.bed'.format(datatmpd)
-        dalignbedp='{}/02_dalignbed.tsv'.format(datatmpd)
+        alignmentbedp=f'{datatmpd}/02_alignment.bed'
+        dalignbedp=f'{datatmpd}/02_dalignbed.tsv'
         logging.info(basename(dalignbedp))
         if not exists(alignmentbedp) or cfg['force']:
             samfile=pysam.AlignmentFile(guidessamp, "rb")
