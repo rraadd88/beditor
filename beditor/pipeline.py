@@ -143,7 +143,7 @@ def pipeline(cfgp,step=None,test=False,force=False):
             yaml.dump(cfg, f
 #                       default_flow_style=False
                      ) 
-    if step==1 or step is None:
+    if (not 'chunk' in cfgp) and (step==1 or (step is None)):
         if not exists(dinoutp) or cfg['force']:
             from shutil import copyfile
             copyfile(cfg['dinp'], dinoutp)
@@ -151,12 +151,10 @@ def pipeline(cfgp,step=None,test=False,force=False):
         from beditor.lib.io_dfs import df2chucks
         din=pd.read_csv(cfg['dinp'],sep='\t')
         din=din.loc[:,['aminoacid: position','transcript: id']].drop_duplicates()
-
         chunkps=df2chucks(din,chunksize=cfg['chunksize'],
                           outd='{}/chunks'.format(cfg['prjd']),
                           fn='din',return_fmt='\t',
                           force=cfg['force'])
-
         chunkcfgps=[]
         for ci,cp in enumerate(chunkps):
             cfg_=cfg.copy()
@@ -170,7 +168,8 @@ def pipeline(cfgp,step=None,test=False,force=False):
             cfg_['prjd']=f"{dirname(chunkcfgp)}/{cfg_['prj']}"
 #             else:
 #                 cfg_['prjd']=f"./chunks/{cfg_['prj']}"
-            
+            cfg_['test']=False    
+            cfg_['force']=False    
             if not exists(chunkcfgp) or cfg['force']:
                 with open(chunkcfgp, 'w') as f:
                     yaml.dump(cfg_, f, default_flow_style=False) 
@@ -178,9 +177,9 @@ def pipeline(cfgp,step=None,test=False,force=False):
 #             sys.exit(1)
     else:
         chunkcfgps=glob('{}/chunk*.yml'.format(cfg['prjd']))
-
+    
     chunkcfgps=np.sort(chunkcfgps)
-    if len(chunkcfgps)!=0:
+    if len(chunkcfgps)!=0 and (not 'chunk' in cfgp):
         if cfg['test']:
             pipeline_chunks(chunkcfgps[0])
         else:
