@@ -48,20 +48,22 @@ def dguides2offtargets(cfg):
                    3: 'align_guides',
                   }
         
-        dguides=pd.read_csv(dguidesp)
+        dguides=pd.read_csv(dguidesp,sep='\t')
     #     dguides.to_csv('{}/{}'.format(cfg['datad'],basename(dguidesp)),sep='\t')
         dguides=dguides.set_index('guide: id')
-
-            guidesfap = '{}/01_guides.fa'.format(datatmpd)
+        guidels=dguides.loc[:,'guide sequence length'].unique()
+        for guidel in guidels:
+            logging.info(f"now aligning guides of length {guidel}")
+            guidesfap = f'{datatmpd}/01_guides_guidel{guidel:02}.fa'
             logging.info(basename(guidesfap))
             if not exists(guidesfap) or cfg['force']:
                 with open(guidesfap,'w') as f:
                     for gi in dguides.index:
-                        f.write('>{}\n{}\n'.format(gi.replace(' ','_'),dguides.loc[gi,'guide sequence+PAM']))
+                        f.write('>{}\n{}\n'.format(gi.replace(' ','_'),dguides.loc[gi,'guide+PAM sequence']))
 
+            ## BWA alignment command is adapted from cripror 
+            ## https://github.com/rraadd88/crisporWebsite/blob/master/crispor.py
             # BWA: allow up to X mismatches
-            # cfg['cores']=8
-
             # maximum number of occurences in the genome to get flagged as repeats. 
             # This is used in bwa samse, when converting the sam file
             # and for warnings in the table output.
@@ -76,15 +78,15 @@ def dguides2offtargets(cfg):
 
             # increase MAXOCC if there is only a single query, but only in CGI mode
             bwaM = MFAC*MAXOCC # -m is queue size in bwa
-            guidessap = '{}/01_guides.sa'.format(datatmpd)
+            guidessap = f'{datatmpd}/01_guides_guidel{guidel:02}.sa'
             logging.info(basename(guidessap))
             if not exists(guidessap) or cfg['force']:
     #             cmd="{} aln -t {} -o 0 -m {} -n {} -k {} -N -l {} {} {} > {}".format(cfg['bwa'],1,bwaM,cfg['mismatches_max'],cfg['mismatches_max'],cfg['guidel'],genomep,guidesfap,guidessap)
     #             runbashcmd(cmd)
-                cmd=f"{cfg['bwa']} aln -t 1 -o 0 -m {bwaM} -n {cfg['mismatches_max']} -k {cfg['mismatches_max']} -N -l {cfg['guidel']} {genomep} {guidesfap} > {guidessap}"
+                cmd=f"{cfg['bwa']} aln -t 1 -o 0 -m {bwaM} -n {cfg['mismatches_max']} -k {cfg['mismatches_max']} -N -l {guidel} {genomep} {guidesfap} > {guidessap}"
                 runbashcmd(cmd)
 
-            guidessamp = 'f{datatmpd}/01_guides.sam'
+            guidessamp = 'f{datatmpd}/01_guides_guidel{guidel:02}.sam'
             logging.info(basename(guidessamp))        
             if not exists(guidessamp) or cfg['force']:
                 cmd=f"{cfg['bwa']} samse -n {MAXOCC} {genomep} {guidessap} {guidesfap} > {guidessamp}"
@@ -93,48 +95,52 @@ def dguides2offtargets(cfg):
         #----make tables-----------
         from beditor.lib.global_vars import bed_colns,gff_colns    
 
+        #output
         alignmentbedp=f'{datatmpd}/02_alignment.bed'
         dalignbedp=f'{datatmpd}/02_dalignbed.tsv'
         logging.info(basename(dalignbedp))
         if not exists(alignmentbedp) or cfg['force']:
-            samfile=pysam.AlignmentFile(guidessamp, "rb")
-            dalignbed=pd.DataFrame(columns=bed_colns)
-            for read in samfile.fetch():
-                algnids=[]
-                algnids.append('{}|{}{}|{}|{}'.format(read.reference_name,
-                         ('-' if read.is_reverse else '+'),read.positions[0],read.cigarstring,read.get_tag('NM')))
-                if read.has_tag('XA'):
-                    algnids+=['|'.join(s.split(',')) for s in read.get_tag('XA').split(';') if len(s.split(','))>1]
-                chroms=[]
-                starts=[]
-                ends=[]
-                ids=algnids
-                NMs=[]
-                strands=[]    
-                for a in algnids:
-                    strand=a.split('|')[1][0]
-                    chroms.append(a.split('|')[0])
-                    if strand=='+':
-                        offset=0
-                    elif strand=='-':
-                        offset=0                    
-                    starts.append(int(a.split('|')[1][1:])+offset)
-                    ends.append(int(a.split('|')[1][1:])+str2num(a.split('|')[2])+offset)
-                    NMs.append(a.split('|')[3])
-                    strands.append(strand)
-                    del strand,offset
-                col2dalignbed={'chromosome':chroms,
-                               'start':starts,
-                               'end':ends,
-                               'id':ids,
-                               'NM':NMs,
-                               'strand':strands}
-            #     col2dalignbed=dict(zip(cols,[a.split('|')[0],a.split('|')[1],a.split('|')[2],a,a.split('|')[3],a.split('|')[4] for a in algnids]))
-                dalignbed_=pd.DataFrame(col2dalignbed)
-                dalignbed_['guide: id']=read.qname.replace('_',' ')
-                dalignbed = dalignbed.append(dalignbed_,ignore_index=True)
-            #     break
-            samfile.close()
+            #input/s
+            guidessamps=glob('f{datatmpd}/01_guides_guidel*.sam')
+            for guidessamp in guidessamps:
+                samfile=pysam.AlignmentFile(guidessamp, "rb")
+                dalignbed=pd.DataFrame(columns=bed_colns)
+                for read in samfile.fetch():
+                    algnids=[]
+                    algnids.append('{}|{}{}|{}|{}'.format(read.reference_name,
+                             ('-' if read.is_reverse else '+'),read.positions[0],read.cigarstring,read.get_tag('NM')))
+                    if read.has_tag('XA'):
+                        algnids+=['|'.join(s.split(',')) for s in read.get_tag('XA').split(';') if len(s.split(','))>1]
+                    chroms=[]
+                    starts=[]
+                    ends=[]
+                    ids=algnids
+                    NMs=[]
+                    strands=[]    
+                    for a in algnids:
+                        strand=a.split('|')[1][0]
+                        chroms.append(a.split('|')[0])
+                        if strand=='+':
+                            offset=0
+                        elif strand=='-':
+                            offset=0                    
+                        starts.append(int(a.split('|')[1][1:])+offset)
+                        ends.append(int(a.split('|')[1][1:])+str2num(a.split('|')[2])+offset)
+                        NMs.append(a.split('|')[3])
+                        strands.append(strand)
+                        del strand,offset
+                    col2dalignbed={'chromosome':chroms,
+                                   'start':starts,
+                                   'end':ends,
+                                   'id':ids,
+                                   'NM':NMs,
+                                   'strand':strands}
+                #     col2dalignbed=dict(zip(cols,[a.split('|')[0],a.split('|')[1],a.split('|')[2],a,a.split('|')[3],a.split('|')[4] for a in algnids]))
+                    dalignbed_=pd.DataFrame(col2dalignbed)
+                    dalignbed_['guide: id']=read.qname.replace('_',' ')
+                    dalignbed = dalignbed.append(dalignbed_,ignore_index=True)
+                #     break
+                samfile.close()
 
             # filter bad asssembly junk genmomes
     #         from beditor.lib.global_vars import host2contigs
@@ -219,8 +225,8 @@ def dguides2offtargets(cfg):
         dalignbedstatsp='{}/07_dalignbedstats.tsv'.format(datatmpd)  
         logging.info(basename(dalignbedstatsp))
         if not exists(dalignbedstatsp) or cfg['force']:
-    #         dalignbed['Hamming distance']=dalignbed.apply(lambda x : hamming_distance(x['guide sequence+PAM'], x['aligned sequence']),axis=1)
-            df=dalignbed.apply(lambda x: align(x['guide sequence+PAM'],x['aligned sequence']),
+    #         dalignbed['Hamming distance']=dalignbed.apply(lambda x : hamming_distance(x['guide+PAM sequence'], x['aligned sequence']),axis=1)
+            df=dalignbed.apply(lambda x: align(x['guide+PAM sequence'],x['aligned sequence']),
                                axis=1).apply(pd.Series)
             df.columns=['alignment','alignment: score']
             dalignbed=dalignbed.join(df)
@@ -300,7 +306,7 @@ def dguides2offtargets(cfg):
                             #                                                                                                        test=cfg['test'],
                             ),axis=1) 
 
-            daggbyguide=dalignbedannot.loc[(dalignbedannot['NM']==0),['guide: id','guide sequence+PAM','gene names', 'gene ids','transcript ids']].drop_duplicates(subset=['guide: id'])
+            daggbyguide=dalignbedannot.loc[(dalignbedannot['NM']==0),['guide: id','guide+PAM sequence','gene names', 'gene ids','transcript ids']].drop_duplicates(subset=['guide: id'])
             if cfg['test']:
                 df2info(daggbyguide)
             if len(daggbyguide)!=0:
@@ -328,7 +334,7 @@ def dguides2offtargets(cfg):
 
                 for guideid in daggbyguide.index:
                     dalignbedannotguide=dalignbedannot.loc[(dalignbedannot['guide: id']==guideid),:]
-                    daggbyguide.loc[guideid,'beditor score']=get_beditorscore_per_guide(guide_seq=dalignbedannotguide['guide sequence+PAM'].unique()[0], 
+                    daggbyguide.loc[guideid,'beditor score']=get_beditorscore_per_guide(guide_seq=dalignbedannotguide['guide+PAM sequence'].unique()[0], 
                                                strategy=dalignbedannotguide['strategy'].unique()[0],
                                                align_seqs_scores=dalignbedannotguide['beditor score'],
         #                                        test=cfg['test']
@@ -337,7 +343,7 @@ def dguides2offtargets(cfg):
                 daggbyguide['beditor score (log10)']=daggbyguide['beditor score'].apply(np.log10)
                 dalignbedannot['alternate alignments count']=1
                 daggbyguide=daggbyguide.join(pd.DataFrame(dalignbedannot.groupby('guide: id')['alternate alignments count'].agg('sum'))-1)
-                daggbyguide.loc[:,['guide sequence+PAM','beditor score','beditor score (log10)','alternate alignments count',
+                daggbyguide.loc[:,['guide+PAM sequence','beditor score','beditor score (log10)','alternate alignments count',
                              'id',
                              'gene names',
                              'gene ids',
