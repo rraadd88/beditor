@@ -346,10 +346,11 @@ def dguides2offtargets(cfg):
 
                 daggbyguide['beditor score (log10)']=daggbyguide['beditor score'].apply(np.log10)
                 dalignbedannot['alternate alignments count']=1
-                daggbyguide=daggbyguide.join(pd.DataFrame(dalignbedannot.groupby('guide: id')['alternate alignments count'].agg('sum'))-1)
+                daggbyguide=daggbyguide.join(pd.DataFrame(dalignbedannot.groupby('guide: id')['alternate alignments count'].agg('sum')))
                 daggbyguide.loc[:,['guide+PAM sequence','beditor score','beditor score (log10)','alternate alignments count',
                              'id',
                              'gene names',
                              'gene ids',
                              'transcript ids']].to_csv(dofftargetsp,sep='\t')
-
+        import gc
+        gc.collect()

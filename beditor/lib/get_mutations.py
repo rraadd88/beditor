@@ -439,3 +439,6 @@ def dseq2dmutagenesis(cfg):
         for aa in aas:
             print(aa+' can be mutated to:')
             print(list(dmutagenesis.loc[dmutagenesis.loc[:,'amino acid']==aa,:].loc[:,'amino acid mutation'].unique()))
+
+        import gc
+        gc.collect()

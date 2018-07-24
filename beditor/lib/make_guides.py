@@ -296,3 +296,5 @@ def dseq2dguides(cfg):
         with open(dguideslinp+'.err.json', 'w') as f:
             json.dump(err2idxs, f)
         
+        import gc
+        gc.collect()

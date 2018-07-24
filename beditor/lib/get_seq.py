@@ -257,3 +257,6 @@ def din2dseq(cfg):
         dseq.to_csv(dseqp)
         logging.info('Counts of amino acids to mutate:')
         logging.info(dseq['aminoacid: wild-type'].value_counts())
+
+        import gc
+        gc.collect()

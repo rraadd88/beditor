@@ -23,86 +23,88 @@ from beditor.lib.io_sys import runbashcmd
 def pipeline_chunks(cfgp):
     # from beditor.configure import get_deps
 
-    logging.info('processing: '+cfgp)
-    import yaml
-    cfg=yaml.load(open(cfgp, 'r'))
+    if not exists(f"{cfg['prjd']}/04_offtargets/dofftargets.tsv"):
+        logging.info('processing: '+cfgp)
+        import yaml
+        cfg=yaml.load(open(cfgp, 'r'))
 
-    print('processing: '+cfgp)
-#     print(cfg)    
-#     deps and genome are only needed if running step =1 or 4
-    cfg['step2ignoredl']=[2,3]
-    if not cfg['step'] in cfg['step2ignoredl']:
-        cfg=get_deps(cfg)
-        cfg=get_genomes(cfg)
+    #     print(cfg)    
+    #     deps and genome are only needed if running step =1 or 4
+        cfg['step2ignoredl']=[2,3]
+        if not cfg['step'] in cfg['step2ignoredl']:
+            cfg=get_deps(cfg)
+            cfg=get_genomes(cfg)
 
-#     #project dir
-#     cfg['prj']=splitext(basename(cfgp))[0]
-#     if dirname(cfgp)=='':
-#         cfg['prjd']=dirname(cfgp)+'/'+cfg['prj']
-#     else:
-#         cfg['prjd']=cfg['prj']
+    #     #project dir
+    #     cfg['prj']=splitext(basename(cfgp))[0]
+    #     if dirname(cfgp)=='':
+    #         cfg['prjd']=dirname(cfgp)+'/'+cfg['prj']
+    #     else:
+    #         cfg['prjd']=cfg['prj']
 
-    #datads
-    cfg[0]=cfg['prjd']+'/00_input/'
-    cfg[1]=cfg['prjd']+'/01_sequences/'
-    cfg[2]=cfg['prjd']+'/02_mutagenesis/'
-    cfg[3]=cfg['prjd']+'/03_guides/'
-    cfg[4]=cfg['prjd']+'/04_offtargets/'
+        #datads
+        cfg[0]=cfg['prjd']+'/00_input/'
+        cfg[1]=cfg['prjd']+'/01_sequences/'
+        cfg[2]=cfg['prjd']+'/02_mutagenesis/'
+        cfg[3]=cfg['prjd']+'/03_guides/'
+        cfg[4]=cfg['prjd']+'/04_offtargets/'
 
-    #make dirs
-    for i in range(5):
-        if not exists(cfg[i]):
-            makedirs(cfg[i])
-    
-    #backup inputs
-    cfgoutp='{}/cfg.yml'.format(cfg[0])    
-    dinoutp='{}/din.tsv'.format(cfg[0])    
-    if not exists(cfgoutp) or cfg['force']:
-        with open(cfgoutp, 'w') as f:
-            yaml.dump(cfg, f, default_flow_style=False)
-    logging.info(cfg)
-    if cfg['step']==None or cfg['step']==1:
-        if not exists(dinoutp) or cfg['force']:
-            from shutil import copyfile
-            copyfile(cfg['dinp'], dinoutp)
-    #         din.to_csv(dinoutp,sep='\t')
-    
-    if not exists(cfg['prjd']):
-        makedirs(cfg['prjd'])
-    for i in range(0,4+1,1):
-        if not exists(cfg[i]):
-            makedirs(cfg[i])            
-    if cfg['step']==None:
-        stepall=True
+        #make dirs
+        for i in range(5):
+            if not exists(cfg[i]):
+                makedirs(cfg[i])
+        
+        #backup inputs
+        cfgoutp='{}/cfg.yml'.format(cfg[0])    
+        dinoutp='{}/din.tsv'.format(cfg[0])    
+        if not exists(cfgoutp) or cfg['force']:
+            with open(cfgoutp, 'w') as f:
+                yaml.dump(cfg, f, default_flow_style=False)
+        logging.info(cfg)
+        if cfg['step']==None or cfg['step']==1:
+            if not exists(dinoutp) or cfg['force']:
+                from shutil import copyfile
+                copyfile(cfg['dinp'], dinoutp)
+        #         din.to_csv(dinoutp,sep='\t')
+        
+        if not exists(cfg['prjd']):
+            makedirs(cfg['prjd'])
+        for i in range(0,4+1,1):
+            if not exists(cfg[i]):
+                makedirs(cfg[i])            
+        if cfg['step']==None:
+            stepall=True
+        else:
+            stepall=False
+        # print(cfg['step'],stepall)
+        print('processing: '+cfgp)
+        if cfg['step']==1 or stepall:
+            from beditor.lib.get_seq import din2dseq
+            cfg['step']=1
+            din2dseq(cfg)
+        if cfg['step']==2 or stepall:
+            from beditor.lib.get_mutations import dseq2dmutagenesis 
+            cfg['step']=2
+            dseq2dmutagenesis(cfg)
+        if cfg['step']==3 or stepall:
+            from beditor.lib.make_guides import dseq2dguides
+            cfg['step']=3
+            dseq2dguides(cfg)
+        if cfg['step']==4 or stepall:
+            from beditor.lib.get_specificity import dguides2offtargets
+            cfg['step']=4
+            dguides2offtargets(cfg)
+        if 'datad' in cfg.keys():
+            print("Location of output data: {}".format(cfg['datad']))
+            print("Location of output plot: {}".format(cfg['plotd']))
     else:
-        stepall=False
-    # print(cfg['step'],stepall)
-    if cfg['step']==1 or stepall:
-        from beditor.lib.get_seq import din2dseq
-        cfg['step']=1
-        din2dseq(cfg)
-    if cfg['step']==2 or stepall:
-        from beditor.lib.get_mutations import dseq2dmutagenesis 
-        cfg['step']=2
-        dseq2dmutagenesis(cfg)
-    if cfg['step']==3 or stepall:
-        from beditor.lib.make_guides import dseq2dguides
-        cfg['step']=3
-        dseq2dguides(cfg)
-    if cfg['step']==4 or stepall:
-        from beditor.lib.get_specificity import dguides2offtargets
-        cfg['step']=4
-        dguides2offtargets(cfg)
-    if 'datad' in cfg.keys():
-        logging.info("Location of output data: {}".format(cfg['datad']))
-        logging.info("Location of output plot: {}".format(cfg['plotd']))
-
+        print(f"skipped: {cfg['cfgp']}")
 
 def pipeline(cfgp,step=None,test=False,force=False):        
 
     import yaml
     from glob import glob
-    
+
     cfg=yaml.load(open(cfgp, 'r'))
     
     #project dir
