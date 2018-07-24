@@ -431,8 +431,8 @@ def dseq2dmutagenesis(cfg):
         
         dmutagenesis.to_csv(dmutagenesisp)
 
-        print('Possible 1 nucleotide mutations:')
-        print(dmutagenesis.set_index('amino acid')[['amino acid mutation','method','codon','codon mutation',
+        logging.info('Possible 1 nucleotide mutations:')
+        logging.info(dmutagenesis.set_index('amino acid')[['amino acid mutation','method','codon','codon mutation',
         #               'position of mutation in codon','mutation on strand',
         #               'nucleotide','nucleotide mutation',
                      ]])

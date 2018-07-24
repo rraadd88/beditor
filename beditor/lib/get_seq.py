@@ -176,8 +176,8 @@ def din2dseq(cfg):
                                 elif t.strand=='-':
                                     dbed.loc[bedrowi,'codon start']=codon_positions[2]
                                     dbed.loc[bedrowi,'codon end']=codon_positions[0]
-                                dbed.loc[bedrowi,'start']=dbed.loc[bedrowi,'codon start']-22
-                                dbed.loc[bedrowi,'end']=dbed.loc[bedrowi,'codon end']+21
+                                dbed.loc[bedrowi,'start']=dbed.loc[bedrowi,'codon start']-22 #FIXME put flank in the yml
+                                dbed.loc[bedrowi,'end']=dbed.loc[bedrowi,'codon end']+21 #FIXME put flank in the yml
 
                                 dbed.loc[bedrowi,'reference residue']=dcodingmutpos['protein sequence'].tolist()[0]
                                 dbed.loc[bedrowi,'reference codon']=''.join(dcodingmutpos['coding sequence'].tolist())
@@ -201,6 +201,8 @@ def din2dseq(cfg):
                     terrnotfound.append(din.loc[i,'transcript: id'])
                     if cfg['test']:
                         logging.error('not found: {}'.format(din.loc[i,'transcript: id']))
+            dbed=dbed.loc[(dbed.apply(lambda x : x['end']-x['start']==45, axis=1)),:] #FIXME put flank in the yml
+
             dbed.loc[:,'start']=dbed.loc[:,'start'].astype(int)
             dbed.loc[:,'end']=dbed.loc[:,'end'].astype(int)
             
