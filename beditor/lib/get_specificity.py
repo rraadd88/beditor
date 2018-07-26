@@ -294,6 +294,13 @@ def dguides2offtargets(cfg):
         if not exists(dalignbedannotp) or cfg['force']:
             dalignbedannot=set_index(dalignbed,'id').join(set_index(dannotsagg,'id'),
                                                   rsuffix=' annotation')
+            dalignbedannot['NM']=dalignbedannot['NM'].apply(int)
+            from beditor.lib.get_scores import get_beditorscore_per_guide,get_beditorscore_per_alignment
+            dalignbedannot['beditor score']=dalignbedannot.apply(lambda x : get_beditorscore_per_alignment(x['NM'],cfg['mismatches_max'],
+                            True if x['region']=='genic' else False,
+                            x['alignment'],
+                            #                                                                                                        test=cfg['test'],
+                            ),axis=1) 
             dalignbedannot.to_csv(dalignbedannotp,sep='\t')
         else:
             dalignbedannot=pd.read_csv(dalignbedannotp,sep='\t',low_memory=False)
@@ -301,15 +308,7 @@ def dguides2offtargets(cfg):
 
         daggbyguidep='{}/10_daggbyguide.tsv'.format(datatmpd)      
         logging.info(basename(daggbyguidep))
-        dalignbedannot['NM']=dalignbedannot['NM'].apply(int)
         if not exists(daggbyguidep) or cfg['force']:
-            from beditor.lib.get_scores import get_beditorscore_per_guide,get_beditorscore_per_alignment
-            dalignbedannot['beditor score']=dalignbedannot.apply(lambda x : get_beditorscore_per_alignment(x['NM'],cfg['mismatches_max'],
-                            True if x['region']=='genic' else False,
-                            x['alignment'],
-                            #                                                                                                        test=cfg['test'],
-                            ),axis=1) 
-
             daggbyguide=dalignbedannot.loc[(dalignbedannot['NM']==0),['guide: id','guide+PAM sequence','gene names', 'gene ids','transcript ids']].drop_duplicates(subset=['guide: id'])
             if cfg['test']:
                 df2info(daggbyguide)

@@ -23,10 +23,10 @@ from beditor.lib.io_sys import runbashcmd
 def pipeline_chunks(cfgp):
     # from beditor.configure import get_deps
 
+    import yaml
+    cfg=yaml.load(open(cfgp, 'r'))
     if not exists(f"{cfg['prjd']}/04_offtargets/dofftargets.tsv"):
         logging.info('processing: '+cfgp)
-        import yaml
-        cfg=yaml.load(open(cfgp, 'r'))
 
     #     print(cfg)    
     #     deps and genome are only needed if running step =1 or 4
