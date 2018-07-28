@@ -5,7 +5,7 @@ channels:
   - bioconda 
 dependencies:
   - biopython=1.71
-  - numpy
+  - numpy=1.13.1
   - python=3.6.5
   - setuptools=39.2.0
   - pyyaml=3.13
@@ -16,4 +16,5 @@ dependencies:
     - scipy==1.1.0
     - tqdm==4.23.4
     - seaborn==0.8.1
-    - pandas==0.22.0
+    - pandas==0.23.3
+    - pyensembl==1.4.0
