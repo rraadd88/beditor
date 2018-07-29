@@ -347,7 +347,7 @@ def get_submap(cfg):
     sns.heatmap(dsubmaptop.astype(int),square=True)
     plt.savefig('{}/heatmap_submap.svg'.format(cfg['datad']))
     dsubmaptop=df2unstack(dsubmaptop,col='mimetic')
-    dsubmaptop.to_csv('{}/dsubmaptop.svg'.format(cfg['datad']))
+    dsubmaptop.to_csv('{}/dsubmaptop.tsv'.format(cfg['datad']))
     dsubmaptop=dsubmaptop[dsubmaptop['mimetic']]
     return dsubmaptop
 
@@ -389,7 +389,7 @@ def filterdmutagenesis(dmutagenesis,cfg):
             if cfg['dsubmap_preferred_path'] is None:    
                 logging.error('submap_type is P and dsubmap_preferred_path is None')
             else:
-                dsubmap=pd.read_csv(cfg['dsubmap_preferred_path']) # has two cols: amino acid and amino acid mutation
+                dsubmap=pd.read_csv(cfg['dsubmap_preferred_path'],sep='\t') # has two cols: amino acid and amino acid mutation
         elif cfg['submap_type']=='both':
             dsubmap=get_submap(cfg).append(pd.read_csv(cfg['dsubmap_preferred_path'])).drop_duplicates()
         dmutagenesis=pd.merge(dsubmap,dmutagenesis,on=['amino acid','amino acid mutation'],how='inner')
