@@ -1,6 +1,6 @@
 def test_install():
     try:
-        from beditor import *
+        from beditor import pipeline
         # cfg=get_deps(cfg)
         # cfg=get_genomes(cfg)
         print(f">>> SUCCESS")
