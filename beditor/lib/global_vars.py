@@ -6,6 +6,16 @@ import subprocess
 from Bio import SeqIO, Alphabet, Data, Seq, SeqUtils
 from Bio import motifs,Seq,AlignIO
 
+# steps
+# 0:'input',
+stepi2name= {
+ 1: 'sequences',
+ 2: 'mutagenesis',
+ 3: 'guides',
+ 4: 'offtargets'}
+
+ 
+
 hosts={"coli":11, # http://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi
 "saccharomyces_cerevisiae":12,
 "homo_sapiens":1}

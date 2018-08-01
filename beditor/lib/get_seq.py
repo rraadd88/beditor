@@ -68,35 +68,6 @@ def get_seq_yeast(dseq,orfs_fastap,
 #   print(dseq.shape)
     return dseq
 
-def get_codon_seq(dintseqflt01,test=False):
-    """
-    Fetches codon sequences foe given sequences and positions.
-    """
-    for subi,sub in zip(dintseqflt01.index,dintseqflt01['gene: name'].tolist()):
-        psite=int(dintseqflt01.loc[subi,'Psite01'])
-        dintseqflt01.loc[subi,'P']=dintseqflt01.loc[subi,'Protein sequence'][(psite-1)]
-        dintseqflt01.loc[subi,'P-codon']=dintseqflt01.loc[subi,'transcript: sequence'][(psite-1)*3:(psite-1)*3+3]    
-        ini=(psite-1)-10
-        end=(psite-1)+10+1
-        if ini<0:
-            ini=0
-        if end>len(dintseqflt01.loc[subi,'Protein sequence']):
-            end=len(dintseqflt01.loc[subi,'Protein sequence'])        
-        dintseqflt01.loc[subi,'10[P]10']=dintseqflt01.loc[subi,'Protein sequence'][ini:end]
-        dintseqflt01.loc[subi,'10[P]10: P position']=(psite-1)-ini
-        ini=(psite-1)*3-(10*3)
-        end=(psite-1)*3+((10+1)*3)
-        if ini<0:
-            ini=0
-        if end>len(dintseqflt01.loc[subi,'transcript: sequence']):
-            end=len(dintseqflt01.loc[subi,'transcript: sequence'])        
-        dintseqflt01.loc[subi,'30[P-codon]30']=dintseqflt01.loc[subi,'transcript: sequence'][ini:end]
-        dintseqflt01.loc[subi,'30[P-codon]30: P-codon position']=(psite-1)*3-ini
-        if test:
-            print('{}:{}'.format(dintseqflt01.loc[subi,'P'],dintseqflt01.loc[subi,'P-codon']))
-    return dintseqflt01
-
-
 from beditor.lib.global_vars import bed_colns
 from beditor.lib.io_seqs import fa2df 
 from beditor.lib.io_sys import runbashcmd
@@ -136,8 +107,8 @@ def din2dseq(cfg):
     cfg['datad']=cfg[cfg['step']]
     cfg['plotd']=cfg['datad']
     # get dna and protein sequences 
-    dseqp='{}/dseq.csv'.format(cfg['datad'])
-    dseqtmpp='{}/dseqtmp.csv'.format(cfg['datad'])
+    dseqp='{}/dsequences.tsv'.format(cfg['datad'])
+    dseqtmpp='{}/dseqtmp.tsv'.format(cfg['datad'])
     if not exists(dseqp) or cfg['force']:
         din=pd.read_csv(cfg['dinp'],sep='\t')
 #         drop dups
@@ -228,7 +199,7 @@ def din2dseq(cfg):
             dflankfa.index=[idx.split('(')[0] for idx in dflankfa.index]
             dflankfa.index.name='id'
             dseq=set_index(dbed,'id').join(set_index(dflankfa,'id'),rsuffix='.1')
-            dseq.to_csv(dseqtmpp)
+            dseq.to_csv(dseqtmpp,sep='\t')
             dseq2compatible={'aminoacid: position':'aminoacid: position',
              'gene: id':'gene: id',
              'gene: name':'gene: name',
@@ -248,13 +219,13 @@ def din2dseq(cfg):
             dseq.columns=list(dseq2compatible.keys())
 #             dseq.to_csv('data/dseq.csv')            
             
-        elif cfg['host']=='saccharomyces_cerevisiae':
+        elif cfg['host']=='saccharomyces_cerevisiae': #FIXME with pyensembl PRs
             dseq=get_seq_yeast(din,
                           orfs_fastap='{}/../data/yeast/orf_coding_all.fasta'.format(abspath(dirname(__file__))),
                           host=cfg['host'],
                           test=cfg['test'])
 #         din.to_csv('{}/din.csv'.format(cfg['datad']))
-        dseq.to_csv(dseqp)
+        dseq.to_csv(dseqp,sep='\t')
         logging.info('Counts of amino acids to mutate:')
         logging.info(dseq['aminoacid: wild-type'].value_counts())
 

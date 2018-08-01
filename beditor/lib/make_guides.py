@@ -238,7 +238,7 @@ def dseq2dguides(cfg):
     dmutagenesisp='{}/dmutagenesis.csv'.format(cfg['datad'])
     dpam_strandsp='{}/dpam_strands.csv'.format(cfg['datad'])
     if not exists(dguideslinp) or cfg['force']:
-        dseq=pd.read_csv('{}/dseq.csv'.format(cfg[cfg['step']-2])) #FIXME if numbering of steps is changed, this is gonna blow
+        dseq=pd.read_csv('{}/dsequences.tsv'.format(cfg[cfg['step']-2]),sep='\t') #FIXME if numbering of steps is changed, this is gonna blow
         dmutagenesis=pd.read_csv('{}/dmutagenesis.csv'.format(cfg[cfg['step']-1]))
 
         # make pam table
