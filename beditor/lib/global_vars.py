@@ -20,11 +20,16 @@ hosts={"coli":11, # http://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi
 "saccharomyces_cerevisiae":12,
 "homo_sapiens":1}
 
-BEs={'Target-AID on + strand':['C',['T','G']],
+BEs={'Target-AID on + strand':['C',['T']],
 'ABE on + strand':['A',['G']],
-'Target-AID on - strand':['G',['A','C']],
+'Target-AID on - strand':['G',['A']],
 'ABE on - strand':['T',['C']],
 }
+
+## yeast #FIXME
+# BEs={'Target-AID on + strand':['C',['T','G']],
+# 'Target-AID on - strand':['G',['A','C']],
+# }
 
 
 pos_muts=pd.DataFrame(index=['ABE','Target-AID'],columns=['Position of mutation from PAM: minimum','Position of mutation from PAM: maximum'])
@@ -95,6 +100,8 @@ bed_colns = ['chromosome','start','end','id','NM','strand']
 ## ref coordinate system
 # UCSC : 0 based 
 # ENSEMBL : 1 based
+# #FIXME need to automatically detect 'proper' chromosomes from scaffolds and rest.
+
 host2contigs={'homo_sapiens':['1','2','3','4','5','6','7','8','9','10','11','12','13','14',
                               '15','16','17','18','19','20','21','22','X','Y','MT'],
 'saccharomyces_cerevisiae':['I',

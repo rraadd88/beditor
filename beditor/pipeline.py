@@ -128,7 +128,10 @@ def pipeline(cfgp,step=None,test=False,force=False):
     from glob import glob
 
     cfg=yaml.load(open(cfgp, 'r'))
-    
+    if not exists(cfg['dinp']):
+        logging.error(f"input file {cfg['dinp']} is not found.")
+        sys.exit(1)
+
     #project dir
     cfg['prj']=splitext(basename(cfgp))[0]
     if dirname(cfgp)!='':

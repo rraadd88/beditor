@@ -1,0 +1,36 @@
+language: python
+cache: pip
+sudo: false
+env:
+  global:
+  - PACKAGENAME="beditor"
+  - MINICONDA_URL="https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh"
+python:
+- 3.6.5
+before_install:
+- export MINICONDA=$HOME/miniconda
+- export PATH="$MINICONDA/bin:$PATH"
+- hash -r
+- echo $MINICONDA_URL
+- wget $MINICONDA_URL -O miniconda.sh;
+- bash miniconda.sh -b -f -p $MINICONDA;
+- conda config --set always_yes yes
+- conda update conda
+- conda info -a
+- conda env create -f environment.yml
+- source activate beditor
+install:
+- python setup.py install --record installed_files.txt
+script:
+- python test/test_install.py
+after_success:
+- coveralls
+deploy:
+  provider: pypi
+  user: rraadd88
+  distributions: sdist bdist_wheel
+  password:
+  - secure: A8OxbA3mN++WOasq1Be7m1Hezp/TNlWSb6usRdjCRNSSLE+YOqP1O4bc/qQTbpqRF0wnF7sUsfUfYbZlbHZO+vWXVGoDGEc8fdEs6ea4l9VJlWr0GewHKTXEfiHQlieK1x2TLAvLq+Zx0CqtAR0g6ig53Cd2B1/EHA3W+uZGi4/KxccKN/W6bFGciry1lMKNf7MTvA9qenrxfiU9CDxx44uR00Mnpxza2gfN4LVaZ5W6/f2cu4BBY8i7tXsmMC5NvLxWLRoV92Aap+8UhvT0Gn0T5HMC+DC7M8xCJKzrTe/F9Gb66iF4YVmGnxdV51msVgn3cPeR/9AyYmf7Y8hp1ndOLV/3cAgcVyTQana8+cyvDSUzqtMRbHHpX/ZMg3889OF6fcqRg4gbNjm/hFX2XL7Jz17hNPDhLkEgL4wRWRQJ+M9JLvEPfrB9tCQOT6NfcFfz2YKzPM+fI0W6MRxZ+C1ck08BOS3M4QtHKEHWoZ6upoPUNOhmprvKb375j8CD7R4qPhMgEBjcScdh7TZCveWUlXb/Prrq7rZ+25vLERZCHO9X/dbttxPCfQWMwFurDTQF3iYvJbLda58ZDQjWTZAocEopjNjxdT/XyV5QMa3T48ARYibDt3QWHGQuYVVt1KcZGpY5d0M2r7WfjQnOBuHQ93hDHUpDv8t0p7+lHgQ=
+  on:
+    tags: true
+    branch: master  

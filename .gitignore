@@ -18,7 +18,6 @@ beditor/bin/*
 beditor/beditor_dependencies/*
 beditor.egg-info/*
 dist/*
-test/*
 test_dataset/*
 paper/latex.template
 paper/.Rhistory
