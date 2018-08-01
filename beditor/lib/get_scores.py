@@ -355,7 +355,7 @@ def calc_cfd(wt,sg,pam):
 
 # wt = 'ATTCAATCCTATGCTGACTTGGG'
 # off = 'ATTCAATCCTATGATGACTTGGG'
-def get_CFDscore(wt,off):
+def get_cfdscore(wt,off):
     m_wt = re.search('[^ATCG]',wt)
     m_off = re.search('[^ATCG]',off)
     if (m_wt is None) and (m_off is None):

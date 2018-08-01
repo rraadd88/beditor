@@ -295,12 +295,13 @@ def dguides2offtargets(cfg):
             dalignbedannot=set_index(dalignbed,'id').join(set_index(dannotsagg,'id'),
                                                   rsuffix=' annotation')
             dalignbedannot['NM']=dalignbedannot['NM'].apply(int)
-            from beditor.lib.get_scores import get_beditorscore_per_guide,get_beditorscore_per_alignment
+            from beditor.lib.get_scores import get_beditorscore_per_guide,get_beditorscore_per_alignment,get_cfdscore
             dalignbedannot['beditor score']=dalignbedannot.apply(lambda x : get_beditorscore_per_alignment(x['NM'],cfg['mismatches_max'],
                             True if x['region']=='genic' else False,
                             x['alignment'],
                             #                                                                                                        test=cfg['test'],
                             ),axis=1) 
+            dalignbedannot['CFD score']=dalignbedannot.apply(lambda x : get_cfdscore(x['guide+PAM sequence'].upper(), x['aligned sequence'].upper()), axis=1)            
             dalignbedannot.to_csv(dalignbedannotp,sep='\t')
         else:
             dalignbedannot=pd.read_csv(dalignbedannotp,sep='\t',low_memory=False)
@@ -342,7 +343,7 @@ def dguides2offtargets(cfg):
                                                align_seqs_scores=dalignbedannotguide['beditor score'],
         #                                        test=cfg['test']
                                               )
-
+                    dalignbedannot['CFD score']=dalignbedannotguide['CFD score'].mean() #FIXME if mean is not appropriate
                 daggbyguide['beditor score (log10)']=daggbyguide['beditor score'].apply(np.log10)
                 dalignbedannot['alternate alignments count']=1
                 daggbyguide=daggbyguide.join(pd.DataFrame(dalignbedannot.groupby('guide: id')['alternate alignments count'].agg('sum')))

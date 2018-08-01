@@ -224,3 +224,14 @@ def df2chucks(din,chunksize,outd,fn,return_fmt='\t',force=False):
         return chunks
     else:
         return chunkps        
+
+def filldiagonal(df,cols,filler=None):
+    try:
+        d=df.loc[cols,cols]
+    except:
+        logging.error('cols should be in cols and idxs')
+    if filler is None:
+        filler=np.nan
+    for r,c in zip(cols,cols):
+        df.loc[r,c]=filler
+    return df
