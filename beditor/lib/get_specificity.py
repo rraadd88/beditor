@@ -35,8 +35,8 @@ def dguides2offtargets(cfg):
     
     stepn='04_offtargets'
     logging.info(stepn)
-    dguidesp='{}/dguideslin.csv'.format(cfg[cfg['step']-1])
-    datatmpd='{}/tmp'.format(cfg['datad'],stepn)
+    dguidesp=f"{cfg[cfg['step']-1]}/dguides.tsv"
+    datatmpd=f"{cfg['datad']}/tmp"
     for dp in [datatmpd]:
         if not exists(dp):
             makedirs(dp)

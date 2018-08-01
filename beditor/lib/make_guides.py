@@ -213,9 +213,9 @@ def make_guides(dseq,dmutagenesis,
 
     if 'dguides' in locals():        
         logging.info('#reverse complement all the sequences')
-        dguides['PAM']=dguides.apply(lambda x : reverse_complement_multintseq(x['PAM'],nt2complement) if x['is a reverse complement'] else x['PAM'],axis=1)
+        dguides.loc[:,'PAM']=dguides.apply(lambda x : reverse_complement_multintseq(x['PAM'],nt2complement) if x['is a reverse complement'] else x['PAM'],axis=1)
         for colseq in ['guide+PAM sequence','guide sequence','PAM sequence','activity sequence']:
-            dguides[colseq]=dguides.apply(lambda x : str(str2seq(x[colseq]).reverse_complement()) if x['is a reverse complement'] else x[colseq],axis=1)
+            dguides.loc[:,colseq]=dguides.apply(lambda x : str(str2seq(x[colseq]).reverse_complement()) if x['is a reverse complement'] else x[colseq],axis=1)
             
         logging.info('filter by # editable nts in activity seq')
         logging.info(dguides.shape)
@@ -234,12 +234,12 @@ def dseq2dguides(cfg):
     """
     cfg['datad']=cfg[cfg['step']]
     cfg['plotd']=cfg['datad']
-    dguideslinp='{}/dguideslin.csv'.format(cfg['datad'])
-    dmutagenesisp='{}/dmutagenesis.csv'.format(cfg['datad'])
+    dguideslinp='{}/dguides.tsv'.format(cfg['datad'])
+    dmutagenesisp='{}/dmutagenesis.tsv'.format(cfg['datad'])
     dpam_strandsp='{}/dpam_strands.csv'.format(cfg['datad'])
     if not exists(dguideslinp) or cfg['force']:
         dseq=pd.read_csv('{}/dsequences.tsv'.format(cfg[cfg['step']-2]),sep='\t') #FIXME if numbering of steps is changed, this is gonna blow
-        dmutagenesis=pd.read_csv('{}/dmutagenesis.csv'.format(cfg[cfg['step']-1]))
+        dmutagenesis=pd.read_csv(f"{cfg[cfg['step']-1]}/dmutagenesis.tsv",sep='\t')
 
         # make pam table
         dpam=pd.read_table('{}/../data/dpam.tsv'.format(dirname(realpath(__file__))))

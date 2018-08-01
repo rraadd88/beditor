@@ -133,7 +133,7 @@ def fhs2data_combo_appended(fhs, cols=None,labels=None,labels_coln='labels',sep=
             data.loc[:,labels_coln]=label
             if not cols is None:
                 data=data.loc[:,cols]
-            data_all=data_all.append(data)
+            data_all=data_all.append(data,sort=True)
         return data_all
 
 def rename_cols(df,names,renames=None,prefix=None,suffix=None):

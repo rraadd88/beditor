@@ -411,9 +411,9 @@ def dseq2dmutagenesis(cfg):
     """
     cfg['datad']=cfg[cfg['step']]
     cfg['plotd']=cfg['datad']
-    dmutagenesisp='{}/dmutagenesis.csv'.format(cfg['datad'])
+    dmutagenesisp='{}/dmutagenesis.tsv'.format(cfg['datad'])
     if not exists(dmutagenesisp) or cfg['force']:
-        dseq=pd.read_csv('{}/dseq.csv'.format(cfg[cfg['step']-1]))
+        dseq=pd.read_csv('{}/dsequences.tsv'.format(cfg[cfg['step']-1]),sep='\t')
         aas=list(dseq['aminoacid: wild-type'].unique())#['S','T','Y']
 
         dcodontable=get_codon_table(aa=aas, host=cfg['host'])
@@ -429,7 +429,7 @@ def dseq2dmutagenesis(cfg):
         colns_pos=[c for c in dmutagenesis if ('position' in c) or ('Position' in c)]
         dmutagenesis.loc[:,colns_pos]=dmutagenesis.loc[:,colns_pos].astype(int)
         
-        dmutagenesis.to_csv(dmutagenesisp)
+        dmutagenesis.to_csv(dmutagenesisp,sep='\t')
 
         logging.info('Possible 1 nucleotide mutations:')
         logging.info(dmutagenesis.set_index('amino acid')[['amino acid mutation','method','codon','codon mutation',

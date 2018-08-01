@@ -100,6 +100,28 @@ def pipeline_chunks(cfgp):
     # else:
     #     print(f"skipped: {cfg['cfgp']}")
 
+from beditor.lib.global_vars import stepi2name
+from beditor.lib.io_nums import str2num
+from os.path import basename
+def collect_chunks(cfg,chunkcfgps):
+"""
+#collects chunks
+"""    
+    for step in stepi2name.keys():
+        doutp=f"{cfg['prjd']}/{step:02d}_{stepi2name[step]}/d{stepi2name[step]}.tsv"
+        if not exists(doutp) or cfg['force']:
+            dps=[] 
+            outd=cfg[step]
+            for chunkcfgp in chunkcfgps:
+                chunkprjd=chunkcfgp.replace('.yml','')
+                dps.append(f"{chunkprjd}/{step:02d}_{stepi2name[step]}/d{stepi2name[step]}.tsv")
+            if len(dps)!=0:
+                dout=fhs2data_combo_appended(dps,sep='\t',
+                                             labels=[str2num(basename(p)) for p in chunkcfgps],
+                                             labels_coln='chunk#')
+                dout.to_csv(doutp,sep='\t')
+                del dout
+
 def pipeline(cfgp,step=None,test=False,force=False):        
 
     import yaml
@@ -191,6 +213,7 @@ def pipeline(cfgp,step=None,test=False,force=False):
             pool=Pool(processes=cfg['cores']) # T : get it from xls
             pool.map(pipeline_chunks, chunkcfgps)
             pool.close(); pool.join()         
+        collect_chunks(cfg,chunkcfgps)
     else:
         pipeline_chunks(cfgoutp)
 #     pipeline_chunks(cfgp)
