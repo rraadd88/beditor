@@ -430,6 +430,8 @@ def dseq2dmutagenesis(cfg):
 
         #create BEs and pos_muts for back-compatibility
         dBEs=pd.read_table(f"{dirname(realpath(__file__))}/../data/dBEs.tsv")
+        dBEs=dBEs.loc[dBEs['method'].isin(cfg['BEs']),:]
+        
         BEs2mutations={}
         for method in dBEs['method'].unique():
             for strand in dBEs['strand'].unique():

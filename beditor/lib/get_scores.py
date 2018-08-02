@@ -44,6 +44,7 @@ def get_beditorscore_per_alignment(NM,mismatches_max,genic,alignment,
 
 def get_beditorscore_per_guide(guide_seq, strategy,
                                align_seqs_scores,
+                              BEs,
                               penalty_activity_window=0.5,
                                test=False,
                               ):
@@ -59,6 +60,7 @@ def get_beditorscore_per_guide(guide_seq, strategy,
     #create BEs and pos_muts for back-compatibility
     from os.path import dirname,realpath
     dBEs=pd.read_table(f"{dirname(realpath(__file__))}/../data/dBEs.tsv")
+    dBEs=dBEs.loc[dBEs['method'].isin(BEs),:]
     # BEs2mutations={}
     # for method in dBEs['method'].unique():
     #     for strand in dBEs['strand'].unique():

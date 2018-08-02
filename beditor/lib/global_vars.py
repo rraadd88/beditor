@@ -15,7 +15,6 @@ stepi2name= {
  4: 'offtargets'}
 
 # # regex
-
 multint2reg={'R':'[AG]',
 'Y':'[CT]',
 'S':'[GC]',

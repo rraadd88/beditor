@@ -338,6 +338,7 @@ def dguides2offtargets(cfg):
                     daggbyguide.loc[guideid,'beditor score']=get_beditorscore_per_guide(guide_seq=dalignbedannotguide['guide+PAM sequence'].unique()[0], 
                                                strategy=dalignbedannotguide['strategy'].unique()[0],
                                                align_seqs_scores=dalignbedannotguide['beditor score'],
+                                               BEs=cfg['BEs']
         #                                        test=cfg['test']
                                               )
                     dalignbedannot['CFD score']=dalignbedannotguide['CFD score'].mean() #FIXME if mean is not appropriate
