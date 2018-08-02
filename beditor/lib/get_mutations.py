@@ -382,16 +382,14 @@ def filterdmutagenesis(dmutagenesis,cfg):
         logging.info('dmutagenesis.shape: '+str(dmutagenesis.shape))    
 
     # filter by submap
-    if not cfg['submap_type'] is None:
-        if cfg['submap_type']=='M':
+    if (not cfg['mutations'] is None) and (cfg['mutations']!='mutations'):
+        if cfg['mutations']=='mimetic':
             dsubmap=get_submap(cfg)
-        elif cfg['submap_type']=='P':
+        elif cfg['mutations']=='substitutions':
             if cfg['dsubmap_preferred_path'] is None:    
-                logging.error('submap_type is P and dsubmap_preferred_path is None')
+                logging.error('mutations is P and dsubmap_preferred_path is None')
             else:
                 dsubmap=pd.read_csv(cfg['dsubmap_preferred_path'],sep='\t') # has two cols: amino acid and amino acid mutation
-        elif cfg['submap_type']=='both':
-            dsubmap=get_submap(cfg).append(pd.read_csv(cfg['dsubmap_preferred_path'])).drop_duplicates()
         dmutagenesis=pd.merge(dsubmap,dmutagenesis,on=['amino acid','amino acid mutation'],how='inner')
         logging.info('dmutagenesis.shape: '+str(dmutagenesis.shape))    
 
@@ -424,8 +422,7 @@ def dseq2dmutagenesis(cfg):
         #                          aa=aas,
                                               BEs=BEs,pos_muts=pos_muts,
                                      host=cfg['host'])
-        if not 'amino acid mutation' in dseq:
-            dmutagenesis=filterdmutagenesis(dmutagenesis,cfg)            
+        dmutagenesis=filterdmutagenesis(dmutagenesis,cfg)            
         colns_pos=[c for c in dmutagenesis if ('position' in c) or ('Position' in c)]
         dmutagenesis.loc[:,colns_pos]=dmutagenesis.loc[:,colns_pos].astype(int)
         

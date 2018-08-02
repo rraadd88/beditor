@@ -111,9 +111,8 @@ def din2dseq(cfg):
     dseqtmpp='{}/dseqtmp.tsv'.format(cfg['datad'])
     if not exists(dseqp) or cfg['force']:
         din=pd.read_csv(cfg['dinp'],sep='\t')
-#         drop dups
-        din=din.drop_duplicates(subset=['transcript: id','aminoacid: position'])
-#         din=pd.read_csv(cfg['dinp'])    
+        from .io_dfs import del_Unnamed
+        din=del_Unnamed(din)
         if cfg['host']=='homo_sapiens':
             import pyensembl
             #import ensembl object that would fetch genes 
@@ -205,7 +204,6 @@ def din2dseq(cfg):
             dflankfa.index=[idx.split('(')[0] for idx in dflankfa.index]
             dflankfa.index.name='id'
             dseq=set_index(dbed,'id').join(set_index(dflankfa,'id'),rsuffix='.1')
-            dseq.to_csv(dseqtmpp,sep='\t')
             dseq2compatible={'aminoacid: position':'aminoacid: position',
              'gene: id':'gene: id',
              'gene: name':'gene: name',
@@ -221,9 +219,18 @@ def din2dseq(cfg):
              'codon start':'codon start',
              'codon end':'codon end',
             }
+            if 'amino acid mutation' in dseq:
+                dseq2compatible['amino acid mutation']='amino acid mutation'
             dseq=dseq[list(dseq2compatible.values())]
             dseq.columns=list(dseq2compatible.keys())
 #             dseq.to_csv('data/dseq.csv')            
+
+            logging.info(dseq.columns.tolist())
+            logging.info(din.columns.tolist())
+            dseq=pd.merge(dseq.reset_index(),din,on=['transcript: id','aminoacid: position'])
+            logging.info(dseq.columns.tolist())
+            dseq.to_csv(dseqtmpp,sep='\t')
+            set_index(dseq,'id')
             
         elif cfg['host']=='saccharomyces_cerevisiae': #FIXME with pyensembl PRs
             dseq=get_seq_yeast(din,

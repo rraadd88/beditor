@@ -106,7 +106,7 @@ def get_activity_seq(guide_seq,pam_pos,pam_dist_min,pam_dist_max,dbug=False):
         seq=guide_seq[len(guide_seq)-pam_dist_max:len(guide_seq)-pam_dist_min+1]
     return seq
 
-def make_guides(dseq,dmutagenesis,
+def make_guides(cfg,dseq,dmutagenesis,
                 dpam,
                test=False,
                dbug=False):
@@ -131,18 +131,18 @@ def make_guides(dseq,dmutagenesis,
     gierrcannotmutate=[]
     for gi in dseq.index:
         dseqi=pd.DataFrame(dseq.loc[gi,['aminoacid: wild-type','codon: wild-type','id','aminoacid: position',]]).T
-        if not 'amino acid mutation' in dseq:
-            dmutagenesis_gi=pd.merge(dseqi,
-                dmutagenesis,
-                how='inner',
-                left_on=['aminoacid: wild-type','codon: wild-type'],
-                right_on=['amino acid','codon'])        
-        else:
+        if not cfg['mutations']=='mutations':
             dmutagenesis_gi=pd.merge(dseqi,
                 dmutagenesis,
                 how='inner',
                 left_on=['aminoacid: wild-type','codon: wild-type','amino acid mutation'],
                 right_on=['amino acid','codon','amino acid mutation'])                    
+        else:
+            dmutagenesis_gi=pd.merge(dseqi,
+                dmutagenesis,
+                how='inner',
+                left_on=['aminoacid: wild-type','codon: wild-type'],
+                right_on=['amino acid','codon'])        
         if len(dmutagenesis_gi)!=0:
             logging.info(f"working on {dseq.loc[gi,'id']}")
 #             codon=dseq.loc[gi,'codon: wild-type']
@@ -290,7 +290,7 @@ def dseq2dguides(cfg):
         dmutagenesis.to_csv(dmutagenesisp,sep='\t')
 #         sys.exist(1)
         
-        dguideslin,err2idxs=make_guides(dseq,
+        dguideslin,err2idxs=make_guides(cfg,dseq,
                     dmutagenesis,
                     dpam=dpam_strands,
                        test=cfg['test'],

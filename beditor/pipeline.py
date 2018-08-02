@@ -180,7 +180,7 @@ def pipeline(cfgp,step=None,test=False,force=False):
         
         from beditor.lib.io_dfs import df2chucks
         din=pd.read_csv(cfg['dinp'],sep='\t')
-        din=din.loc[:,['aminoacid: position','transcript: id']].drop_duplicates()
+        din=din.drop_duplicates()
         chunkps=df2chucks(din,chunksize=cfg['chunksize'],
                           outd='{}/chunks'.format(cfg['prjd']),
                           fn='din',return_fmt='\t',
