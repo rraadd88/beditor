@@ -265,7 +265,7 @@ def main():
     get_logger(program='beditor',
                argv=list(vars(args).values()),
                level=level,
-               dp=basename('args.cfg').split('.')[0])
+               dp=None)
     
     logging.info("start")
     

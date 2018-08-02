@@ -439,7 +439,7 @@ def dseq2dmutagenesis(cfg):
          'Position of codon start from PAM: maximum']].drop_duplicates().set_index('method')
 
         dmutagenesis=get_possible_mutagenesis(dcodontable,dcodonusage,
-                                    BEs=BEs,pos_muts=pos_muts,
+                                    BEs=BEs2mutations,pos_muts=pos_muts,
                                     host=cfg['host'])
         dmutagenesis=filterdmutagenesis(dmutagenesis,cfg)            
         colns_pos=[c for c in dmutagenesis if ('position' in c) or ('Position' in c)]

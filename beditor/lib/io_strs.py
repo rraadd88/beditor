@@ -27,7 +27,7 @@ def get_logger(program='program',argv=None,level=None,dp=None):
         dp=''
     else:
         dp=dp+'/'
-    logp=f"({dp}.log_{program}_{date}_{cmd}.log"
+    logp=f"{dp}.log_{program}_{date}_{cmd}.log"
     log_format='[%(asctime)s] %(levelname)s\tfrom %(filename)s in %(funcName)s(..):%(lineno)d: %(message)s'
     #'[%(asctime)s] %(levelname)s\tfrom %(filename)s in %(funcName)s(..):%(lineno)d: %(message)s'
     
