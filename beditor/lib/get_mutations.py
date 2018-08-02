@@ -113,7 +113,7 @@ def get_possible_mutagenesis(dcodontable,dcodonusage,
                             codonmut='{}{}{}'.format(codon[0],ntmut,codon[2])
                         elif posi==2:
                             codonmut='{}{}{}'.format(codon[0],codon[1],ntmut)
-                        aamut=str(Seq.Seq(codonmut,Alphabet.generic_dna).translate(table=1)
+                        aamut=str(Seq.Seq(codonmut,Alphabet.generic_dna).translate(table=1))
                         # if (aamut!='*') and (aamut!=aa): #  nonsence and synonymous
                         if muti==0:
                             cdni=cdni
@@ -148,7 +148,7 @@ def get_possible_mutagenesis(dcodontable,dcodonusage,
                             codonmut='{}{}{}'.format(codon[0],ntmut1,ntmut2)
                         elif (posi1==0) and (posi2==2):
                             codonmut='{}{}{}'.format(ntmut1,codon[1],ntmut2)
-                        aamut=str(Seq.Seq(codonmut,Alphabet.generic_dna).translate(table=1)
+                        aamut=str(Seq.Seq(codonmut,Alphabet.generic_dna).translate(table=1))
                         # if (aamut!='*') and (aamut!=aa): #  nonsence and synonymous
                         if muti==0:
                             cdni=cdni
@@ -181,7 +181,7 @@ def get_possible_mutagenesis(dcodontable,dcodonusage,
                 if (BEs[method][0]==codon[posi1]) and (BEs[method][0]==codon[posi2]) and (BEs[method][0]==codon[posi3]):
                     for ntmut1,ntmut2,ntmut3 in itertools.product(''.join(BEs[method][1]), repeat=3):
                         codonmut='{}{}{}'.format(ntmut1,ntmut2,ntmut3)
-                        aamut=str(Seq.Seq(codonmut,Alphabet.generic_dna).translate(table=1)
+                        aamut=str(Seq.Seq(codonmut,Alphabet.generic_dna).translate(table=1))
                         # if (aamut!='*') and (aamut!=aa): #  nonsence and synonymous
                         if muti==0:
                             cdni=cdni
@@ -221,7 +221,7 @@ def get_possible_mutagenesis(dcodontable,dcodonusage,
                             codonmut='{}{}{}'.format(codon[0],ntmut1,ntmut2)
                         elif (posi1==0) and (posi2==2):
                             codonmut='{}{}{}'.format(ntmut1,codon[1],ntmut2)
-                        aamut=str(Seq.Seq(codonmut,Alphabet.generic_dna).translate(table=1)
+                        aamut=str(Seq.Seq(codonmut,Alphabet.generic_dna).translate(table=1))
                         # if (aamut!='*') and (aamut!=aa): #  nonsence and synonymous
                         if muti==0:
                             cdni=cdni
@@ -256,7 +256,7 @@ def get_possible_mutagenesis(dcodontable,dcodonusage,
                     ntmuts=[(n1,n2,n3) for n1 in ''.join(BEs[method1][1]) for n2 in ''.join(BEs[method2][1]) for n3 in ''.join(BEs[method3][1])]
                     for ntmut1,ntmut2,ntmut3 in ntmuts:
                         codonmut='{}{}{}'.format(ntmut1,ntmut2,ntmut3)
-                        aamut=str(Seq.Seq(codonmut,Alphabet.generic_dna).translate(table=1)
+                        aamut=str(Seq.Seq(codonmut,Alphabet.generic_dna).translate(table=1))
                         # if (aamut!='*') and (aamut!=aa): #  nonsence and synonymous
                         if muti==0:
                             cdni=cdni
