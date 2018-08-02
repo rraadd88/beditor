@@ -343,11 +343,8 @@ def get_submap(cfg):
     dsubmaptop_=dsubmaptop.copy()
     for c in dsubmap:
         dsubmaptop.loc[dsubmap.nlargest(mimetism_levels[cfg['mimetism_level']],c).index,c]=True
-    import seaborn as sns
-    sns.heatmap(dsubmaptop.astype(int),square=True)
-    plt.savefig('{}/heatmap_submap.svg'.format(cfg['datad']))
+
     dsubmaptop=df2unstack(dsubmaptop,col='mimetic')
-    dsubmaptop.to_csv('{}/dsubmaptop.tsv'.format(cfg['datad']))
     dsubmaptop=dsubmaptop[dsubmaptop['mimetic']]
     return dsubmaptop
 
@@ -382,15 +379,22 @@ def filterdmutagenesis(dmutagenesis,cfg):
         logging.info('dmutagenesis.shape: '+str(dmutagenesis.shape))    
 
     # filter by submap
-    if (not cfg['mutations'] is None) and (cfg['mutations']!='mutations'):
-        if cfg['mutations']=='mimetic':
+    if (cfg['mutations']=='mimetic') or (cfg['mutations']=='substitutions'):
+        if cfg['mutations']=='mimetic':            
             dsubmap=get_submap(cfg)
         elif cfg['mutations']=='substitutions':
-            if cfg['dsubmap_preferred_path'] is None:    
-                logging.error('mutations is P and dsubmap_preferred_path is None')
-            else:
-                dsubmap=pd.read_csv(cfg['dsubmap_preferred_path'],sep='\t') # has two cols: amino acid and amino acid mutation
+            dsubmap=pd.read_csv(cfg['dsubmap_preferred_path'],sep='\t') # has two cols: amino acid and amino acid mutation
+
+        import seaborn as sns
+        dsubmap.to_csv(f"{cfg['datad']}/dsubmap.tsv",sep='\t')
         dmutagenesis=pd.merge(dsubmap,dmutagenesis,on=['amino acid','amino acid mutation'],how='inner')
+
+        dsubmap['count']=1
+        sns.heatmap(dsubmap.pivot_table(columns='amino acid',index='amino acid mutation',values='count'),square=True)
+        plt.xlabel('wild-type amino acid')
+        plt.ylabel('mutated amino acid')
+        plt.savefig(f"{cfg['datad']}/heatmap_submap.svg")
+
         logging.info('dmutagenesis.shape: '+str(dmutagenesis.shape))    
 
     # filter non interchageables

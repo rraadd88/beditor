@@ -130,10 +130,15 @@ def pipeline(cfgp,step=None,test=False,force=False):
     from glob import glob
 
     cfg=yaml.load(open(cfgp, 'r'))
+    # check inputs
     if not exists(cfg['dinp']):
         logging.error(f"input file {cfg['dinp']} is not found.")
         sys.exit(1)
-
+    if (cfg['mutations']=='substitutions'):    
+        if not exists(cfg['dsubmap_preferred_path']):
+            logging.critical(f"dsubmap_preferred_path is {cfg['dsubmap_preferred_path']}")
+            logging.critical(cfg)
+            sys.exit(1)
     #project dir
     cfg['prj']=splitext(basename(cfgp))[0]
     if dirname(cfgp)!='':
