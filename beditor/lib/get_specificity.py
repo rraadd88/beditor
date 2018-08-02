@@ -142,9 +142,6 @@ def dguides2offtargets(cfg):
                 #     break
                 samfile.close()
 
-            # filter bad asssembly junk genmomes
-    #         from beditor.lib.global_vars import host2contigs
-    #         dalignbed=dalignbed.loc[dalignbed['chromosome'].isin(host2contigs[cfg['host']]),:]
             dalignbed.to_csv(dalignbedp,sep='\t')
             from beditor.lib.io_nums import str2numorstr
             dalignbed['chromosome']=dalignbed.apply(lambda x : str2numorstr(x['chromosome']),axis=1)

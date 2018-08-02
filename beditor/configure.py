@@ -70,7 +70,19 @@ def get_deps(cfg):
     return cfg
 
 def get_genomes(cfg):
-        # refs
+    #pyensembl first
+    runbashcmd(f"pyensembl install --reference-name {cfg['genomeassembly']} --release {cfg['genomerelease']} --species {cfg['host']}")
+
+    import pyensembl
+    ensembl = pyensembl.EnsemblRelease(species=pyensembl.species.Species.register(
+    latin_name=cfg['host'],
+    synonyms=[cfg['host']],
+    reference_assemblies={
+        cfg['genomeassembly']: (cfg['genomerelease'], cfg['genomerelease']),
+    }),release=cfg['genomerelease'])
+    contigs=[c for c in ensembl.contigs() if not '.' in c]    
+
+    # raw genome next
     if 'human' in cfg['host'].lower():
         cfg['host']='homo_sapiens'
     if 'yeast' in cfg['host'].lower():
@@ -84,8 +96,7 @@ def get_genomes(cfg):
         ifdlref = input("\nDownload genome at {}?[Y/n]: ".format(genome_fastad))
         if ifdlref=='Y':
         # #FIXME download contigs and cat and get index, sizes
-            from beditor.lib.global_vars import host2contigs
-            for contig in host2contigs[cfg['host']]:
+            for contig in contigs:
                 fn='{}.{}.dna_sm.chromosome.{}.fa.gz'.format(cfg['host'].capitalize(),cfg['genomeassembly'],contig)
                 fp='{}/{}'.format(ensembl_fastad,fn)
                 if not exists(fp):
@@ -123,7 +134,6 @@ def get_genomes(cfg):
         ifdlref = input("\nDownload genome annotations at {}?[Y/n]: ".format(genome_gff3d))
         if ifdlref=='Y':
         # #FIXME download contigs and cat and get index, sizes
-            from beditor.lib.global_vars import host2contigs
             fn='{}.{}.{}.gff3.gz'.format(cfg['host'].capitalize(),cfg['genomeassembly'],cfg['genomerelease'])
             fp='{}/{}'.format(ensembl_gff3d,fn)
             if not exists(fp):
@@ -136,6 +146,5 @@ def get_genomes(cfg):
         else:
             logging.error('abort')
             sys.exit(1)
-    runbashcmd(f"pyensembl install --reference-name {cfg['genomeassembly']} --release {cfg['genomerelease']} --species {cfg['host']}")
     logging.info('genomes are installed!')
     return cfg
