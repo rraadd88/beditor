@@ -41,6 +41,7 @@ def get_beditorscore_per_alignment(NM,mismatches_max,genic,alignment,
             return 1
     else:
         return np.nan
+
 def get_beditorscore_per_guide(guide_seq, strategy,
                                align_seqs_scores,
                               penalty_activity_window=0.5,
@@ -54,7 +55,21 @@ def get_beditorscore_per_guide(guide_seq, strategy,
     :param penalty_activity_window: if editable base is not in activity window, penalty_activity_window=0.5
     :returns: beditor score per guide.
     """
-    from beditor.lib.global_vars import pos_muts
+    
+    #create BEs and pos_muts for back-compatibility
+    from os.path import dirname,realpath
+    dBEs=pd.read_table(f"{dirname(realpath(__file__))}/../data/dBEs.tsv")
+    # BEs2mutations={}
+    # for method in dBEs['method'].unique():
+    #     for strand in dBEs['strand'].unique():
+    #         dBEsi=dBEs.loc[(dBEs['method']==method) & (dBEs['strand']==strand),:]
+    #         BEs2mutations[f"{method} on {strand} strand"]=[dBEsi['nucleotide'].unique().tolist()[0],
+    #                                                        dBEsi['nucleotide mutation'].unique().tolist()]
+    pos_muts=dBEs.loc[:,['method','Position of mutation from PAM: minimum',
+     'Position of mutation from PAM: maximum',
+     'Position of codon start from PAM: minimum',
+     'Position of codon start from PAM: maximum']].drop_duplicates().set_index('method')
+
     pos_mut=int(strategy.split(';')[2].replace('@',''))
     method=strategy.split(';')[0]
     penalty_activity_window=1 if (pos_muts.loc[method,'Position of mutation from PAM: minimum']<=pos_mut<=pos_muts.loc[method,'Position of mutation from PAM: maximum']) else penalty_activity_window

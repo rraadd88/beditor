@@ -295,7 +295,7 @@ def dguides2offtargets(cfg):
             dalignbedannot=set_index(dalignbed,'id').join(set_index(dannotsagg,'id'),
                                                   rsuffix=' annotation')
             dalignbedannot['NM']=dalignbedannot['NM'].apply(int)
-            from beditor.lib.get_scores import get_beditorscore_per_guide,get_beditorscore_per_alignment,get_cfdscore
+            from beditor.lib.get_scores import get_beditorscore_per_alignment,get_cfdscore
             dalignbedannot['beditor score']=dalignbedannot.apply(lambda x : get_beditorscore_per_alignment(x['NM'],cfg['mismatches_max'],
                             True if x['region']=='genic' else False,
                             x['alignment'],
@@ -335,7 +335,7 @@ def dguides2offtargets(cfg):
         #---
                 if cfg['test']:
                     df2info(daggbyguide)
-
+                from beditor.lib.get_scores import get_beditorscore_per_guide
                 for guideid in daggbyguide.index:
                     dalignbedannotguide=dalignbedannot.loc[(dalignbedannot['guide: id']==guideid),:]
                     daggbyguide.loc[guideid,'beditor score']=get_beditorscore_per_guide(guide_seq=dalignbedannotguide['guide+PAM sequence'].unique()[0], 
@@ -347,10 +347,13 @@ def dguides2offtargets(cfg):
                 daggbyguide['beditor score (log10)']=daggbyguide['beditor score'].apply(np.log10)
                 dalignbedannot['alternate alignments count']=1
                 daggbyguide=daggbyguide.join(pd.DataFrame(dalignbedannot.groupby('guide: id')['alternate alignments count'].agg('sum')))
-                daggbyguide.loc[:,['guide+PAM sequence','beditor score','beditor score (log10)','alternate alignments count',
-                             'id',
-                             'gene names',
-                             'gene ids',
-                             'transcript ids']].to_csv(dofftargetsp,sep='\t')
+                daggbyguide.to_csv(daggbyguidep,sep='\t')
+                daggbyguide.to_csv(dofftargetsp,sep='\t')
+                # daggbyguide.loc[:,['guide+PAM sequence','beditor score','beditor score (log10)','alternate alignments count',
+                #              'id',
+                #              'gene names',
+                #              'gene ids',
+                #              'transcript ids']].to_csv(dofftargetsp,sep='\t')
+
         import gc
         gc.collect()
