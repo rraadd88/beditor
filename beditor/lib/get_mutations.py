@@ -8,15 +8,14 @@ import matplotlib.pyplot as plt
 from os.path import exists,realpath,dirname
 import itertools
 
-from Bio import SeqIO, Alphabet, Data, Seq, SeqUtils
+from Bio import SeqIO, Alphabet, Seq, SeqUtils
 from Bio import motifs,Seq,AlignIO
 
 import logging
 
 # local scripts
-from beditor.lib.global_vars  import hosts
 
-def get_codon_table(aa, host):
+def get_codon_table(aa, tax_id=None):
     """
     Gets host specific codon table.
     Eq: a*np.exp(-(x-x0)**2/(2*sigma**2))
@@ -24,8 +23,12 @@ def get_codon_table(aa, host):
     :param host: name of host
     :returns: codon table (pandas dataframe)
     """
+    from Bio import Data
     # get codon table
-    codontable=Data.CodonTable.unambiguous_dna_by_id[hosts[host]]
+    if tax_id is None:
+        codontable=Data.CodonTable.unambiguous_dna_by_name["Standard"]
+    else:
+        codontable=Data.CodonTable.unambiguous_dna_by_id[tax_id]
 
     dcodontable=pd.DataFrame(pd.Series(codontable.forward_table))
 
@@ -421,7 +424,7 @@ def dseq2dmutagenesis(cfg):
         dseq=pd.read_csv('{}/dsequences.tsv'.format(cfg[cfg['step']-1]),sep='\t')
         aas=list(dseq['aminoacid: wild-type'].unique())#['S','T','Y']
 
-        dcodontable=get_codon_table(aa=aas, host=cfg['host'])
+        dcodontable=get_codon_table(aa=aas)
 
         dcodonusage=get_codon_usage(cuspp='{}/../data/64_1_1_all_nuclear.cusp.txt'.format(abspath(dirname(__file__)))) #FIXME if prokaryote is used ?
 

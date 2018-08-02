@@ -109,3 +109,17 @@ def align(s1,s2,test=False):
         break
     return alignsymb,score
 
+def translate(dnaseq,host='human',fmtout=str):
+    """
+    Translates a DNA seqeunce
+    :param dnaseq: DNA sequence
+    :param host: host organism
+    :param fmtout: format of output sequence
+    """
+    if isinstance(dnaseq,str): 
+        dnaseq=Seq.Seq(dnaseq,Alphabet.generic_dna)
+    prtseq=dnaseq.translate(table=hosts[host])
+    if fmtout is str:
+        return str(prtseq)
+    else:
+        return prtseq

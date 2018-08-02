@@ -8,65 +8,8 @@ from Bio import motifs,Seq,AlignIO
 #lib modules
 import logging
 from beditor.lib.io_dfs import set_index,df2info
-from beditor.lib.global_vars import hosts
 
 import json
-
-def translate(dnaseq,host='human',fmtout=str):
-    """
-    Translates a DNA seqeunce
-    :param dnaseq: DNA sequence
-    :param host: host organism
-    :param fmtout: format of output sequence
-    """
-    if isinstance(dnaseq,str): 
-        dnaseq=Seq.Seq(dnaseq,Alphabet.generic_dna)
-    prtseq=dnaseq.translate(table=hosts[host])
-    if fmtout is str:
-        return str(prtseq)
-    else:
-        return prtseq
-
-def get_seq_yeast(dseq,orfs_fastap,
-            host,
-           test=False):
-    """
-    Get yeast seqeunces from local files.
-    Would be removed.
-    """
-    orfs=SeqIO.to_dict(SeqIO.parse(orfs_fastap,'fasta'))
-    for subi,sub in enumerate(dseq['gene: name'].tolist()):
-        if sub in orfs:
-            seq=orfs[sub]
-            if test:
-                print(seq.id)
-    #             break
-        else:
-            print('{}: not found in fasta'.format(sub))
-            break
-        dnaseq=str(seq.seq)
-#         print(host)
-        prtseq=translate(seq.seq,host=host,fmtout=str)
-#       prtseq=str(seq.seq.translate(table=hosts[host]))
-#       if not isinstance(dseq.loc[subi,'aminoacid: position'],str):
-        dseq.loc[subi,'transcript: sequence']=dnaseq
-        dseq.loc[subi,'Protein sequence']=prtseq
-        dseq.loc[subi,'gene: name']=sub
-    #   dseq.loc[subi,'aminoacid: position']=int(dseq.loc[subi,'aminoacid: position 
-        try:
-            dseq.loc[subi,'aminoacid: position']=int(float(dseq.loc[subi,'aminoacid: position']))
-            dseq.loc[subi,'aminoacid: wild-type']=prtseq[int(dseq.loc[subi,'aminoacid: position'])-1]
-        #   if dseq.loc[subi,'aminoacid: wild-type']=='Y':
-            dseq.loc[subi,'codon: wild-type']=dnaseq[(int(dseq.loc[subi,'aminoacid: position'])-1)*3:(int(dseq.loc[subi,'aminoacid: position'])-1)*3+3]
-            dseq.loc[subi,'transcript: sequence']=dnaseq
-            dseq.loc[subi,'protein: sequence']=prtseq
-        except:
-            dseq.loc[subi,'aminoacid: position']=dseq.loc[subi,'aminoacid: position']
-            if test:
-                print(print(seq.id,dseq.loc[subi,'aminoacid: position']))                        
-    dseq=dseq.dropna(axis=0,how='any')
-#   print(dseq.shape)
-    return dseq
 
 from beditor.lib.global_vars import bed_colns
 from beditor.lib.io_seqs import fa2df 

@@ -14,9 +14,9 @@ stepi2name= {
  3: 'guides',
  4: 'offtargets'}
 
-hosts={"coli":11, # http://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi
-"saccharomyces_cerevisiae":12,
-"homo_sapiens":1}
+# hosts={"coli":11, # http://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi
+# "saccharomyces_cerevisiae":12,
+# "homo_sapiens":1}
 
 # BEs2mutations={'Target-AID on + strand':['C',['T']],
 # 'ABE on + strand':['A',['G']],
