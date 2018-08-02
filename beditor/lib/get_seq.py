@@ -117,7 +117,13 @@ def din2dseq(cfg):
         if cfg['host']=='homo_sapiens':
             import pyensembl
             #import ensembl object that would fetch genes 
-            ensembl = pyensembl.EnsemblRelease(release=cfg['genomerelease'])
+            # ensembl = pyensembl.EnsemblRelease(release=cfg['genomerelease'])
+            ensembl = pyensembl.EnsemblRelease(species=pyensembl.species.Species.register(
+            latin_name=cfg['host'],
+            synonyms=[cfg['host']],
+            reference_assemblies={
+                cfg['genomeassembly']: (cfg['genomerelease'], cfg['genomerelease']),
+            }),release=cfg['genomerelease'])
             
             din.index=range(len(din))
             dbedp='{}/dbedflank.bed'.format(cfg['datad'])

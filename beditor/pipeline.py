@@ -9,8 +9,9 @@ from os import makedirs
 import argparse
 import pkg_resources
 
-import pandas as pd
 import numpy as np
+import pandas as pd
+pd.options.mode.chained_assignment = None
 
 from multiprocessing import Pool
 
@@ -100,13 +101,14 @@ def pipeline_chunks(cfgp):
     # else:
     #     print(f"skipped: {cfg['cfgp']}")
 
+from beditor.lib.io_dfs import fhs2data_combo_appended
 from beditor.lib.global_vars import stepi2name
 from beditor.lib.io_nums import str2num
 from os.path import basename
 def collect_chunks(cfg,chunkcfgps):
-"""
-#collects chunks
-"""    
+    """
+    #collects chunks
+    """    
     for step in stepi2name.keys():
         doutp=f"{cfg['prjd']}/{step:02d}_{stepi2name[step]}/d{stepi2name[step]}.tsv"
         if not exists(doutp) or cfg['force']:
@@ -216,7 +218,7 @@ def pipeline(cfgp,step=None,test=False,force=False):
             pool=Pool(processes=cfg['cores']) # T : get it from xls
             pool.map(pipeline_chunks, chunkcfgps)
             pool.close(); pool.join()         
-        collect_chunks(cfg,chunkcfgps)
+            collect_chunks(cfg,chunkcfgps)
     else:
         pipeline_chunks(cfgoutp)
 #     pipeline_chunks(cfgp)
@@ -239,11 +241,11 @@ def main():
     parser = argparse.ArgumentParser(description=version_info)
     parser.add_argument("cfg", help="path to project directory", 
                         action="store", default=False)    
-    parser.add_argument("--step", help="1: get seqeucnces,\n2: get possible strategies,\n3: make guides,\n 4: identify offtargets", dest="step", 
+    parser.add_argument("--step", help="1: get seqeucnces,\n2: get possible strategies,\n3: make guides,\n 4: identify offtargets \n else all the steps in tandem.", dest="step", 
                         type=float,action="store", choices=[1,2,3,4],default=None)  
     parser.add_argument("--test", help="Debug mode on", dest="test", 
                         action='store_true', default=False)    
-    parser.add_argument("--force", help="Debug mode on", dest="force", 
+    parser.add_argument("--force", help="Overwrite existing outputs.", dest="force", 
                         action='store_true', default=False)    
     parser.add_argument('-v','--version', action='version',version=version_info)
 #    parser.add_argument('-h', '--help', action='help', #default=argparse.SUPPRESS,

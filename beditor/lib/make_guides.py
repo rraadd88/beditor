@@ -131,11 +131,18 @@ def make_guides(dseq,dmutagenesis,
     gierrcannotmutate=[]
     for gi in dseq.index:
         dseqi=pd.DataFrame(dseq.loc[gi,['aminoacid: wild-type','codon: wild-type','id','aminoacid: position',]]).T
-        dmutagenesis_gi=pd.merge(dseqi,
-        dmutagenesis,
-        how='inner',
-        left_on=['aminoacid: wild-type','codon: wild-type'],
-        right_on=['amino acid','codon'])        
+        if not 'amino acid mutation' in dseq:
+            dmutagenesis_gi=pd.merge(dseqi,
+                dmutagenesis,
+                how='inner',
+                left_on=['aminoacid: wild-type','codon: wild-type'],
+                right_on=['amino acid','codon'])        
+        else:
+            dmutagenesis_gi=pd.merge(dseqi,
+                dmutagenesis,
+                how='inner',
+                left_on=['aminoacid: wild-type','codon: wild-type','amino acid mutation'],
+                right_on=['amino acid','codon','amino acid mutation'])                    
         if len(dmutagenesis_gi)!=0:
             logging.info(f"working on {dseq.loc[gi,'id']}")
 #             codon=dseq.loc[gi,'codon: wild-type']

@@ -136,7 +136,6 @@ def get_genomes(cfg):
         else:
             logging.error('abort')
             sys.exit(1)
-    #FIXME for species
-    runbashcmd('pyensembl install --release 92 --species homo_sapiens')
+    runbashcmd(f"pyensembl install --reference-name {cfg['genomeassembly']} --release {cfg['genomerelease']} --species {cfg['host']}")
     logging.info('genomes are installed!')
     return cfg

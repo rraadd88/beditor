@@ -418,14 +418,14 @@ def dseq2dmutagenesis(cfg):
 
         dcodontable=get_codon_table(aa=aas, host=cfg['host'])
 
-        dcodonusage=get_codon_usage(cuspp='{}/../data/64_1_1_all_nuclear.cusp.txt'.format(abspath(dirname(__file__))))
+        dcodonusage=get_codon_usage(cuspp='{}/../data/64_1_1_all_nuclear.cusp.txt'.format(abspath(dirname(__file__)))) #FIXME if prokaryote is used ?
 
         dmutagenesis=get_possible_mutagenesis(dcodontable,dcodonusage,
         #                          aa=aas,
                                               BEs=BEs,pos_muts=pos_muts,
                                      host=cfg['host'])
-        dmutagenesis=filterdmutagenesis(dmutagenesis,cfg)
-        
+        if not 'amino acid mutation' in dseq:
+            dmutagenesis=filterdmutagenesis(dmutagenesis,cfg)            
         colns_pos=[c for c in dmutagenesis if ('position' in c) or ('Position' in c)]
         dmutagenesis.loc[:,colns_pos]=dmutagenesis.loc[:,colns_pos].astype(int)
         
