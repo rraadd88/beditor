@@ -109,7 +109,7 @@ def align(s1,s2,test=False):
         break
     return alignsymb,score
 
-def translate(dnaseq,host='human',fmtout=str):
+def translate(dnaseq,host='human',fmtout=str,tax_id=None):
     """
     Translates a DNA seqeunce
     :param dnaseq: DNA sequence
@@ -118,7 +118,9 @@ def translate(dnaseq,host='human',fmtout=str):
     """
     if isinstance(dnaseq,str): 
         dnaseq=Seq.Seq(dnaseq,Alphabet.generic_dna)
-    prtseq=dnaseq.translate(table=hosts[host])
+    if tax_id is None:
+        tax_id=1 # stanndard codon table. ref http://biopython.org/DIST/docs/tutorial/Tutorial.html#htoc25
+    prtseq=dnaseq.translate(table=tax_id)
     if fmtout is str:
         return str(prtseq)
     else:
