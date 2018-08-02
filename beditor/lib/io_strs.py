@@ -18,12 +18,16 @@ def s2re(s,ss2re):
 import logging
 import os.path
 
-def get_logger(program='program',argv=None,level=None):
+def get_logger(program='program',argv=None,level=None,dp=None):
 # def initialize_logger(output_dir):
     import datetime
     date=make_pathable_string(str(datetime.datetime.now())).replace('-','_')
     cmd='_'.join([str(s) for s in argv]).replace('/','|')
-    logp=f"log_{program}_{date}_{cmd}.log"
+    if dp is None:
+        dp=''
+    else:
+        dp=dp+'/'
+    logp=f"({dp}.log_{program}_{date}_{cmd}.log"
     log_format='[%(asctime)s] %(levelname)s\tfrom %(filename)s in %(funcName)s(..):%(lineno)d: %(message)s'
     #'[%(asctime)s] %(levelname)s\tfrom %(filename)s in %(funcName)s(..):%(lineno)d: %(message)s'
     

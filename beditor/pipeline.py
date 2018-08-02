@@ -264,7 +264,8 @@ def main():
         level=logging.ERROR
     get_logger(program='beditor',
                argv=list(vars(args).values()),
-               level=level)
+               level=level,
+               dp=basename('args.cfg').split('.')[0])
     
     logging.info("start")
     
