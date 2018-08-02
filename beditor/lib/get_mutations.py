@@ -405,12 +405,15 @@ def filterdmutagenesis(dmutagenesis,cfg):
             logging.info('dmutagenesis.shape: '+str(dmutagenesis.shape))    
     return dmutagenesis
 
-from beditor.lib.global_vars import BEs,pos_muts
 def dseq2dmutagenesis(cfg):
+    # from beditor.lib.global_vars import BEs2mutations,pos_muts
     """
     Generates mutagenesis strategies from identities of reference and mutated codons (from dseq).
     :param cfg: configurations from yml file  
     """
+
+
+
     cfg['datad']=cfg[cfg['step']]
     cfg['plotd']=cfg['datad']
     dmutagenesisp='{}/dmutagenesis.tsv'.format(cfg['datad'])
@@ -422,10 +425,22 @@ def dseq2dmutagenesis(cfg):
 
         dcodonusage=get_codon_usage(cuspp='{}/../data/64_1_1_all_nuclear.cusp.txt'.format(abspath(dirname(__file__)))) #FIXME if prokaryote is used ?
 
+        #create BEs and pos_muts for back-compatibility
+        dBEs=pd.read_table(f"{dirname(realpath(__file__))}/../data/dBEs.tsv")
+        BEs2mutations={}
+        for method in dBEs['method'].unique():
+            for strand in dBEs['strand'].unique():
+                dBEsi=dBEs.loc[(dBEs['method']==method) & (dBEs['strand']==strand),:]
+                BEs2mutations[f"{method} on {strand} strand"]=[dBEsi['nucleotide'].unique().tolist()[0],
+                                                               dBEsi['nucleotide mutation'].unique().tolist()]
+        pos_muts=dBEs.loc[:,['method','Position of mutation from PAM: minimum',
+         'Position of mutation from PAM: maximum',
+         'Position of codon start from PAM: minimum',
+         'Position of codon start from PAM: maximum']].drop_duplicates().set_index('method')
+
         dmutagenesis=get_possible_mutagenesis(dcodontable,dcodonusage,
-        #                          aa=aas,
-                                              BEs=BEs,pos_muts=pos_muts,
-                                     host=cfg['host'])
+                                    BEs=BEs,pos_muts=pos_muts,
+                                    host=cfg['host'])
         dmutagenesis=filterdmutagenesis(dmutagenesis,cfg)            
         colns_pos=[c for c in dmutagenesis if ('position' in c) or ('Position' in c)]
         dmutagenesis.loc[:,colns_pos]=dmutagenesis.loc[:,colns_pos].astype(int)
