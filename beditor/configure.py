@@ -75,12 +75,13 @@ def get_genomes(cfg):
 
     import pyensembl
     ensembl = pyensembl.EnsemblRelease(species=pyensembl.species.Species.register(
-    latin_name=cfg['host'],
-    synonyms=[cfg['host']],
-    reference_assemblies={
-        cfg['genomeassembly']: (cfg['genomerelease'], cfg['genomerelease']),
-    }),release=cfg['genomerelease'])
-    contigs=[c for c in ensembl.contigs() if not '.' in c]    
+                                        latin_name=cfg['host'],
+                                        synonyms=[cfg['host']],
+                                        reference_assemblies={
+                                            cfg['genomeassembly']: (cfg['genomerelease'], cfg['genomerelease']),
+                                        }),release=cfg['genomerelease'])
+    contig_mito=['MTDNA','MITO','MT']
+    contigs=[c for c in ensembl.contigs() if ((not '.' in c) and (c not in contig_mito))]    
 
     # raw genome next
     if 'human' in cfg['host'].lower():
@@ -93,7 +94,7 @@ def get_genomes(cfg):
     cfg['genomep']='{}/genome.fa'.format(genome_fastad)
     if not exists(cfg['genomep']):
         logging.error('not found: {}'.format(cfg['genomep']))
-        ifdlref = input("\nDownload genome at {}?[Y/n]: ".format(genome_fastad))
+        ifdlref = input("Download genome at {}?[Y/n]: ".format(genome_fastad))
         if ifdlref=='Y':
         # #FIXME download contigs and cat and get index, sizes
             for contig in contigs:
@@ -131,7 +132,7 @@ def get_genomes(cfg):
     cfg['genomegffp']='{}/genome.gff3'.format(genome_gff3d)
     if not exists(cfg['genomegffp']):
         logging.error('not found: {}'.format(cfg['genomegffp']))
-        ifdlref = input("\nDownload genome annotations at {}?[Y/n]: ".format(genome_gff3d))
+        ifdlref = input("Download genome annotations at {}?[Y/n]: ".format(genome_gff3d))
         if ifdlref=='Y':
         # #FIXME download contigs and cat and get index, sizes
             fn='{}.{}.{}.gff3.gz'.format(cfg['host'].capitalize(),cfg['genomeassembly'],cfg['genomerelease'])

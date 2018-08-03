@@ -139,6 +139,10 @@ def pipeline(cfgp,step=None,test=False,force=False):
             logging.critical(f"dsubmap_preferred_path is {cfg['dsubmap_preferred_path']}")
             logging.critical(cfg)
             sys.exit(1)
+
+    # get names right
+    import pyensembl
+    cfg['host']=pyensembl.species.normalize_species_name(cfg['host'])        
     #project dir
     cfg['prj']=splitext(basename(cfgp))[0]
     if dirname(cfgp)!='':
