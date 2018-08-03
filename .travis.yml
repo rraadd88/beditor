@@ -31,6 +31,6 @@ deploy:
   distributions: sdist bdist_wheel
   password:
     secure: bwTQZshWT7FVBkgVTKimF/0C80Aum3R1Yyyd3pOdLdZM1cD9l6KfaYw6GAZ4M3YLuuL3MGMv3vATNyDfq616BVNbxao2sE7zqwvQKqON+G6dm9d9Ryl3pczMV3+sPcJZF/Waqx598yQsjStOSQDpLoDk+7TeelF1a/vjvdpWpDoWMhJ7RrmOAK4KVKSzF6uYPiPeMkZOV52hf9AM4hKluOFGuwonc8PQhywKYRuLx0yPKs3oIImDGVO0xVDZD0iXPrBF1OdqYium7TH7s96640gZyDXGgo0Y1+1bm434NWgpRJ5gEJghlEwxgga4FmRHUQuVGLBNAE8qeQZ8FiGq1FGFnPjKR05ch+AiUnA8sLW77RFVu557WovN9hL8dZyBt+msTkJvWBZSq9U//3xv8dR33r/PZjpm62/krE3xs5ukh2MoFyU360Is4zhekbOWCeUSTWfJTXQuU8V0MEABfJbOTQgDHnTGNH9wEVb0/kzUh4tLgbewNKxb6hZc5ITH1XIGWSNOqJmMAL41zaNQlMX+8fB0xKXz1T1ouYU1QBK3/xDsUtah9B1lDp5/W28MPXxikYHbIZV3yeYQLkMfdKUG4zGFoIXu9OTckD5K6Z/V5m65z7XJQypt5XpwntkMMDnMhKNpKJRwMgMG0YGmkSmwVocC5UlzRdAyNYjnSNo=
-    # on:
-    # tags: true
-    # branch: master  
+  on:
+    tags: true
+    branch: master  
