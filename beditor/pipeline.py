@@ -34,14 +34,6 @@ def pipeline_chunks(cfgp):
     if not cfg['step'] in cfg['step2ignoredl']:
         cfg=get_deps(cfg)
         cfg=get_genomes(cfg)
-
-#     #project dir
-#     cfg['prj']=splitext(basename(cfgp))[0]
-#     if dirname(cfgp)=='':
-#         cfg['prjd']=dirname(cfgp)+'/'+cfg['prj']
-#     else:
-#         cfg['prjd']=cfg['prj']
-
     #datads
     cfg[0]=cfg['prjd']+'/00_input/'
     cfg[1]=cfg['prjd']+'/01_sequences/'
