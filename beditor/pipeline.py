@@ -248,10 +248,12 @@ def main():
     """
     version_info='%(prog)s v{version}'.format(version=pkg_resources.require("beditor")[0].version)
     parser = argparse.ArgumentParser(description=version_info)
-    parser.add_argument("cfg", help="path to project directory", 
+    parser.add_argument("--cfg", help="path to project directory", 
                         action="store", default=False)    
     parser.add_argument("--step", help="1: get seqeucnces,\n2: get possible strategies,\n3: make guides,\n 4: identify offtargets \n else all the steps in tandem.", dest="step", 
                         type=float,action="store", choices=[1,2,3,4],default=None)  
+    parser.add_argument("--list", help="list something", dest="lister", 
+                        action="store", default=None)
     parser.add_argument("--test", help="Debug mode on", dest="test", 
                         action='store_true', default=False)    
     parser.add_argument("--force", help="Overwrite existing outputs.", dest="force", 
@@ -261,20 +263,32 @@ def main():
 #                    help='Show this help message and exit. \n Version info: %s' % version_info)
     args = parser.parse_args()
 
-    from beditor.lib.io_strs import get_logger
-    if args.test:
-        level=logging.INFO
-    else: 
-        level=logging.ERROR
-    get_logger(program='beditor',
-               argv=list(vars(args).values()),
-               level=level,
-               dp=None)
-    
-    logging.info("start")
-    
-    pipeline(args.cfg,step=args.step,
-        test=args.test,force=args.force)
+
+    lists=['pams','editors']
+    if args.lister is not None:
+        if args.lister in lists:
+            if args.lister.lower()=='pams':
+                d=pd.read_table(f"{dirname(realpath(__file__))}/data/dpam.tsv")
+                print(d)                
+            elif args.lister.lower()=='editors':
+                d=pd.read_table(f"{dirname(realpath(__file__))}/data/dBEs.tsv")
+                print(d.loc[:,['method', 'nucleotide', 'nucleotide mutation','strand']])
+        else:
+            logging.error("args.lister should be one these {','.join(lists)}")  
+    else:
+        from beditor.lib.io_strs import get_logger
+        if args.test:
+            level=logging.INFO
+        else: 
+            level=logging.ERROR
+        get_logger(program='beditor',
+                   argv=list(vars(args).values()),
+                   level=level,
+                   dp=None)
+        
+        logging.info("start")
+        pipeline(args.cfg,step=args.step,
+            test=args.test,force=args.force)
 
 if __name__ == '__main__':
     main()
