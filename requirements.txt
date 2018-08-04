@@ -1,7 +1,7 @@
 biopython==1.71
 regex==2018.7.11
 pandas == 0.23.3
-pyyaml==3.13
+pyyaml
 numpy==1.13.1
 matplotlib==2.2.2
 pysam==0.14.1
@@ -9,4 +9,4 @@ requests==2.19.1
 scipy==1.1.0
 tqdm==4.23.4
 seaborn==0.8.1
-pyensembl==1.4.0
+

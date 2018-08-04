@@ -255,7 +255,6 @@ def main():
 #                    help='Show this help message and exit. \n Version info: %s' % version_info)
     args = parser.parse_args()
 
-
     lists=['pams','editors']
     if args.lister is not None:
         if args.lister in lists:
@@ -269,6 +268,7 @@ def main():
         else:
             logging.error("args.lister should be one these {','.join(lists)}")  
     else:
+
         from beditor.lib.io_strs import get_logger
         if args.test:
             level=logging.INFO
@@ -280,6 +280,7 @@ def main():
                    dp=None)
         
         logging.info("start")
+        print("start")
         pipeline(args.cfg,step=args.step,
             test=args.test,force=args.force)
 
