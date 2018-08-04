@@ -18,12 +18,12 @@ python setup.py install --prefix=/your/local/dir
 
 import sys
 try:
-    from setuptools import setup, find_packages, Extension 
+    from setuptools import setup, find_packages, Extension
 except ImportError:
     from distutils.core import setup, find_packages, Extension
 if (sys.version_info[0], sys.version_info[1],sys.version_info[2]) != (3, 6 ,5):
     raise RuntimeError('Python 3.6.5 required ')
- 
+
 # main setup
 setup(
 name='beditor',
