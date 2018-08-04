@@ -32,7 +32,9 @@ def pipeline_chunks(cfgp):
 #     deps and genome are only needed if running step =1 or 4
     cfg['step2ignoredl']=[2,3]
     if not cfg['step'] in cfg['step2ignoredl']:
+        print('installing dependencies')
         cfg=get_deps(cfg)
+        print('installing genomes')
         cfg=get_genomes(cfg)
     #datads
     cfg[0]=cfg['prjd']+'/00_input/'
