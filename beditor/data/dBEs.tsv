@@ -4,6 +4,6 @@ ABE	T	C	-	-17	-13	-19	-13
 Target-AID	C	T	+	-19	-17	-21	-17
 Target-AID	G	A	-	-19	-17	-21	-17
 Target-AID yeast	C	T	+	-19	-17	-21	-17
-Target-AID yeast	C	G	-	-19	-17	-21	-17
-Target-AID yeast	G	A	+	-19	-17	-21	-17
+Target-AID yeast	C	G	+	-19	-17	-21	-17
+Target-AID yeast	G	A	-	-19	-17	-21	-17
 Target-AID yeast	G	C	-	-19	-17	-21	-17

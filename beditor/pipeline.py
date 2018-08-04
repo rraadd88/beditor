@@ -262,10 +262,10 @@ def main():
             from .lib.io_dfs import del_Unnamed
             if args.lister.lower()=='pams':
                 d=pd.read_table(f"{dirname(realpath(__file__))}/data/dpam.tsv")
-                print(del_Unnamed(d))                
+                print(del_Unnamed(d.loc[:,['PAM','Description']]).set_index('PAM'))                
             elif args.lister.lower()=='editors':
                 d=pd.read_table(f"{dirname(realpath(__file__))}/data/dBEs.tsv")
-                print(del_Unnamed(d.loc[:,['method', 'nucleotide', 'nucleotide mutation','strand']]))
+                print(del_Unnamed(d.loc[(d['strand']=='+'),['method', 'nucleotide', 'nucleotide mutation']]).set_index('method'))
         else:
             logging.error("args.lister should be one these {','.join(lists)}")  
     else:
