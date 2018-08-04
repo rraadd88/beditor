@@ -259,12 +259,13 @@ def main():
     lists=['pams','editors']
     if args.lister is not None:
         if args.lister in lists:
+            from .lib.io_dfs import del_Unnamed
             if args.lister.lower()=='pams':
                 d=pd.read_table(f"{dirname(realpath(__file__))}/data/dpam.tsv")
-                print(d)                
+                print(del_Unnamed(d))                
             elif args.lister.lower()=='editors':
                 d=pd.read_table(f"{dirname(realpath(__file__))}/data/dBEs.tsv")
-                print(d.loc[:,['method', 'nucleotide', 'nucleotide mutation','strand']])
+                print(del_Unnamed(d.loc[:,['method', 'nucleotide', 'nucleotide mutation','strand']]))
         else:
             logging.error("args.lister should be one these {','.join(lists)}")  
     else:

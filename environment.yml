@@ -17,4 +17,4 @@ dependencies:
     - tqdm==4.23.4
     - seaborn==0.8.1
     - pandas==0.23.3
-    - pyensembl==1.4.0
+    # - pyensembl==1.4.0
