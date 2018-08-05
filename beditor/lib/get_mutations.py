@@ -325,12 +325,17 @@ def get_submap(cfg):
     mimetism_levels={'high': 1,
                      'medium': 5,
                      'low': 10}
+    if not cfg['host'] in ['saccharomyces_cerevisiae','homo_sapiens']:
+        host='saccharomyces_cerevisiae'
+        logging.warning("for mimetic substitutions, substitution matrix of {host} is used")
+    else:
+        host=cfg['host']
     try:
-        dsubmap=pd.read_csv('{}/../data/dsubmap_{}.csv'.format(dirname(realpath(__file__)),cfg['host'])).set_index('AA1')
+        dsubmap=pd.read_csv('{}/../data/dsubmap_{}.csv'.format(dirname(realpath(__file__)),host)).set_index('AA1')
     except:
         if cfg['test']:
-            print('{}/data/dsubmap_{}.csv'.format(dirname(realpath(__file__)),cfg['host']))
-        dsubmap=pd.read_csv('data/dsubmap_{}.csv'.format(cfg['host'])).set_index('AA1')
+            print('{}/data/dsubmap_{}.csv'.format(dirname(realpath(__file__)),host))
+        dsubmap=pd.read_csv('data/dsubmap_{}.csv'.format(host)).set_index('AA1')
         
     dsubmap.index.name='amino acid'
     dsubmap.columns.name='amino acid mutation'
@@ -383,7 +388,7 @@ def filterdmutagenesis(dmutagenesis,cfg):
 
     # filter by submap
     if (cfg['mutations']=='mimetic') or (cfg['mutations']=='substitutions'):
-        if cfg['mutations']=='mimetic':            
+        if cfg['mutations']=='mimetic':                
             dsubmap=get_submap(cfg)
         elif cfg['mutations']=='substitutions':
             dsubmap=pd.read_csv(cfg['dsubmap_preferred_path'],sep='\t') # has two cols: amino acid and amino acid mutation
