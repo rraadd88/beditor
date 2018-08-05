@@ -101,7 +101,7 @@ def get_genomes(cfg):
                 fn='{}.{}.dna_sm.chromosome.{}.fa.gz'.format(cfg['host'].capitalize(),cfg['genomeassembly'],contig)
                 fp='{}/{}'.format(ensembl_fastad,fn)
                 if not exists(fp):
-                    cmd='wget -x -nH ftp://ftp.ensembl.org/{} -P {}'.format(fp,dirname(realpath(__file__)))
+                    cmd='wget -q -x -nH ftp://ftp.ensembl.org/{} -P {}'.format(fp,dirname(realpath(__file__)))
                     runbashcmd(cmd,test=cfg['test'])
 #                 break
             # make the fa ready
