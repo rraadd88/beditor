@@ -87,21 +87,6 @@ def get_pam_searches(dpam,seq,pos_codon,
 #         print(dpamposs.shape)
     return dpamposs
 
-# if mutation is in the activity window
-def get_distance_of_mutation_in_codon_from_PAM(dist_codon,pos_pam,pos_mut,strand):
-    if pos_pam=='up':
-        dist_mut=dist_codon+pos_mut
-    elif pos_pam=='down':
-        dist_mut=dist_codon-pos_mut
-    else:
-        logging.error(f'pam_pos {pam_pos} is wrong')
-    if strand=='+':
-        dist_mut=dist_mut-1
-    elif strand=='-':
-        dist_mut=dist_mut
-    else:
-
-    return dist_mut
 
 def get_activity_seq(guide_seq,pam_pos,pam_dist_min,pam_dist_max,dbug=False):
     if dbug:
@@ -109,9 +94,17 @@ def get_activity_seq(guide_seq,pam_pos,pam_dist_min,pam_dist_max,dbug=False):
     if pam_pos=='up':
         seq=guide_seq[pam_dist_min-1:pam_dist_max]
     elif pam_pos=='down':
-        seq=guide_seq[len(guide_seq)-pam_dist_max:len(guide_seq)-pam_dist_min+1]
+        seq=guide_seq[::-1][pam_dist_min-1:pam_dist_max][::-1]
     return seq
 
+def get_pos_mut_from_pam(seq_activity,nt,pam_pos,pos_pam_min,pos_pam_max,dbug=False):
+    if dbug:
+        print(seq_activity,nt,pam_pos,pos_pam_min,pos_pam_max)
+    if pam_pos=='up':
+        return pos_pam_min+seq_activity.find(nt)
+    elif pam_pos=='down':
+        return seq_activity.find(nt)+pos_pam_min
+        
 def make_guides(cfg,dseq,dmutagenesis,
                 dpam,
                test=False,
@@ -171,28 +164,25 @@ def make_guides(cfg,dseq,dmutagenesis,
 #                         print('search',dpamsearchesflt['strand'].value_counts())
 #                         print('mutage',dmutagenesis_gi['strand'].value_counts())
                     dpamsearches_strategy=pd.merge(dpamsearchesflt.reset_index(),dmutagenesis_gi.reset_index(),
-                             how='left',
+                             how='inner',
                              on=['codon','strand'])
-                    dpamsearches_strategy=dpamsearches_strategy.dropna(subset=[c for c in dpamsearches_strategy if 'sequence' in c],how='any',axis=0)
-                    if len(dpamsearches_strategy)!=0:
-                        # filter by mutation position 
-                        dpamsearches_strategy['activity sequence']=dpamsearches_strategy.apply(lambda x: get_activity_seq(x['guide sequence'],x['position'],
-                                     int(x['distance of mutation from PAM: minimum']),
-                                     int(x['distance of mutation from PAM: maximum'])),axis=1)   
-                        dpamsearches_strategy['distance of mutation in codon from PAM']=dpamsearches_strategy.apply(lambda x: x['activity sequence'].find('nucleotide mutation')+x['Position of mutation from PAM: minimum'],axis=1) #FIXME if pam is up
-                        dpamsearches_strategy=dpamsearches_strategy.loc[dpamsearches_strategy.apply(lambda x : True if (x['distance of mutation from PAM: minimum']<=abs(x['distance of mutation in codon from PAM'])<=x['distance of mutation from PAM: maximum']) else False,axis=1),:]
-                        if len(dpamsearches_strategy)!=0:                                 
-                            if not 'dguides' in locals():
-                                dguides=dpamsearches_strategy.copy()
-                            else:
-                                dguides=dguides.append(dpamsearches_strategy)
+                    # dpamsearches_strategy=dpamsearches_strategy.dropna(subset=[c for c in dpamsearches_strategy if 'sequence' in c],how='any',axis=0)
+                    # if len(dpamsearches_strategy)!=0:
+                    #     # filter by mutation position 
+                    #     # print(dpamsearches_strategy)
+                    #     # dpamsearches_strategy.to_csv('test.tsv',sep='\t')
+                    if len(dpamsearches_strategy)!=0:                                 
+                        if not 'dguides' in locals():
+                            dguides=dpamsearches_strategy.copy()
+                        else:
+                            dguides=dguides.append(dpamsearches_strategy)
 #                             if dbug:
 #                                 return dpamsearches_strategy        
-                            del dpamsearches_strategy
-                        else:
-                            gierrfltmutpos.append(gi)
-                            if dbug:
-                                print(f"empty after filter by mutation position {dpamsearches_strategy['distance of mutation in codon from PAM'].tolist()}")
+                        del dpamsearches_strategy
+                    # else:
+                    #     gierrfltmutpos.append(gi)
+                    #     if dbug:
+                    #         print(f"empty after filter by mutation position {dpamsearches_strategy['distance of mutation in codon from PAM'].tolist()}")
                     else:
                         gierrdenan.append(gi)
                         if dbug:
@@ -224,16 +214,32 @@ def make_guides(cfg,dseq,dmutagenesis,
              }
 
     if 'dguides' in locals():        
-        logging.info('#reverse complement all the sequences')
+
+        logging.info('#reverse complement guides on negative strand sequences')
         dguides.loc[:,'PAM']=dguides.apply(lambda x : reverse_complement_multintseq(x['PAM'],nt2complement) if x['is a reverse complement'] else x['PAM'],axis=1)
-        for colseq in ['guide+PAM sequence','guide sequence','PAM sequence','activity sequence']:
+        for colseq in ['guide+PAM sequence','guide sequence','PAM sequence']:
             dguides.loc[:,colseq]=dguides.apply(lambda x : str(str2seq(x[colseq]).reverse_complement()) if x['is a reverse complement'] else x[colseq],axis=1)
-            
-        logging.info('filter by # editable nts in activity seq')
+
+        logging.info('get activity sequence')        
+        dguides['activity sequence']=dguides.apply(lambda x: get_activity_seq(x['guide sequence'],x['position'],
+                     int(x['distance of mutation from PAM: minimum']),
+                     int(x['distance of mutation from PAM: maximum'])),axis=1)   
+
+        logging.info('filter by # of editable nts in activity seq')
         logging.info(dguides.shape)
         dguides=dguides.loc[(dguides.apply(lambda x : np.sum([x['activity sequence'].count(nt) for nt in  x['nucleotide']])==len(x['nucleotide']),axis=1)),:]
         logging.info(dguides.shape)
-    
+
+        # if dbug:
+        #     dguides.to_csv('test.tsv',sep='\t')
+
+        logging.info('#filter by location of mutation within guide')        
+        dguides['distance of mutation in codon from PAM']=dguides.apply(lambda x: get_pos_mut_from_pam(x['activity sequence'],x['nucleotide'],
+                             x['position'],
+                             x['Position of mutation from PAM: minimum'],
+                             x['Position of mutation from PAM: maximum']),axis=1) #FIXME if pam is up
+        dguides=dguides.loc[dguides.apply(lambda x : True if (x['distance of mutation from PAM: minimum']<=abs(x['distance of mutation in codon from PAM'])<=x['distance of mutation from PAM: maximum']) else False,axis=1),:]
+
         dguides.loc[:,'strategy']=dguides.apply(lambda x: f"{x['method']};{x['strand']};@{int(x['distance of mutation in codon from PAM'])};{x['PAM']};{x['codon']}:{x['codon mutation']};{x['amino acid']}:{x['amino acid mutation']};",axis=1)
         dguides.loc[:,'guide: id']=dguides.apply(lambda x: f"{x['id']}|{int(x['aminoacid: position'])}|({x['strategy']})",axis=1)
         dguides.loc[:,'guide+PAM length']=dguides.apply(lambda x: len(x['guide+PAM sequence']),axis=1)
@@ -276,8 +282,6 @@ def dseq2dguides(cfg):
     if not exists(dguideslinp) or cfg['force']:
         dseq=pd.read_csv('{}/dsequences.tsv'.format(cfg[cfg['step']-2]),sep='\t') #FIXME if numbering of steps is changed, this is gonna blow
         dmutagenesis=pd.read_csv(f"{cfg[cfg['step']-1]}/dmutagenesis.tsv",sep='\t')
-
-        
         # make pam table
         dpam=pd.read_table('{}/../data/dpam.tsv'.format(dirname(realpath(__file__))))
         if sum(dpam['PAM'].isin(cfg['pams']))!=len(cfg['pams']):
@@ -304,7 +308,7 @@ def dseq2dguides(cfg):
                     dmutagenesis,
                     dpam=dpam_strands,
                        test=cfg['test'],
-        #                dbug=True,
+                       dbug=True,
                      )
 
         dguideslin.to_csv(dguideslinp,sep='\t')
