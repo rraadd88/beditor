@@ -104,7 +104,7 @@ def get_pos_mut_from_pam(seq_activity,nt,pam_pos,pos_pam_min,pos_pam_max,dbug=Fa
         return pos_pam_min+seq_activity.find(nt)
     elif pam_pos=='down':
         return seq_activity.find(nt)+pos_pam_min
-        
+
 def make_guides(cfg,dseq,dmutagenesis,
                 dpam,
                test=False,
@@ -243,6 +243,7 @@ def make_guides(cfg,dseq,dmutagenesis,
         dguides.loc[:,'strategy']=dguides.apply(lambda x: f"{x['method']};{x['strand']};@{int(x['distance of mutation in codon from PAM'])};{x['PAM']};{x['codon']}:{x['codon mutation']};{x['amino acid']}:{x['amino acid mutation']};",axis=1)
         dguides.loc[:,'guide: id']=dguides.apply(lambda x: f"{x['id']}|{int(x['aminoacid: position'])}|({x['strategy']})",axis=1)
         dguides.loc[:,'guide+PAM length']=dguides.apply(lambda x: len(x['guide+PAM sequence']),axis=1)
+        dguides=dguides.drop_duplicates(subset=['guide: id'])
         return dguides,err2idxs
 
 def dpam2dpam_strands(dpam,pams):
