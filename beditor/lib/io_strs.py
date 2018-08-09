@@ -54,56 +54,7 @@ def get_logger(program='program',argv=None,level=None,dp=None):
     formatter = logging.Formatter(log_format)
     handler.setFormatter(formatter)
     logger.addHandler(handler)
-    
-# def get_logger(argv=None,level=None):
-#     """
-#     Initiates logging information in a pre-defined format. 
-#     :param level:
-#     'debug': logging.DEBUG,
-#     'info': logging.INFO,
-#     'warning': logging.WARNING,
-#     'error': logging.ERROR,
-#     'critical': logging.CRITICAL    
-#     """
-#     import logging
-#     import logging.handlers
-#     import datetime
-#     log_format='[%(asctime)s] %(levelname)s\tfrom %(filename)s in %(funcName)s(..):%(lineno)d: %(message)s'
-#     #'[%(asctime)s] %(levelname)s\tfrom %(filename)s in %(funcName)s(..):%(lineno)d: %(message)s'
-#     if level is None:
-#         level=logging.INFO
-#     if not argv is None:
-#         logp=f"{make_pathable_string(str(datetime.datetime.now()))}_{'_'.join([str(s) for s in argv]).replace('/','|')}.log"
-#         logging.basicConfig(filename=logp,format=log_format,
-#                             level=level)
-        
-# #         my_logger = logging.getLogger('rraadd88')
-# #         my_logger.setLevel(level)
-
-# #         # Add the log message handler to the logger
-# #         handler = logging.handlers.RotatingFileHandler(
-# #                   logp, maxBytes=100000000000000)
-
-# #         handler.setLevel(level)
-
-# #         my_logger.addHandler(handler)
-        
-# #         print(log_fh)
-# #         logging.basicConfig(filename=log_fh)
-# #         console = logging.StreamHandler()
-# #         console.setLevel(logging.INFO)
-# #         formatter = logging.Formatter(log_format)
-# #         console.setFormatter(formatter)
-# #         logging.getLogger('').addHandler(console)
-
-# #         # Set up a specific logger with our desired output level
-#     # logging.info('#START')
-#     else:
-#         logging.basicConfig(format=log_format,
-#                 level=level)
-
-#     return logging
-
+    return logp
 
 def isstrallowed(s,form):
     """

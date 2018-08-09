@@ -375,9 +375,11 @@ def calc_cfd(wt,sg,pam):
 def get_cfdscore(wt,off):
     m_wt = re.search('[^ATCG]',wt)
     m_off = re.search('[^ATCG]',off)
-    if (m_wt is None) and (m_off is None):
+    if len(m_wt)== 23 and len(m_off)== 23:
         pam = off[-2:]
         sg = off[:-3]
         cfd_score = calc_cfd(wt,sg,pam)
 #         print("CFD score: "+str(cfd_score))
         return cfd_score
+    else:
+        np.nan

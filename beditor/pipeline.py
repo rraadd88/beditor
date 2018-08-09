@@ -279,13 +279,13 @@ def main():
             level=logging.INFO
         else: 
             level=logging.ERROR
-        get_logger(program='beditor',
+        logp=get_logger(program='beditor',
                    argv=list(vars(args).values()),
                    level=level,
                    dp=None)
         
-        logging.info("start")
-        print("start")
+        logging.info(f"start\nlog file: {logp}")
+        print(f"start\nlog file: {logp}")
         pipeline(args.cfg,step=args.step,
             test=args.test,force=args.force)
 
