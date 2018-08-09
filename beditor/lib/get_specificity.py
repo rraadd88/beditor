@@ -192,7 +192,8 @@ def dguides2offtargets(cfg):
                 runbashcmd(cmd)
 
             dalignedfasta=fa2df(alignedfastap)
-            dalignedfasta.columns=['aligned sequence']        
+            dalignedfasta.columns=['aligned sequence']
+            dalignedfasta=dalignedfasta.loc[(dalignedfasta.apply(lambda x: not 'N' in x['aligned sequence'],axis=1)),:] #FIXME bwa aligns to NNNNNs
     #         dalignedfasta=dalignedfasta.loc[[False if np.unique(list(s.upper()))=='N' else True for s in dalignedfasta['aligned sequence']],:]
             dalignedfasta.index=[i.split('(')[0] for i in dalignedfasta.index] # for bedtools 2.27, the fasta header now has hanging (+) or (-)
             dalignedfasta.index.name='id'
@@ -212,6 +213,8 @@ def dguides2offtargets(cfg):
 
     #         dalignedfasta['guide: id']=dalignedfasta.apply(lambda x : x['guide: id'].replace('_',' '),axis=1)
             dalignbed=set_index(dalignbed,'id').join(set_index(dalignedfasta,'id'))
+            dalignbed=dalignbed.dropna(subset=['aligned sequence'],axis=0)
+
             dalignbed.index.name='id'
             dalignbed=dalignbed.drop_duplicates()
             dalignbed.to_csv(dalignbedguidesseqp,sep='\t')
@@ -292,12 +295,14 @@ def dguides2offtargets(cfg):
             dalignbedannot=set_index(dalignbed,'id').join(set_index(dannotsagg,'id'),
                                                   rsuffix=' annotation')
             dalignbedannot['NM']=dalignbedannot['NM'].apply(int)
+            
             from beditor.lib.get_scores import get_beditorscore_per_alignment,get_cfdscore
             dalignbedannot['beditor score']=dalignbedannot.apply(lambda x : get_beditorscore_per_alignment(x['NM'],cfg['mismatches_max'],
                             True if x['region']=='genic' else False,
                             x['alignment'],
                             #                                                                                                        test=cfg['test'],
                             ),axis=1) 
+            # dalignbedannot.to_csv('test.tsv',sep='\t')
             dalignbedannot['CFD score']=dalignbedannot.apply(lambda x : get_cfdscore(x['guide+PAM sequence'].upper(), x['aligned sequence'].upper()), axis=1)            
             dalignbedannot.to_csv(dalignbedannotp,sep='\t')
         else:

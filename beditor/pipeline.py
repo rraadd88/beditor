@@ -202,12 +202,16 @@ def pipeline(cfgp,step=None,test=False,force=False):
 #             else:
 #                 cfg_['prjd']=f"./chunks/{cfg_['prj']}"
             cfg_['step']=None    
-            cfg_['test']=False 
             if cfg['test'] and cfg['force']:
+                cfg_['test']=True 
                 cfg_['force']=True    
+            elif cfg['test'] and not cfg['force']:
+                cfg_['test']=True 
+                cfg_['force']=False
             else:
+                cfg_['test']=False    
                 cfg_['force']=False    
-            if (not exists(chunkcfgp)) or cfg['force']:
+            if (not exists(chunkcfgp)) or cfg['force'] or cfg['test']:
                 with open(chunkcfgp, 'w') as f:
                     print(f"created {chunkcfgp}")
                     yaml.dump(cfg_, f, default_flow_style=False) 
