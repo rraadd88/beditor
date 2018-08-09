@@ -1,5 +1,11 @@
-import matplotlib
-matplotlib.use('Agg')
+def is_interactive():
+    # thanks to https://stackoverflow.com/a/22424821/3521099
+    import __main__ as main
+    return not hasattr(main, '__file__')
+
+if not is_interactive():
+    import matplotlib
+    matplotlib.use('Agg')
 
 import pandas as pd
 import numpy as np

@@ -83,13 +83,13 @@ def dguides2offtargets(cfg):
             if not exists(guidessap) or cfg['force']:
     #             cmd="{} aln -t {} -o 0 -m {} -n {} -k {} -N -l {} {} {} > {}".format(cfg['bwa'],1,bwaM,cfg['mismatches_max'],cfg['mismatches_max'],cfg['guidel'],genomep,guidesfap,guidessap)
     #             runbashcmd(cmd)
-                cmd=f"{cfg['bwa']} aln -t 1 -o 0 -m {bwaM} -n {cfg['mismatches_max']} -k {cfg['mismatches_max']} -N -l {guidel} {genomep} {guidesfap} > {guidessap}"
+                cmd=f"{cfg['bwa']} aln -t 1 -o 0 -m {bwaM} -n {cfg['mismatches_max']} -k {cfg['mismatches_max']} -N -l {guidel} {genomep} {guidesfap} > {guidessap} 2> {guidessap}.log"
                 runbashcmd(cmd)
 
             guidessamp = f'{datatmpd}/01_guides_guidel{guidel:02}.sam'
             logging.info(basename(guidessamp))        
             if not exists(guidessamp) or cfg['force']:
-                cmd=f"{cfg['bwa']} samse -n {MAXOCC} {genomep} {guidessap} {guidesfap} > {guidessamp}"
+                cmd=f"{cfg['bwa']} samse -n {MAXOCC} {genomep} {guidessap} {guidesfap} > {guidessamp} 2> {guidessamp}.log"
                 runbashcmd(cmd)
 
         #----make tables-----------

@@ -131,17 +131,14 @@ def convertstr2format(col,form):
                 col=col.replace(char,"_")
     return col
 
-def make_pathable_string(s):
+def make_pathable_string(s,replacewith='_'):
     """
     Removes symbols from a string to be compatible with directory structure.
 
     :param s: string
     """
-    return s.replace(" ","_").replace("$","").replace("\\","")\
-            .replace("(","").replace(")","")\
-            .replace("{","").replace("}","").replace("%","_")\
-            .replace(":","").replace("^","").replace("+","").replace("'","").replace("\"","")\
-            .replace("\n","_").replace("\t","_")
+    import re
+    return re.sub('\W+',replacewith, s )
 
 def linebreaker(l,break_pt=16):
     """
