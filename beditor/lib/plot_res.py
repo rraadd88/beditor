@@ -121,33 +121,109 @@ def plot_seq(record,annot_residuei=8,
     if not plotp is None:
         ax.figure.savefig(plotp,format='png')
 
-def plot_nt_composition(dintseqguidesflt,pos_muts,plotp=None):
-    fig=plt.figure(figsize=[16,10])
-    for mi,method in enumerate(pos_muts.index):
-        pos_min=pos_muts.loc[method,'Position of mutation from PAM: minimum']
-        pos_max=pos_muts.loc[method,'Position of mutation from PAM: maximum']
-        poss=np.arange(pos_min,pos_max+1)
-        for posi,pos in enumerate(poss):
-            seqs=list(dintseqguidesflt.loc[:,[c for c in dintseqguidesflt if ('guide sequence+PAM' in c) \
-                                              and ('mutation position={}'.format(pos) in c)\
-                                             and (' {}: '.format(method) in c)]].unstack().dropna())
-            if len(seqs)>2:
-                # [c for c in dintseqguidesflt if 'dintseqguidesflt codon position=-16' in c]
-                instances=[Seq.Seq(s) for s in seqs]
-                motif=motifs.create(instances)
-                d=pd.DataFrame(motif.counts)
-                d.index=d.index-20
-                d.index.name='Position'
-                ax=plt.subplot(5,len(pos_muts.index),posi*2+1+mi) #012 135 
-                ax=d.plot(grid=True,xticks=d.index,ax=ax,lw=3)
-                ax.set_ylabel('count')
-                ax.axvspan(0,2,lw=4,color='lime',zorder=-1, label='PAM')    
-                ax.axvline(pos,ax.get_ylim()[0],ax.get_ylim()[1],lw=3,color='k',zorder=-1, label='Mutation at')
-                ax.axvspan(pos_min,pos_max,lw=4,color='lightgray',zorder=-1,label='Activity window')
-                ax.legend(loc=2,bbox_to_anchor=[1,1])
-    plt.suptitle(list(pos_muts.index))
-    plt.subplots_adjust(wspace = 0.5)
-            #     break
-#     plt.tight_layout()
-    if not plotp is None:
-        plt.savefig(plotp)
+from Bio import SeqIO, Alphabet, Data, Seq, SeqUtils
+from Bio import motifs,Seq,AlignIO
+
+def get_nt_composition(seqs):
+    instances=[Seq.Seq(s) for s in seqs]
+    motif=motifs.create(instances)
+    d=pd.DataFrame(motif.counts)
+    d.index=range(1,d.shape[0]+1)
+    return d
+
+def plot_ntcompos(dp,
+                  legend=True,title=None,
+                  ax=None,fig=None):
+    if fig is None:
+        fig=plt.figure(figsize=[15,4])
+    if ax is None:
+        ax=plt.subplot(111)
+    ax=dp.loc[:,list('ATGC')].plot(grid=True,xticks=dp.index,ax=ax,lw=3,
+           color=['r','b','orange','g'],
+           label=None,
+    #                cmap='Spectral'
+           legend=False,
+          )
+
+    ax.set_ylabel('count')
+    #pam
+    ax.axvspan(dp['PAM'].min(),dp['PAM'].max(),lw=4,color='lime',zorder=-1, label='PAM')    
+    #mutation
+    ax.axvline(dp['Mutation at'].min(),ax.get_ylim()[0],ax.get_ylim()[1],lw=3,color='k',zorder=-1, label='Mutation at')
+    #activity window
+    ax.axvspan(dp['Activity window'].min(),dp['Activity window'].max(),lw=4,color='lightgray',zorder=-1,label='Activity window')
+    for pampos in dp['PAM'].dropna():
+        ax.text(pampos,0,dp.loc[pampos,'PAM nt'],
+                ha='center',va='center')
+    if not title is None:
+        ax.set_title(title)
+    if legend:
+        ax.legend(loc=2,bbox_to_anchor=[1,1])
+    return ax
+
+def get_dntcompos(dguideslin_sub123,dpam,pos,pam):
+    dp=get_nt_composition(dguideslin_sub123['guide+PAM sequence'])
+    paml=len(dguideslin_sub123['PAM'].unique()[0])
+
+    if dpam.loc[pam,'position']=='down':
+        dp.index=(dp.index[::-1]-paml)*-1
+        pos=pos
+        pamposs=dp.index.tolist()[-1*paml:]
+        windowmin=dguideslin_sub123['Position of mutation from PAM: minimum'].unique()[0]
+        windowmax=dguideslin_sub123['Position of mutation from PAM: maximum'].unique()[0]        
+    else:
+        dp.index=dp.index-paml
+        pos=pos
+        pamposs=dp.index.tolist()[:paml]        
+        windowmin=dguideslin_sub123['Position of mutation from PAM: minimum'].unique()[0]*-1
+        windowmax=dguideslin_sub123['Position of mutation from PAM: maximum'].unique()[0]*-1        
+
+    dp.loc[dguideslin_sub123['Position of mutation from PAM: minimum'].unique()[0],'Activity window']=windowmin
+    dp.loc[dguideslin_sub123['Position of mutation from PAM: maximum'].unique()[0],'Activity window']=windowmax
+    dp.loc[pos,'Mutation at']=pos
+    for pamnti,pamnt in enumerate(list(pam)):
+        dp.loc[pamposs[pamnti],'PAM']=pamposs[pamnti]
+        dp.loc[pamposs[pamnti],'PAM nt']=pamnt
+    return dp
+
+def plot_dist_dguides(dguideslin,dpam,plotpf):
+    #method fig
+    for met in dguideslin['method'].unique():
+        dps_met={}
+        dguideslin_sub1=dguideslin.loc[((dguideslin['method']==met)),:]
+        #pam
+        dps_pam={}
+        for pam in np.sort(dguideslin_sub1['PAM'].unique()):
+            dguideslin_sub12=dguideslin_sub1.loc[(dguideslin_sub1['PAM']==pam),:]
+            #position
+            dps_pos={}
+            for pos in np.sort(dguideslin_sub12['distance of mutation in codon from PAM'].unique()):
+                dguideslin_sub123=dguideslin_sub12.loc[(dguideslin_sub12['distance of mutation in codon from PAM']==pos),:]
+                #combine strands
+                dps_pos[pos]=get_dntcompos(dguideslin_sub123,dpam,pos,pam)
+            dps_pam[pam]=dps_pos
+    #             break
+    #         break
+        dps_met[met]=dps_pam
+        pamc=np.max([len(dps_met[met]) for pam in dps_met])
+        posc=np.max([len(dps_met[met][pam]) for pam in dps_met[met]])
+        fig,axes=plt.subplots(ncols=pamc,
+                              nrows=posc,
+                              figsize=[8*(pamc),2*(posc)],
+    #                          sharey=True,
+                             )
+    #     for met in dps_met.keys():
+        for pami,pam in enumerate(dps_met[met].keys()):
+            for posi,pos in enumerate(dps_met[met][pam].keys()):
+                ax=axes[posi,pami]
+                plot_ntcompos(dp=dps_met[met][pam][pos],
+                      legend=False,title=f"PAM={pam}; position of mutation={pos}",
+                      ax=ax,fig=fig)
+                if posi==0 and pami==len(dps_met[met].keys())-1:
+                    ax.legend(loc=2,bbox_to_anchor=[1,1.15])
+
+    #             break
+    #         break
+        plt.tight_layout()
+        plt.savefig(plotpf.format(method=met))
+#         break                      
