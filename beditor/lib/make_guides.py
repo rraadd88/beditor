@@ -130,7 +130,7 @@ def make_guides(cfg,dseq,dmutagenesis,
     gierrcannotmutate=[]
     for gi in dseq.index:
         if cfg['mutations']=='mutations':
-            dseqi=pd.DataFrame(dseq.loc[gi,['aminoacid: wild-type','codon: wild-type','id','aminoacid: position','amino acid mutation']]).T
+            dseqi=pd.DataFrame(dseq.loc[gi,['aminoacid: wild-type','codon: wild-type','id','transcript: id','aminoacid: position','amino acid mutation']]).T
             dmutagenesis_gi=pd.merge(dseqi,
                 dmutagenesis,
                 how='inner',

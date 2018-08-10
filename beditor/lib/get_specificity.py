@@ -345,7 +345,7 @@ def dguides2offtargets(cfg):
                                                BEs=cfg['BEs']
         #                                        test=cfg['test']
                                               )
-                    dalignbedannot['CFD score']=dalignbedannotguide['CFD score'].mean() #FIXME if mean is not appropriate
+                    daggbyguide.loc[guideid,'CFD score']=dalignbedannotguide['CFD score'].mean() #FIXME if mean is not appropriate
                 daggbyguide['beditor score (log10)']=daggbyguide['beditor score'].apply(np.log10)
                 dalignbedannot['alternate alignments count']=1
                 daggbyguide=daggbyguide.join(pd.DataFrame(dalignbedannot.groupby('guide: id')['alternate alignments count'].agg('sum')))

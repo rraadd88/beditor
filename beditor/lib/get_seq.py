@@ -53,7 +53,7 @@ def din2dseq(cfg):
     dseqp='{}/dsequences.tsv'.format(cfg['datad'])
     dseqtmpp='{}/dseqtmp.tsv'.format(cfg['datad'])
     if not exists(dseqp) or cfg['force']:
-        din=pd.read_csv(cfg['dinp'],sep='\t')
+        din=f"{cfg[cfg['step']-1]}/dinput.tsv"
         from .io_dfs import del_Unnamed
         din=del_Unnamed(din)
         import pyensembl
@@ -63,7 +63,7 @@ def din2dseq(cfg):
         latin_name=cfg['host'],
         synonyms=[cfg['host']],
         reference_assemblies={
-            cfg['genomeassembly']: (cfg['genomerelease'], cfg['genomerelease']),
+        cfg['genomeassembly']: (cfg['genomerelease'], cfg['genomerelease']),
         }),release=cfg['genomerelease'])
         
         din.index=range(len(din))

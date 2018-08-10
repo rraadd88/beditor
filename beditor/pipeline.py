@@ -50,7 +50,7 @@ def pipeline_chunks(cfgp):
     
     #backup inputs
     cfgoutp='{}/cfg.yml'.format(cfg[0])    
-    dinoutp='{}/din.tsv'.format(cfg[0])    
+    dinoutp='{}/dinput.tsv'.format(cfg[0])    
     if not exists(cfgoutp) or cfg['force']:
         with open(cfgoutp, 'w') as f:
             yaml.dump(cfg, f, default_flow_style=False)
@@ -170,20 +170,19 @@ def pipeline(cfgp,step=None,test=False,force=False):
             makedirs(cfg[i])
     #backup combo inputs
     cfgoutp='{}/cfg.yml'.format(cfg[0])    
-    dinoutp='{}/din.tsv'.format(cfg[0])    
+    dinoutp='{}/dinput.tsv'.format(cfg[0])    
     if not exists(cfgoutp) or cfg['force']:
         with open(cfgoutp, 'w') as f:
             yaml.dump(cfg, f
 #                       default_flow_style=False
                      ) 
     if (not '/chunk' in cfgp) and (step==1 or (step is None)):
-        if not exists(dinoutp) or cfg['force']:
-            from shutil import copyfile
-            copyfile(cfg['dinp'], dinoutp)
-        
         from beditor.lib.io_dfs import df2chucks
-        din=pd.read_csv(cfg['dinp'],sep='\t')
+        din=pd.read_csv(dinoutp,sep='\t')
         din=din.drop_duplicates()
+        if not exists(dinoutp) or cfg['force']:
+            if not 'amino acid mutation' in din:
+                din.to_csv(dinoutp,sep='\t')
         chunkps=df2chucks(din,chunksize=cfg['chunksize'],
                           outd='{}/chunks'.format(cfg['prjd']),
                           fn='din',return_fmt='\t',
@@ -234,6 +233,10 @@ def pipeline(cfgp,step=None,test=False,force=False):
             collect_chunks(cfg,chunkcfgps)
     else:
         pipeline_chunks(cfgoutp)
+
+    # get_outputs
+    make_outputs(cfg)        
+
 #     pipeline_chunks(cfgp)
     logging.shutdown()
 
