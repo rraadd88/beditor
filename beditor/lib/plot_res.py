@@ -186,6 +186,17 @@ def get_dntcompos(dguideslin_sub123,dpam,pos,pam):
         dp.loc[pamposs[pamnti],'PAM nt']=pamnt
     return dp
 
+def plot_bar_dguides(dstep,plotp):
+    cols=['method','PAM','strand']
+    fig,axes=plt.subplots(nrows=len(cols),figsize=[3,3],sharex=True)
+    for i,col in enumerate(cols):
+        dstep[col].value_counts().plot.barh(ax=axes[i])
+        axes[i].set_ylabel(col)
+        if i==len(cols)-1:
+            axes[i].set_xlabel('count of guides designed')
+    plt.tight_layout()
+    plt.savefig(plotp)
+
 def plot_dist_dguides(dguideslin,dpam,plotpf):
     #method fig
     for met in dguideslin['method'].unique():
@@ -227,3 +238,13 @@ def plot_dist_dguides(dguideslin,dpam,plotpf):
         plt.tight_layout()
         plt.savefig(plotpf.format(method=met))
 #         break                      
+
+def plot_dist_dofftargets(dofftargets,plotp)
+    dofftargets=dofftargets.replace([np.inf, -np.inf], np.nan)
+    plt.figure(figsize=[3,3])
+    ax=plt.subplot(111)
+    _=dofftargets['beditor score (log10)'].hist(bins=100,ax=ax)
+    ax.set_xlabel('beditor score (log10 scale)')
+    ax.set_ylabel('number of guides')
+    plt.tight_layout()
+    plt.savefig(plotp)
