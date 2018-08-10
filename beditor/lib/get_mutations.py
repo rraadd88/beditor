@@ -302,10 +302,10 @@ def get_possible_mutagenesis(dcodontable,dcodonusage,
         dmutagenesis,muti=get_dm(dmutagenesis,BEs,positions_dm,codon,muti,cdni)
         #triple nucleotide mutations
         dmutagenesis,muti=get_tm(dmutagenesis,BEs,positions_tm,codon,muti,cdni)
-        #double nucleotide mutations combinations
-        dmutagenesis,muti=get_dm_combo(dmutagenesis,BEs,positions_dm,codon,muti,cdni,method='undefined')
-        #triple nucleotide mutations combinations
-        dmutagenesis,muti=get_tm_combo(dmutagenesis,BEs,positions_tm,codon,muti,cdni,method='undefined')
+        # #double nucleotide mutations combinations
+        # dmutagenesis,muti=get_dm_combo(dmutagenesis,BEs,positions_dm,codon,muti,cdni,method='undefined')
+        # #triple nucleotide mutations combinations
+        # dmutagenesis,muti=get_tm_combo(dmutagenesis,BEs,positions_tm,codon,muti,cdni,method='undefined')
 
     dmutagenesis['nucleotide mutation: count']=[len(s) for s in dmutagenesis['nucleotide mutation']]
     dmutagenesis=dmutagenesis.sort_values('codon')  
