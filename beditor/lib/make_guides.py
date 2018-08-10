@@ -101,7 +101,7 @@ def get_pos_mut_from_pam(seq_activity,nt,pam_pos,pos_pam_min,pos_pam_max,dbug=Fa
     if dbug:
         print(seq_activity,nt,pam_pos,pos_pam_min,pos_pam_max)
     if pam_pos=='up':
-        return pos_pam_min+seq_activity.find(nt)
+        return -1*pos_pam_max+seq_activity.find(nt)
     elif pam_pos=='down':
         return seq_activity.find(nt)+pos_pam_min
 
@@ -171,10 +171,6 @@ def make_guides(cfg,dseq,dmutagenesis,
 #                             if dbug:
 #                                 return dpamsearches_strategy        
                         del dpamsearches_strategy
-                    # else:
-                    #     gierrfltmutpos.append(gi)
-                    #     if dbug:
-                    #         print(f"empty after filter by mutation position {dpamsearches_strategy['distance of mutation in codon from PAM'].tolist()}")
                     else:
                         gierrdenan.append(gi)
                         if dbug:
@@ -212,7 +208,7 @@ def make_guides(cfg,dseq,dmutagenesis,
         for colseq in ['guide+PAM sequence','guide sequence','PAM sequence']:
             dguides.loc[:,colseq]=dguides.apply(lambda x : str(str2seq(x[colseq]).reverse_complement()) if x['is a reverse complement'] else x[colseq],axis=1)
 
-        logging.info('get activity sequence')        
+        logging.info('get activity sequence')
         dguides['activity sequence']=dguides.apply(lambda x: get_activity_seq(x['guide sequence'],x['original position'],
                      int(x['distance of mutation from PAM: minimum']),
                      int(x['distance of mutation from PAM: maximum'])),axis=1)   
@@ -225,9 +221,9 @@ def make_guides(cfg,dseq,dmutagenesis,
         # if dbug:
         #     dguides.to_csv('test.tsv',sep='\t')
 
-        logging.info('#filter by location of mutation within guide')        
+        logging.info('#filter by location of mutation within guide')
         dguides['distance of mutation in codon from PAM']=dguides.apply(lambda x: get_pos_mut_from_pam(x['activity sequence'],x['nucleotide'],
-                             x['position'],
+                             x['original position'],
                              x['Position of mutation from PAM: minimum'],
                              x['Position of mutation from PAM: maximum']),axis=1) #FIXME if pam is up
         dguides=dguides.loc[dguides.apply(lambda x : True if (x['distance of mutation from PAM: minimum']<=abs(x['distance of mutation in codon from PAM'])<=x['distance of mutation from PAM: maximum']) else False,axis=1),:]
