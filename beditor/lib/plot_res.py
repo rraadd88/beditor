@@ -16,6 +16,145 @@ from os.path import exists
 from Bio import SeqIO, Alphabet, Data, Seq, SeqUtils
 from Bio import motifs,Seq,AlignIO
 
+def data2sub_matrix(data_fit,
+                    values_col,
+                    index_col,
+                    col_ref='mut',
+                    aggfunc='mean',test=False): 
+    """
+    This creates substitition matrix from input data (frequncies `data_lbl` or `data_fit`).
+    
+    :param data_fit: fitness data (`data_fit`).
+    :param values_col: column name with values (str). 
+    :param index_col: column name with index (str).
+    :param type_form: type of values ["aas" : amino acid | "cds" : codons].
+    """ 
+    if aggfunc=='sum':
+        data_fit['count']=1
+    if aggfunc=="mean":
+        data_sub_matrix=pd.pivot_table(data_fit,values=values_col,index=index_col,columns=col_ref)
+    else:
+        data_sub_matrix=pd.pivot_table(data_fit,values=values_col,index=index_col,columns=col_ref,aggfunc=aggfunc)            
+    return data_sub_matrix
+
+def plot_submap_possibilities(dmutagenesis,plotpf,test=False):
+    import seaborn as sns
+#     from Bio.Alphabet import IUPAC
+#     aas=IUPAC.IUPACData.protein_letters+'*'    
+
+    d=dmutagenesis.copy()
+    for i in d.index:
+    #     print(BEs['{} on {}'.format(d.loc[i,'method'],d.loc[i,'mutation on strand'])])
+        cd=d.loc[i,'codon']
+        ns=list(d.loc[i,'nucleotide'])
+        if d.loc[i,'mutation on strand']=='- strand':
+    #         cd=Seq.reverse_complement(cd)
+            ns=[Seq.reverse_complement(n) for n in ns]
+        nc=0
+        for n in np.unique(ns):
+            nc+=cd.count(n)
+        if nc!=d.loc[i,'nucleotide mutation: count']:
+            d.loc[i,:]=np.nan
+    # 
+
+    dmutagenesis=d.dropna(how='all')
+    muttype2c={'All mutations':0,
+               'Single nucleotide mutations':1,
+    'Double nucleotide mutations':2,
+    'Triple nucleotide mutations':3}
+
+    aa2grp=pd.DataFrame({'aa':['A','G','I','L','P','V','M','C','N','Q','S','T','H','K','R','D','E','F','W','Y','*'],
+    'grp':['non polar','non polar','non polar','non polar','non polar','non polar','neutral','neutral polar','neutral polar','neutral polar','neutral polar','neutral polar','positive','positive','positive','negative','negative','aromatic','aromatic','aromatic','*'],
+    }).set_index('aa')
+
+    grp2clr=dict(zip(['non polar', 'neutral', 'neutral polar', 'positive', 'negative','aromatic', 'stop codon'],
+                    ['r', 'g', 'b', 'orange', 'm','c', 'k']))
+    aa2grp['c']=[grp2clr[g] for g in aa2grp['grp']]
+
+    aa2grp['rank']=range(len(aa2grp))
+    aa2grp.index.name='amino acid'
+    cd2grp=dcodontable.set_index('amino acid').join(aa2grp).sort_values(by='rank').reset_index().set_index('codon')    
+    methods=['All']+list(dmutagenesis['method'].unique())
+    for muttype1 in ['amino acid','codon']:
+        if muttype1=='codon':
+            figsize=[60,60]
+        else:
+            figsize=[30,30]        
+        fig,axes=plt.subplots(figsize=figsize,nrows=4, ncols=len(methods)+1,)
+        for methodi,method in enumerate(methods):
+            for muttypei,muttype in enumerate(muttype2c.keys()):
+                if not 'All' in method:
+                    dplot=dmutagenesis.loc[(dmutagenesis['method']==method),:]
+                else:
+                    dplot=dmutagenesis
+                if not 'All' in muttype:
+                    dplot=dplot.loc[(dplot['nucleotide mutation: count']==muttype2c[muttype]),:]
+                dplot=data2sub_matrix(dplot,values_col='count',col_ref=muttype1,
+                                               index_col=muttype1+' mutation',
+                                           aggfunc='sum')
+                if muttype1=='amino acid':
+                    annot=True
+                    muttype12grp=aa2grp
+                    rotation=90
+                else:
+                    annot=False
+                    muttype12grp=cd2grp
+                    rotation=90
+                dplot=dplot.loc[muttype12grp.index,muttype12grp.index]
+                ax=sns.heatmap(dplot,ax=axes[muttypei][methodi],
+                              vmin=0, vmax=10,cbar=False,
+                              annot=annot,square=True,
+                              linewidths=0.1, linecolor='gray')
+                ax.set_ylabel('Mutation to',labelpad=20,color='gray')
+                ax.set_xlabel('Wild type',labelpad=20,color='gray')            
+                for ticklabely,aa in enumerate(muttype12grp.index.tolist()):
+                    if not test:
+                        ax.set_yticklabels([])
+                        ticklabelx=-1
+                    else:
+                        ticklabelx=-2
+                    ax.text(ticklabelx+0.5,ticklabely+0.75,aa,color=muttype12grp.loc[aa,'c'],fontsize=10,
+                        ha='right',)
+                    if test:
+                        ticklabelx+=2
+                    else:
+                        ax.set_xticklabels([])
+                    ax.text(ticklabely+0.5,ticklabelx+len(muttype12grp.index)+1.5,aa,color=muttype12grp.loc[aa,'c'],fontsize=10,
+                        ha='center',va='top',rotation=rotation)
+                ax.set_title('method={}\n{}'.format(method,muttype))
+    #                 plt.savefig('plots/heatmap_{}_{}_{}.svg'.format(muttype1.replace(' ','_'),method,muttype))
+    #                 break
+    #             break
+    # legend
+        for muttypei,muttype in enumerate(muttype2c.keys()):
+            ax=axes[muttypei][len(methods)]
+            if muttypei==0:
+                for aa in aa2grp.index:
+                #     ax.scatter(1,cd2grp.loc[aa,'rank'],color=cd2grp.loc[aa,'c'])
+                    ax.scatter(1,aa2grp.loc[aa,'rank'],color=aa2grp.loc[aa,'c'])
+                    ax.text(0.98,aa2grp.loc[aa,'rank']+0.15,aa,color=aa2grp.loc[aa,'c'],
+                           ha='center',va='center')        
+                    ax.text(1.01,aa2grp.loc[aa,'rank']+0.15,cd2grp.loc[(cd2grp['amino acid']==aa),:].index.tolist(),
+                            color=aa2grp.loc[aa,'c'],
+                           ha='left',va='center')    
+                for c in aa2grp['c'].unique():
+                    ax.text(0.96,aa2grp.loc[aa2grp['c']==c,:]['rank'].mean()+0.15,
+                            aa2grp.loc[aa2grp['c']==c,:]['grp'].unique()[0],
+                            color=c,
+                           ha='right',va='center')    
+                ax.invert_yaxis()
+                ax.set_xlim([0.8,1.5])
+                ax.set_facecolor('w')
+                ax.xaxis.set_visible(False)
+                ax.yaxis.set_visible(False)
+            #                 plt.axis('off')
+            else:
+                fig.delaxes(ax)
+        if not '{mutation_type}' in plotpf:
+            plotpf=plotpf+'_{mutation_type}.png'
+        plt.savefig(plotpf.format(mutation_type=muttype1.replace(' ','_')))
+    #     break
+
 def get_df4features(dguideslin,id,types=['guide+pam']):
     features=[]
     df=dguideslin.loc[(dguideslin['id']==id),:]
@@ -236,6 +375,8 @@ def plot_dist_dguides(dguideslin,dpam,plotpf):
     #             break
     #         break
         plt.tight_layout()
+        if not '{method}' in plotpf:
+            plotpf=plotpf+'_{method}.png'
         plt.savefig(plotpf.format(method=met))
 #         break                      
 
@@ -248,3 +389,4 @@ def plot_dist_dofftargets(dofftargets,plotp)
     ax.set_ylabel('number of guides')
     plt.tight_layout()
     plt.savefig(plotp)
+

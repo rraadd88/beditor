@@ -425,6 +425,7 @@ def dseq2dmutagenesis(cfg):
     cfg['datad']=cfg[cfg['step']]
     cfg['plotd']=cfg['datad']
     dmutagenesisp='{}/dmutagenesis.tsv'.format(cfg['datad'])
+    dmutagenesisallp='{}/dmutagenesis_all.tsv'.format(cfg['datad'])
     if not exists(dmutagenesisp) or cfg['force']:
         dseq=pd.read_csv('{}/dsequences.tsv'.format(cfg[cfg['step']-1]),sep='\t')
         aas=list(dseq['aminoacid: wild-type'].unique())#['S','T','Y']
@@ -451,6 +452,8 @@ def dseq2dmutagenesis(cfg):
         dmutagenesis=get_possible_mutagenesis(dcodontable,dcodonusage,
                                     BEs=BEs2mutations,pos_muts=pos_muts,
                                     host=cfg['host'])
+        dmutagenesis.to_csv(dmutagenesisallp,sep='\t')
+        
         dmutagenesis=filterdmutagenesis(dmutagenesis,cfg)            
         colns_pos=[c for c in dmutagenesis if ('position' in c) or ('Position' in c)]
         dmutagenesis.loc[:,colns_pos]=dmutagenesis.loc[:,colns_pos].astype(int)
