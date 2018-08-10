@@ -208,6 +208,9 @@ def pipeline(cfgp,step=None,test=False,force=False):
             elif cfg['test'] and not cfg['force']:
                 cfg_['test']=True 
                 cfg_['force']=False
+            elif not cfg['test'] and cfg['force']:
+                cfg_['test']=False 
+                cfg_['force']=True
             else:
                 cfg_['test']=False    
                 cfg_['force']=False    

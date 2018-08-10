@@ -302,7 +302,6 @@ def dguides2offtargets(cfg):
                             x['alignment'],
                             #                                                                                                        test=cfg['test'],
                             ),axis=1) 
-            # dalignbedannot.to_csv('test.tsv',sep='\t')
             dalignbedannot['CFD score']=dalignbedannot.apply(lambda x : get_cfdscore(x['guide+PAM sequence'].upper(), x['aligned sequence'].upper()), axis=1)            
             dalignbedannot.to_csv(dalignbedannotp,sep='\t')
         else:
@@ -313,8 +312,8 @@ def dguides2offtargets(cfg):
         logging.info(basename(daggbyguidep))
         if not exists(daggbyguidep) or cfg['force']:
             daggbyguide=dalignbedannot.loc[(dalignbedannot['NM']==0),['guide: id','guide+PAM sequence','gene names', 'gene ids','transcript ids']].drop_duplicates(subset=['guide: id'])
-            if cfg['test']:
-                df2info(daggbyguide)
+#             if cfg['test']:
+#                 df2info(daggbyguide)
             if len(daggbyguide)!=0:
                 daggbyguide=set_index(daggbyguide,'guide: id')            
         #---
@@ -335,8 +334,8 @@ def dguides2offtargets(cfg):
                 #         print(";".join(dannoti[col].fillna('nan').tolist()))
                         daggbyguide.loc[gid,col]=";".join(np.unique(dalignbedannoti[col].fillna('nan').tolist()))
         #---
-                if cfg['test']:
-                    df2info(daggbyguide)
+#                 if cfg['test']:
+#                     df2info(daggbyguide)
                 from beditor.lib.get_scores import get_beditorscore_per_guide
                 for guideid in daggbyguide.index:
                     dalignbedannotguide=dalignbedannot.loc[(dalignbedannot['guide: id']==guideid),:]
