@@ -37,6 +37,7 @@ def data2sub_matrix(data_fit,
         data_sub_matrix=pd.pivot_table(data_fit,values=values_col,index=index_col,columns=col_ref,aggfunc=aggfunc)            
     return data_sub_matrix
 
+from beditor.lib.io_dfs import df2info
 def plot_submap_possibilities(dmutagenesis,plotpf,test=False):
     import seaborn as sns
 #     from Bio.Alphabet import IUPAC
@@ -67,12 +68,18 @@ def plot_submap_possibilities(dmutagenesis,plotpf,test=False):
     'grp':['non polar','non polar','non polar','non polar','non polar','non polar','neutral','neutral polar','neutral polar','neutral polar','neutral polar','neutral polar','positive','positive','positive','negative','negative','aromatic','aromatic','aromatic','*'],
     }).set_index('aa')
 
-    grp2clr=dict(zip(['non polar', 'neutral', 'neutral polar', 'positive', 'negative','aromatic', 'stop codon'],
+    grp2clr=dict(zip(['non polar', 'neutral', 'neutral polar', 'positive', 'negative','aromatic', '*'],
                     ['r', 'g', 'b', 'orange', 'm','c', 'k']))
     aa2grp['c']=[grp2clr[g] for g in aa2grp['grp']]
 
     aa2grp['rank']=range(len(aa2grp))
     aa2grp.index.name='amino acid'
+    
+    from Bio.Alphabet import IUPAC
+    aas=IUPAC.IUPACData.protein_letters+'*'
+    from beditor.lib.get_mutations import get_codon_table
+    dcodontable=get_codon_table(aa=list(aas))
+    
     cd2grp=dcodontable.set_index('amino acid').join(aa2grp).sort_values(by='rank').reset_index().set_index('codon')    
     methods=['All']+list(dmutagenesis['method'].unique())
     for muttype1 in ['amino acid','codon']:
@@ -100,6 +107,8 @@ def plot_submap_possibilities(dmutagenesis,plotpf,test=False):
                     annot=False
                     muttype12grp=cd2grp
                     rotation=90
+                
+                df2info(dplot)
                 dplot=dplot.loc[muttype12grp.index,muttype12grp.index]
                 ax=sns.heatmap(dplot,ax=axes[muttypei][methodi],
                               vmin=0, vmax=10,cbar=False,
@@ -380,7 +389,7 @@ def plot_dist_dguides(dguideslin,dpam,plotpf):
         plt.savefig(plotpf.format(method=met))
 #         break                      
 
-def plot_dist_dofftargets(dofftargets,plotp)
+def plot_dist_dofftargets(dofftargets,plotp):
     dofftargets=dofftargets.replace([np.inf, -np.inf], np.nan)
     plt.figure(figsize=[3,3])
     ax=plt.subplot(111)
@@ -390,3 +399,69 @@ def plot_dist_dofftargets(dofftargets,plotp)
     plt.tight_layout()
     plt.savefig(plotp)
 
+def plot_vizbysteps(cfg):  
+    from glob import glob
+    from beditor.lib.io_dfs import del_Unnamed
+    from os.path import exists,splitext,dirname,splitext,basename,realpath
+    
+    prjd=cfg['prjd']
+    #make one output table and stepwise plots
+    datad=f"{prjd}/05_output"
+                               
+#     # step2 # make submap
+#     stepi=2
+#     plotp=f"{datad}/plot_d{cfg[stepi].replace('/','').split('_')[-1]}_submap_all_possibilities"
+#     plotps=glob(plotp+'*')
+#     if len(plotps)==0 or cfg['force']:
+#         plotpf=plotp+"_{mutation_type}.png"
+#         dstepp=f"{cfg[stepi]}/d{cfg[stepi].replace('/','').split('_')[-1]}.tsv"
+#         dstep=del_Unnamed(pd.read_table(dstepp)).drop_duplicates()
+#         plot_submap_possibilities(dmutagenesis=dstep,
+#                                   plotpf=plotpf,test=False)
+
+    # step3 
+    # stats by strategies
+    stepi=3
+    plotp=f"{datad}/plot_d{cfg[stepi].replace('/','').split('_')[-1]}_stats_by_strategies.png"
+    if not exists(plotp) or cfg['force']:                               
+        dstepp=f"{cfg[stepi]}/d{cfg[stepi].replace('/','').split('_')[-1]}.tsv"
+        dstep=del_Unnamed(pd.read_table(dstepp)).drop_duplicates()
+        plot_bar_dguides(dstep,plotp)
+
+    # make nt_composition plot
+    stepi=3
+    plotp=f"{datad}/plot_d{cfg[stepi].replace('/','').split('_')[-1]}_nt_compositions"
+    plotps=glob(plotp+'*')
+    if len(plotps)==0 or cfg['force']:
+        plotpf=plotp+"_{method}.png"
+        dstepp=f"{cfg[stepi]}/d{cfg[stepi].replace('/','').split('_')[-1]}.tsv"
+        dstep=del_Unnamed(pd.read_table(dstepp)).drop_duplicates()
+        dpam=pd.read_table('{}/../data/dpam.tsv'.format(dirname(realpath(__file__))))
+        plot_dist_dguides(dstep,dpam,plotpf)
+
+    # step2 # make submap #FIXME get all the columns used for plotting in the dguides.
+    stepi=3
+    plotp=f"{datad}/plot_d{cfg[stepi].replace('/','').split('_')[-1]}_submap_used_for_mutagenesis"
+    plotps=glob(plotp+'*')
+    if len(plotps)==0 or cfg['force']:
+        plotpf=plotp+"_{mutation_type}.png"
+        dstepp=f"{cfg[stepi]}/d{cfg[stepi].replace('/','').split('_')[-1]}.tsv"
+        dstep=del_Unnamed(pd.read_table(dstepp)).drop_duplicates()
+        plot_submap_possibilities(dmutagenesis=dstep,
+                                  plotpf=plotpf,test=False)
+
+    # step4 offtargets correlations  
+    stepi=4
+    plotp=f"{datad}/plot_d{cfg[stepi].replace('/','').split('_')[-1]}_dist_beditor_score.png"
+    if not exists(plotp) or cfg['force']:                               
+        dstepp=f"{cfg[stepi]}/d{cfg[stepi].replace('/','').split('_')[-1]}.tsv"
+        dstep=del_Unnamed(pd.read_table(dstepp)).drop_duplicates()
+        plot_dist_dofftargets(dstep,plotp)
+
+    # step5
+    stepi=4
+    plotp=f"{datad}/plot_d{cfg[stepi].replace('/','').split('_')[-1]}_dist_beditor_score.png"
+    if not exists(plotp) or cfg['force']:                               
+        dstepp=f"{cfg[stepi]}/d{cfg[stepi].replace('/','').split('_')[-1]}.tsv"
+        dstep=del_Unnamed(pd.read_table(dstepp)).drop_duplicates()
+        plot_dist_dofftargets(dstep,plotp)                
