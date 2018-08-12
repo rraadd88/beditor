@@ -16,6 +16,8 @@ from os.path import exists
 from Bio import SeqIO, Alphabet, Data, Seq, SeqUtils
 from Bio import motifs,Seq,AlignIO
 
+import logging
+
 def data2sub_matrix(data_fit,
                     values_col,
                     index_col,
@@ -401,7 +403,7 @@ def plot_dist_dofftargets(dofftargets,plotp):
 
 def plot_vizbysteps(cfg):  
     from glob import glob
-    from beditor.lib.io_dfs import del_Unnamed
+    from beditor.lib.io_dfs import del_Unnamed,set_index
     from os.path import exists,splitext,dirname,splitext,basename,realpath
     
     prjd=cfg['prjd']
@@ -416,6 +418,7 @@ def plot_vizbysteps(cfg):
 #         plotpf=plotp+"_{mutation_type}.png"
 #         dstepp=f"{cfg[stepi]}/d{cfg[stepi].replace('/','').split('_')[-1]}.tsv"
 #         dstep=del_Unnamed(pd.read_table(dstepp)).drop_duplicates()
+#         logging.info('plot_submap_possibilities')
 #         plot_submap_possibilities(dmutagenesis=dstep,
 #                                   plotpf=plotpf,test=False)
 
@@ -426,6 +429,7 @@ def plot_vizbysteps(cfg):
     if not exists(plotp) or cfg['force']:                               
         dstepp=f"{cfg[stepi]}/d{cfg[stepi].replace('/','').split('_')[-1]}.tsv"
         dstep=del_Unnamed(pd.read_table(dstepp)).drop_duplicates()
+        logging.info('plot_bar_dguides')
         plot_bar_dguides(dstep,plotp)
 
     # make nt_composition plot
@@ -437,18 +441,21 @@ def plot_vizbysteps(cfg):
         dstepp=f"{cfg[stepi]}/d{cfg[stepi].replace('/','').split('_')[-1]}.tsv"
         dstep=del_Unnamed(pd.read_table(dstepp)).drop_duplicates()
         dpam=pd.read_table('{}/../data/dpam.tsv'.format(dirname(realpath(__file__))))
+        dpam=set_index(dpam,'PAM')
+        logging.info('plot_dist_dguides')
         plot_dist_dguides(dstep,dpam,plotpf)
 
-    # step2 # make submap #FIXME get all the columns used for plotting in the dguides.
-    stepi=3
-    plotp=f"{datad}/plot_d{cfg[stepi].replace('/','').split('_')[-1]}_submap_used_for_mutagenesis"
-    plotps=glob(plotp+'*')
-    if len(plotps)==0 or cfg['force']:
-        plotpf=plotp+"_{mutation_type}.png"
-        dstepp=f"{cfg[stepi]}/d{cfg[stepi].replace('/','').split('_')[-1]}.tsv"
-        dstep=del_Unnamed(pd.read_table(dstepp)).drop_duplicates()
-        plot_submap_possibilities(dmutagenesis=dstep,
-                                  plotpf=plotpf,test=False)
+#     # step2 # make submap #FIXME get all the columns used for plotting in the dguides.
+#     stepi=3
+#     plotp=f"{datad}/plot_d{cfg[stepi].replace('/','').split('_')[-1]}_submap_used_for_mutagenesis"
+#     plotps=glob(plotp+'*')
+#     if len(plotps)==0 or cfg['force']:
+#         plotpf=plotp+"_{mutation_type}.png"
+#         dstepp=f"{cfg[stepi]}/d{cfg[stepi].replace('/','').split('_')[-1]}.tsv"
+#         dstep=del_Unnamed(pd.read_table(dstepp)).drop_duplicates()
+#         logging.info('plot_submap_possibilities')
+#         plot_submap_possibilities(dmutagenesis=dstep,
+#                                   plotpf=plotpf,test=False)
 
     # step4 offtargets correlations  
     stepi=4
@@ -456,12 +463,14 @@ def plot_vizbysteps(cfg):
     if not exists(plotp) or cfg['force']:                               
         dstepp=f"{cfg[stepi]}/d{cfg[stepi].replace('/','').split('_')[-1]}.tsv"
         dstep=del_Unnamed(pd.read_table(dstepp)).drop_duplicates()
+        logging.info('plot_dist_dofftargets')
         plot_dist_dofftargets(dstep,plotp)
 
-    # step5
-    stepi=4
-    plotp=f"{datad}/plot_d{cfg[stepi].replace('/','').split('_')[-1]}_dist_beditor_score.png"
-    if not exists(plotp) or cfg['force']:                               
-        dstepp=f"{cfg[stepi]}/d{cfg[stepi].replace('/','').split('_')[-1]}.tsv"
-        dstep=del_Unnamed(pd.read_table(dstepp)).drop_duplicates()
-        plot_dist_dofftargets(dstep,plotp)                
+#     # step5
+#     stepi=4
+#     plotp=f"{datad}/plot_d{cfg[stepi].replace('/','').split('_')[-1]}_dist_beditor_score.png"
+#     if not exists(plotp) or cfg['force']:                               
+#         dstepp=f"{cfg[stepi]}/d{cfg[stepi].replace('/','').split('_')[-1]}.tsv"
+#         dstep=del_Unnamed(pd.read_table(dstepp)).drop_duplicates()
+#         logging.info('plot_dist_dofftargets')
+#         plot_dist_dofftargets(dstep,plotp)                
