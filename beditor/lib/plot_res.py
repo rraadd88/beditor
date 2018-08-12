@@ -417,17 +417,17 @@ def plot_vizbysteps(cfg):
     #make one output table and stepwise plots
     datad=f"{prjd}/05_output"
                                
-#     # step2 # make submap
-#     stepi=2
-#     plotp=f"{datad}/plot_d{cfg[stepi].replace('/','').split('_')[-1]}_submap_all_possibilities"
-#     plotps=glob(plotp+'*')
-#     if len(plotps)==0 or cfg['force']:
-#         plotpf=plotp+"_{mutation_type}.png"
-#         dstepp=f"{cfg[stepi]}/d{cfg[stepi].replace('/','').split('_')[-1]}.tsv"
-#         dstep=del_Unnamed(pd.read_table(dstepp)).drop_duplicates()
-#         logging.info('plot_submap_possibilities')
-#         plot_submap_possibilities(dmutagenesis=dstep,
-#                                   plotpf=plotpf,test=False)
+    # step2 # make submap
+    stepi=2
+    plotp=f"{datad}/plot_d{cfg[stepi].replace('/','').split('_')[-1]}_substitution_map"
+    plotps=glob(plotp+'*')
+    if len(plotps)==0 or cfg['force']:
+        plotpf=plotp+"_{mutation_type}.png"
+        dstepp=f"{cfg[stepi]}/d{cfg[stepi].replace('/','').split('_')[-1]}.tsv"
+        dstep=del_Unnamed(pd.read_table(dstepp)).drop_duplicates()
+        logging.info('plot_submap_possibilities')
+        plot_submap_possibilities(dmutagenesis=dstep,
+                                  plotpf=plotpf,test=False)
 
     # step3 
     # stats by strategies
