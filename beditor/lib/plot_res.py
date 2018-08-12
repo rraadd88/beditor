@@ -11,6 +11,7 @@ import pandas as pd
 import numpy as np
 
 import matplotlib.pyplot as plt
+plt.style.use('ggplot')
 from os.path import exists
 
 from Bio import SeqIO, Alphabet, Data, Seq, SeqUtils
@@ -106,7 +107,9 @@ def plot_submap_possibilities(dmutagenesis,plotpf,test=False):
 #                     df2info(dplot)
                     dplot=data2sub_matrix(dplot,values_col='count',col_ref=muttype1,
                                                    index_col=muttype1+' mutation',
-                                               aggfunc='sum')
+                                                   aggfunc='sum',
+#                                                   cmap=,
+                                                 )
                     if muttype1=='amino acid':
                         annot=True
                         muttype12grp=aa2grp

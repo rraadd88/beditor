@@ -118,6 +118,49 @@ def collect_chunks(cfg,chunkcfgps):
                 dout.to_csv(doutp,sep='\t')
                 del dout
 
+from glob import glob
+from beditor.lib.plot_res import plot_vizbysteps
+def make_outputs(cfg,plot=True):
+    stepi2cols={0: ['transcript: id','aminoacid: position','amino acid mutation'],
+            1: ['transcript: id','aminoacid: position','aminoacid: wild-type'],
+            3: ['transcript: id','aminoacid: position','aminoacid: wild-type','amino acid mutation','guide: id','guide+PAM sequence'],
+            4: ['guide: id','beditor score','alternate alignments count','CFD score'],
+           }
+    prjd=cfg['prjd']
+    #make one output table and stepwise plots
+    datad=f"{prjd}/05_output"
+    #table
+    doutputp=f"{datad}/doutput.tsv" #FIXME if steps are added
+    if not exists(doutputp) or cfg['force']:
+        from beditor.lib.io_dfs import del_Unnamed
+        if 'doutput' in locals():
+            del doutput
+        for stepi in range(5):
+            if stepi!=2:
+                dstepp=f"{cfg[stepi]}/d{cfg[stepi].replace('/','').split('_')[-1]}.tsv"
+                if exists(dstepp):
+                    logging.info(f'combining {stepi}')
+                    dstep=del_Unnamed(pd.read_table(dstepp)).loc[:,stepi2cols[stepi]].drop_duplicates()
+                    if not 'doutput' in locals():
+                        doutput=dstep.copy()
+                        del dstep
+                    else:
+                        cols_on=list(set(doutput.columns.tolist()).intersection(dstep.columns.tolist()))
+                        if len(cols_on)!=0:                    
+                            doutput=pd.merge(doutput,dstep,on=cols_on,how='left')
+                        else:
+                            logging.error(f'output of step {stepi-1} is missing.')
+        #         if stepi==4:
+        #             break
+        makedirs(dirname(doutputp),exist_ok=True)
+        doutput.to_csv(doutputp,sep='\t')
+    else:
+        doutput=pd.read_table(doutputp)
+    # plot
+    if plot:
+        plot_vizbysteps(cfg)
+    return doutput 
+
 def pipeline(cfgp,step=None,test=False,force=False):        
 
     import yaml
@@ -235,7 +278,7 @@ def pipeline(cfgp,step=None,test=False,force=False):
         pipeline_chunks(cfgoutp)
 
     # get_outputs
-    make_outputs(cfg)        
+    _=make_outputs(cfg)        
 
 #     pipeline_chunks(cfgp)
     logging.shutdown()

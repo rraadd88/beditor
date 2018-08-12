@@ -53,7 +53,8 @@ def din2dseq(cfg):
     dseqp='{}/dsequences.tsv'.format(cfg['datad'])
     dseqtmpp='{}/dseqtmp.tsv'.format(cfg['datad'])
     if not exists(dseqp) or cfg['force']:
-        din=f"{cfg[cfg['step']-1]}/dinput.tsv"
+        din=pd.read_table(f"{cfg[cfg['step']-1]}/dinput.tsv")
+        
         from .io_dfs import del_Unnamed
         din=del_Unnamed(din)
         import pyensembl
