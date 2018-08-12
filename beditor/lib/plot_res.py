@@ -63,8 +63,8 @@ def plot_submap_possibilities(dmutagenesis,plotpf,test=False):
     dmutagenesis=d.dropna(how='all')
     muttype2c={'All mutations':0,
                'Single nucleotide mutations':1,
-    'Double nucleotide mutations':2,
-    'Triple nucleotide mutations':3}
+               'Double nucleotide mutations':2,
+               'Triple nucleotide mutations':3}
 
     aa2grp=pd.DataFrame({'aa':['A','G','I','L','P','V','M','C','N','Q','S','T','H','K','R','D','E','F','W','Y','*'],
     'grp':['non polar','non polar','non polar','non polar','non polar','non polar','neutral','neutral polar','neutral polar','neutral polar','neutral polar','neutral polar','positive','positive','positive','negative','negative','aromatic','aromatic','aromatic','*'],
@@ -83,6 +83,7 @@ def plot_submap_possibilities(dmutagenesis,plotpf,test=False):
     dcodontable=get_codon_table(aa=list(aas))
     
     cd2grp=dcodontable.set_index('amino acid').join(aa2grp).sort_values(by='rank').reset_index().set_index('codon')    
+#     df2info(dcodontable)
     methods=['All']+list(dmutagenesis['method'].unique())
     for muttype1 in ['amino acid','codon']:
         if muttype1=='codon':
@@ -95,48 +96,54 @@ def plot_submap_possibilities(dmutagenesis,plotpf,test=False):
                 if not 'All' in method:
                     dplot=dmutagenesis.loc[(dmutagenesis['method']==method),:]
                 else:
-                    dplot=dmutagenesis
+                    dplot=dmutagenesis.copy()
+                    
                 if not 'All' in muttype:
                     dplot=dplot.loc[(dplot['nucleotide mutation: count']==muttype2c[muttype]),:]
-                dplot=data2sub_matrix(dplot,values_col='count',col_ref=muttype1,
-                                               index_col=muttype1+' mutation',
-                                           aggfunc='sum')
-                if muttype1=='amino acid':
-                    annot=True
-                    muttype12grp=aa2grp
-                    rotation=90
+                ax=axes[muttypei][methodi]
+                if len(dplot)!=0:
+#                     print(method,muttype)
+#                     df2info(dplot)
+                    dplot=data2sub_matrix(dplot,values_col='count',col_ref=muttype1,
+                                                   index_col=muttype1+' mutation',
+                                               aggfunc='sum')
+                    if muttype1=='amino acid':
+                        annot=True
+                        muttype12grp=aa2grp
+                        rotation=90
+                    else:
+                        annot=False
+                        muttype12grp=cd2grp
+                        rotation=90
+
+                    dplot=dplot.loc[muttype12grp.index,muttype12grp.index]
+                    ax=sns.heatmap(dplot,ax=ax,
+                                  vmin=0, vmax=10,cbar=False,
+                                  annot=annot,square=True,
+                                  linewidths=0.1, linecolor='gray')
+                    ax.set_ylabel('Mutation to',labelpad=20,color='gray')
+                    ax.set_xlabel('Wild type',labelpad=20,color='gray')            
+                    for ticklabely,aa in enumerate(muttype12grp.index.tolist()):
+                        if not test:
+                            ax.set_yticklabels([])
+                            ticklabelx=-1
+                        else:
+                            ticklabelx=-2
+                        ax.text(ticklabelx+0.5,ticklabely+0.75,aa,color=muttype12grp.loc[aa,'c'],fontsize=10,
+                            ha='right',)
+                        if test:
+                            ticklabelx+=2
+                        else:
+                            ax.set_xticklabels([])
+                        ax.text(ticklabely+0.5,ticklabelx+len(muttype12grp.index)+1.5,aa,color=muttype12grp.loc[aa,'c'],fontsize=10,
+                            ha='center',va='top',rotation=rotation)
+                    ax.set_title('method={}\n{}'.format(method,muttype))
+        #                 plt.savefig('plots/heatmap_{}_{}_{}.svg'.format(muttype1.replace(' ','_'),method,muttype))
+        #                 break
+        #             break
+        # legend
                 else:
-                    annot=False
-                    muttype12grp=cd2grp
-                    rotation=90
-                
-                df2info(dplot)
-                dplot=dplot.loc[muttype12grp.index,muttype12grp.index]
-                ax=sns.heatmap(dplot,ax=axes[muttypei][methodi],
-                              vmin=0, vmax=10,cbar=False,
-                              annot=annot,square=True,
-                              linewidths=0.1, linecolor='gray')
-                ax.set_ylabel('Mutation to',labelpad=20,color='gray')
-                ax.set_xlabel('Wild type',labelpad=20,color='gray')            
-                for ticklabely,aa in enumerate(muttype12grp.index.tolist()):
-                    if not test:
-                        ax.set_yticklabels([])
-                        ticklabelx=-1
-                    else:
-                        ticklabelx=-2
-                    ax.text(ticklabelx+0.5,ticklabely+0.75,aa,color=muttype12grp.loc[aa,'c'],fontsize=10,
-                        ha='right',)
-                    if test:
-                        ticklabelx+=2
-                    else:
-                        ax.set_xticklabels([])
-                    ax.text(ticklabely+0.5,ticklabelx+len(muttype12grp.index)+1.5,aa,color=muttype12grp.loc[aa,'c'],fontsize=10,
-                        ha='center',va='top',rotation=rotation)
-                ax.set_title('method={}\n{}'.format(method,muttype))
-    #                 plt.savefig('plots/heatmap_{}_{}_{}.svg'.format(muttype1.replace(' ','_'),method,muttype))
-    #                 break
-    #             break
-    # legend
+                    fig.delaxes(ax)
         for muttypei,muttype in enumerate(muttype2c.keys()):
             ax=axes[muttypei][len(methods)]
             if muttypei==0:
