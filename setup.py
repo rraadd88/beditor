@@ -29,7 +29,7 @@ setup(
 name='beditor',
 author='Rohan Dandage',
 author_email='rraadd8888@gmail.com, rohan.dandage.1@ulaval.ca',
-version='1.0.4',
+version='1.0.5',
 url='https://github.com/rraadd88/beditor',
 download_url='https://github.com/rraadd88/beditor/archive/master.zip',
 # description='',
