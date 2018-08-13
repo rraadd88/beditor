@@ -146,7 +146,10 @@ def make_outputs(cfg,plot=True):
                         del dstep
                     else:
                         cols_on=list(set(doutput.columns.tolist()).intersection(dstep.columns.tolist()))
-                        if len(cols_on)!=0:                    
+                        if len(cols_on)!=0:         
+                            print(dstepp)
+                            doutput.to_csv('test_doutput.tsv',sep='\t')
+                            dstep.to_csv('test_dstep.tsv',sep='\t')
                             doutput=pd.merge(doutput,dstep,on=cols_on,how='left')
                         else:
                             logging.error(f'output of step {stepi-1} is missing.')
@@ -221,7 +224,7 @@ def pipeline(cfgp,step=None,test=False,force=False):
                      ) 
     if (not '/chunk' in cfgp) and (step==1 or (step is None)):
         from beditor.lib.io_dfs import df2chucks
-        din=pd.read_csv(dinoutp,sep='\t')
+        din=pd.read_csv(cfg['dinp'],sep='\t')
         din=din.drop_duplicates()
         if not exists(dinoutp) or cfg['force']:
             if not 'amino acid mutation' in din:
@@ -274,11 +277,11 @@ def pipeline(cfgp,step=None,test=False,force=False):
             pool.map(pipeline_chunks, chunkcfgps)
             pool.close(); pool.join()         
             collect_chunks(cfg,chunkcfgps)
+            # get_outputs
+            _=make_outputs(cfg)        
     else:
         pipeline_chunks(cfgoutp)
-
-    # get_outputs
-    _=make_outputs(cfg)        
+        _=make_outputs(cfg)        
 
 #     pipeline_chunks(cfgp)
     logging.shutdown()

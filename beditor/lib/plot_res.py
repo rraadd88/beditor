@@ -311,7 +311,7 @@ def plot_ntcompos(dp,
     #mutation
     ax.axvline(dp['Mutation at'].min(),ax.get_ylim()[0],ax.get_ylim()[1],lw=3,color='k',zorder=-1, label='Mutation at')
     #activity window
-    ax.axvspan(dp['Activity window'].min(),dp['Activity window'].max(),lw=4,color='lightgray',zorder=-1,label='Activity window')
+    ax.axvspan(dp['Activity window'].min(),dp['Activity window'].max(),lw=4,color='khaki',zorder=-1,label='Activity window')
     for pampos in dp['PAM'].dropna():
         ax.text(pampos,0,dp.loc[pampos,'PAM nt'],
                 ha='center',va='center')
@@ -380,13 +380,16 @@ def plot_dist_dguides(dguideslin,dpam,plotpf):
         posc=np.max([len(dps_met[met][pam]) for pam in dps_met[met]])
         fig,axes=plt.subplots(ncols=pamc,
                               nrows=posc,
-                              figsize=[8*(pamc),2*(posc)],
+                              figsize=[8.25*(pamc),2*(posc)],
     #                          sharey=True,
                              )
     #     for met in dps_met.keys():
         for pami,pam in enumerate(dps_met[met].keys()):
             for posi,pos in enumerate(dps_met[met][pam].keys()):
-                ax=axes[posi,pami]
+                if len(np.shape(axes))==2:
+                    ax=axes[posi,pami]
+                else:
+                    ax=axes[posi]
                 plot_ntcompos(dp=dps_met[met][pam][pos],
                       legend=False,title=f"PAM={pam}; position of mutation={pos}",
                       ax=ax,fig=fig)

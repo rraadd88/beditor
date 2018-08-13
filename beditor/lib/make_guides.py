@@ -77,6 +77,8 @@ def get_pam_searches(dpam,seq,pos_codon,
 #         print(dpamposs.shape)
     dpamposs['codon']=seq[pos_codon:pos_codon+3]
     dpamposs['guide sequence']=dpamposs['guide sequence'].fillna('')
+    if len(dpamposs)==0:
+        return None
     dpamposs['guide sequence length']=dpamposs.apply(lambda x : len(x['guide sequence']),axis=1)
     
     dpamposs=dpam.join(set_index(dpamposs,'PAM'),how='right')
@@ -128,16 +130,17 @@ def make_guides(cfg,dseq,dmutagenesis,
     gierrfltguidel=[]
     gierrpamnotfound=[]
     gierrcannotmutate=[]
+    dseq_cols=['transcript: id','aminoacid: position','aminoacid: wild-type','codon: wild-type','id',]
     for gi in dseq.index:
         if cfg['mutations']=='mutations':
-            dseqi=pd.DataFrame(dseq.loc[gi,['aminoacid: wild-type','codon: wild-type','id','transcript: id','aminoacid: position','amino acid mutation']]).T
+            dseqi=pd.DataFrame(dseq.loc[gi,dseq_cols+['amino acid mutation']]).T
             dmutagenesis_gi=pd.merge(dseqi,
                 dmutagenesis,
                 how='inner',
                 left_on=['aminoacid: wild-type','codon: wild-type','amino acid mutation'],
                 right_on=['amino acid','codon','amino acid mutation'])                    
         else:
-            dseqi=pd.DataFrame(dseq.loc[gi,['aminoacid: wild-type','codon: wild-type','id','aminoacid: position']]).T
+            dseqi=pd.DataFrame(dseq.loc[gi,dseq_cols]).T
             dmutagenesis_gi=pd.merge(dseqi,
                 dmutagenesis,
                 how='inner',
@@ -151,6 +154,9 @@ def make_guides(cfg,dseq,dmutagenesis,
                  seq=dseq.loc[gi,'transcript: sequence'],
                  pos_codon=pos_codon,
                  test=test)
+            # print(dpamsearches.columns) #RMME
+            if dpamsearches is None:
+                continue
             if len(dpamsearches)!=0:
                 # filter by guide length
                 dpamsearchesflt=dpamsearches.loc[dpamsearches['guide length']==dpamsearches['guide sequence length'],:]
@@ -164,6 +170,7 @@ def make_guides(cfg,dseq,dmutagenesis,
                              how='inner',
                              on=['codon','strand'])
                     if len(dpamsearches_strategy)!=0:                                 
+                        # print(dpamsearches_strategy.columns) #RMME
                         if not 'dguides' in locals():
                             dguides=dpamsearches_strategy.copy()
                         else:
@@ -202,7 +209,7 @@ def make_guides(cfg,dseq,dmutagenesis,
              }
 
     if 'dguides' in locals():        
-
+        # print(dguides.columns) #RMME
         logging.info('#reverse complement guides on negative strand sequences')
         dguides.loc[:,'PAM']=dguides.apply(lambda x : reverse_complement_multintseq(x['PAM'],nt2complement) if x['is a reverse complement'] else x['PAM'],axis=1)
         for colseq in ['guide+PAM sequence','guide sequence','PAM sequence']:
@@ -299,7 +306,7 @@ def dseq2dguides(cfg):
                     dmutagenesis,
                     dpam=dpam_strands,
                        test=cfg['test'],
-                       dbug=True,
+                       # dbug=True,
                      )
 
         dguideslin.to_csv(dguideslinp,sep='\t')
