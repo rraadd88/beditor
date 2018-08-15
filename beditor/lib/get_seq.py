@@ -26,7 +26,7 @@ def tboundaries2positions(t):
             coding_sequence_positions+=np.arange(ini, end+1,1).tolist()
         if t.strand == '-':
             coding_sequence_positions+=np.arange(end, ini-1,-1).tolist()            
-    coding_sequence_positions+=np.arange(coding_sequence_positions[-1], coding_sequence_positions[-1]+3,1).tolist()
+    coding_sequence_positions+=np.arange(coding_sequence_positions[-1]+1, coding_sequence_positions[-1]+1+3,1).tolist()
     return coding_sequence_positions
 
 def t2pmapper(t,coding_sequence_positions):
