@@ -180,4 +180,7 @@ def din2dseq(cfg):
         logging.info(dseq['aminoacid: wild-type'].value_counts())
 
         import gc
+        gc.set_debug(gc.DEBUG_LEAK)
         gc.collect()
+        del ensembl
+

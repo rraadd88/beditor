@@ -206,12 +206,13 @@ def dguides2offtargets(cfg):
             dalignbed=pd.merge(dalignbed,dalignedfasta,on='id',suffixes=('', '.2'))
             dalignbed=dalignbed.dropna(subset=['aligned sequence'],axis=0)
 
-            dalignbed.index.name='id'
+            # dalignbed.index.name='id'
             dalignbed=dalignbed.drop_duplicates()
             dalignbed.to_csv(dalignbedguidesseqp,sep='\t')
         else:
             dalignbed=pd.read_csv(dalignbedguidesseqp,sep='\t',low_memory=False)
             dalignbed=del_Unnamed(dalignbed)
+
 
         dalignbedstatsp='{}/07_dalignbedstats.tsv'.format(datatmpd)  
         logging.info(basename(dalignbedstatsp))
@@ -225,7 +226,8 @@ def dguides2offtargets(cfg):
         else:
             dalignbed=pd.read_csv(dalignbedstatsp,sep='\t',low_memory=False)
             dalignbed=del_Unnamed(dalignbed)
-
+            # df2info(dalignbed)
+            
         daannotp='{}/08_dannot.tsv'.format(datatmpd)  
         dannotsaggp='{}/08_dannotsagg.tsv'.format(datatmpd)  
         logging.info(basename(daannotp))
@@ -282,7 +284,9 @@ def dguides2offtargets(cfg):
         dalignbedannotp='{}/09_dalignbedannot.tsv'.format(datatmpd)  
         logging.info(basename(dalignbedannotp))
         if not exists(dalignbedannotp) or cfg['force']:
-            dalignbedannot=set_index(dalignbed,'id').join(set_index(dannotsagg,'id'),
+            # df2info(dalignbed)
+            # df2info(dannotsagg)
+            dalignbedannot=dalignbed.set_index('id').join(set_index(dannotsagg,'id'),
                                                   rsuffix=' annotation')
             dalignbedannot['NM']=dalignbedannot['NM'].apply(int)
             from beditor.lib.get_scores import get_beditorscore_per_alignment,get_cfdscore

@@ -274,7 +274,8 @@ def pipeline(cfgp,step=None,test=False,force=False):
     chunkcfgps=np.sort(chunkcfgps)
     if len(chunkcfgps)!=0 and (not '/chunk' in cfgp):
         if cfg['test']:
-            pipeline_chunks(chunkcfgps[0])
+            for chunkcfgp in chunkcfgps:
+                pipeline_chunks(chunkcfgp)
         else:
             pool=Pool(processes=cfg['cores']) # T : get it from xls
             pool.map(pipeline_chunks, chunkcfgps)
