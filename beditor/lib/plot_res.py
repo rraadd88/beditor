@@ -110,6 +110,7 @@ def plot_submap_possibilities(dmutagenesis,plotpf,test=False):
                                                    aggfunc='sum',
 #                                                   cmap=,
                                                  )
+                    dplot=dplot.applymap(int)
                     if muttype1=='amino acid':
                         annot=True
                         muttype12grp=aa2grp
@@ -120,12 +121,12 @@ def plot_submap_possibilities(dmutagenesis,plotpf,test=False):
                         rotation=90
 
                     dplot=dplot.loc[muttype12grp.index,muttype12grp.index]
-                    ax=sns.heatmap(dplot,ax=ax,
+                    ax=sns.heatmap(dplot,ax=ax,#fmt="d",
                                   vmin=0, vmax=10,cbar=False,
                                   annot=annot,square=True,
                                   linewidths=0.1, linecolor='gray')
                     ax.set_ylabel('Mutation to',labelpad=20,color='gray')
-                    ax.set_xlabel('Wild type',labelpad=20,color='gray')            
+                    ax.set_xlabel('Wild type',labelpad=20,color='gray')
                     for ticklabely,aa in enumerate(muttype12grp.index.tolist()):
                         if not test:
                             ax.set_yticklabels([])
@@ -409,6 +410,7 @@ def plot_dist_dofftargets(dofftargets,plotp):
     plt.figure(figsize=[3,3])
     ax=plt.subplot(111)
     _=dofftargets['beditor score (log10)'].hist(bins=100,ax=ax)
+    ax.set_xlim(-100,0)
     ax.set_xlabel('beditor score (log10 scale)')
     ax.set_ylabel('number of guides')
     plt.tight_layout()

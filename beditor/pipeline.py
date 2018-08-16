@@ -111,9 +111,12 @@ def collect_chunks(cfg,chunkcfgps):
             for chunkcfgp in chunkcfgps:
                 chunkprjd=chunkcfgp.replace('.yml','')
                 dps.append(f"{chunkprjd}/{step:02d}_{stepi2name[step]}/d{stepi2name[step]}.tsv")
+            dps=[p for p in dps if exists(p)]
+            tdpcp=[(dp,cp) for dp,cp in zip(dps,chunkcfgps) if exists(dp)]                
+            dps_,chunkcfgps_=zip(*tdpcp)
             if len(dps)!=0:
-                dout=fhs2data_combo_appended(dps,sep='\t',
-                                             labels=[str2num(basename(p)) for p in chunkcfgps],
+                dout=fhs2data_combo_appended(dps_,sep='\t',
+                                             labels=[str2num(basename(p)) for p in chunkcfgps_],
                                              labels_coln='chunk#')
                 dout.to_csv(doutp,sep='\t')
                 del dout
