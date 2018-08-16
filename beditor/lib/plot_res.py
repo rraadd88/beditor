@@ -109,10 +109,9 @@ def plot_submap_possibilities(dmutagenesis,plotpf,test=False):
                                                    index_col=muttype1+' mutation',
                                                    aggfunc='sum',
 #                                                   cmap=,
-                                                 )
-                    dplot=dplot.applymap(int)
+                                                 )                    
                     if muttype1=='amino acid':
-                        annot=True
+                        annot=False
                         muttype12grp=aa2grp
                         rotation=90
                     else:
@@ -121,10 +120,14 @@ def plot_submap_possibilities(dmutagenesis,plotpf,test=False):
                         rotation=90
 
                     dplot=dplot.loc[muttype12grp.index,muttype12grp.index]
+                    dplot[pd.notna(dplot)]=1
                     ax=sns.heatmap(dplot,ax=ax,#fmt="d",
-                                  vmin=0, vmax=10,cbar=False,
-                                  annot=annot,square=True,
-                                  linewidths=0.1, linecolor='gray')
+                                  vmin=0, vmax=1,
+                                  cbar=False,
+                                  annot=annot,
+                                  square=True,
+                                  linewidths=0.1, linecolor='gray',
+                                  cmap='YlOrRd')
                     ax.set_ylabel('Mutation to',labelpad=20,color='gray')
                     ax.set_xlabel('Wild type',labelpad=20,color='gray')
                     for ticklabely,aa in enumerate(muttype12grp.index.tolist()):

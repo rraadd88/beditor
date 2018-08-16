@@ -174,15 +174,14 @@ def dguides2offtargets(cfg):
         dalignbedguidesp='{}/04_dalignbedguides.tsv'.format(datatmpd)
         logging.info(basename(dalignbedguidesp))
         if not exists(dalignbedguidesp) or cfg['force']:
-            dalignbed=set_index(dalignbed,'guide: id').join(dguides,rsuffix='.1')
-            dalignbed=set_index(dalignbed,'guide: id')
+            dalignbed=pd.merge(dalignbed,dguides,on='guide: id',suffixes=('', '.1'))
+            # dalignbed=set_index(dalignbed,'guide: id').join(dguides,rsuffix='.1')
+            # dalignbed=set_index(dalignbed,'guide: id')
             dalignbed.to_csv(dalignbedguidesp,'\t')
         else:
             dalignbed=pd.read_csv(dalignbedguidesp,'\t')
             dalignbed=del_Unnamed(dalignbed)
 
-        # dalignid2seq=pd.DataFrame(columns=['sequence'])
-        # dalignid2seq.index.name='id'
         dalignedfastap='{}/05_dalignedfasta.tsv'.format(datatmpd)
         logging.info(basename(dalignedfastap))
         if not exists(dalignedfastap) or cfg['force']:
@@ -194,25 +193,17 @@ def dguides2offtargets(cfg):
             dalignedfasta=fa2df(alignedfastap)
             dalignedfasta.columns=['aligned sequence']
             dalignedfasta=dalignedfasta.loc[(dalignedfasta.apply(lambda x: not 'N' in x['aligned sequence'],axis=1)),:] #FIXME bwa aligns to NNNNNs
-    #         dalignedfasta=dalignedfasta.loc[[False if np.unique(list(s.upper()))=='N' else True for s in dalignedfasta['aligned sequence']],:]
             dalignedfasta.index=[i.split('(')[0] for i in dalignedfasta.index] # for bedtools 2.27, the fasta header now has hanging (+) or (-)
             dalignedfasta.index.name='id'
             dalignedfasta.to_csv(dalignedfastap,sep='\t')
         else:
             dalignedfasta=pd.read_csv(dalignedfastap,sep='\t')        
-            dalignedfasta=dalignedfasta.drop([c for c in dalignbed if 'Unnamed' in c],axis=1)
             dalignedfasta=del_Unnamed(dalignedfasta)
 
         dalignbedguidesseqp='{}/06_dalignbedguidesseq.tsv'.format(datatmpd)
         logging.info(basename(dalignbedguidesseqp))
         if not exists(dalignbedguidesseqp) or cfg['force']:        
-    #         from beditor.lib.io_dfs import df2info
-    #         if cfg['test']:
-    #             df2info(dalignbed)
-    #             df2info(dalignedfasta)
-
-    #         dalignedfasta['guide: id']=dalignedfasta.apply(lambda x : x['guide: id'].replace('_',' '),axis=1)
-            dalignbed=set_index(dalignbed,'id').join(set_index(dalignedfasta,'id'))
+            dalignbed=pd.merge(dalignbed,dalignedfasta,on='id',suffixes=('', '.2'))
             dalignbed=dalignbed.dropna(subset=['aligned sequence'],axis=0)
 
             dalignbed.index.name='id'
@@ -225,7 +216,6 @@ def dguides2offtargets(cfg):
         dalignbedstatsp='{}/07_dalignbedstats.tsv'.format(datatmpd)  
         logging.info(basename(dalignbedstatsp))
         if not exists(dalignbedstatsp) or cfg['force']:
-    #         dalignbed['Hamming distance']=dalignbed.apply(lambda x : hamming_distance(x['guide+PAM sequence'], x['aligned sequence']),axis=1)
             df=dalignbed.apply(lambda x: align(x['guide+PAM sequence'],x['aligned sequence']),
                                axis=1).apply(pd.Series)
             df.columns=['alignment','alignment: score']
@@ -239,7 +229,7 @@ def dguides2offtargets(cfg):
         daannotp='{}/08_dannot.tsv'.format(datatmpd)  
         dannotsaggp='{}/08_dannotsagg.tsv'.format(datatmpd)  
         logging.info(basename(daannotp))
-        if (not exists(daannotp)) or (not exists(dannotsaggp)) or cfg['force']:
+        if ((not exists(daannotp)) and (not exists(dannotsaggp))) or cfg['force']:
             dannots=pd.read_csv(annotationsbedp,sep='\t',
                        names=bed_colns+[c+' annotation' if c in set(bed_colns).intersection(gff_colns) else c for c in gff_colns ],
                                low_memory=False)
@@ -255,6 +245,9 @@ def dguides2offtargets(cfg):
             dannots['annotation coordinate']=dannots.apply(lambda x: '{}:{}-{}({})'.format(x['chromosome annotation'],x['start annotation'],x['end annotation'], x['strand annotation']),axis=1)
             logging.debug('or this step takes more time?')
             dannots.to_csv(daannotp,sep='\t')
+        else:
+            dannots=pd.read_csv(daannotp,sep='\t',low_memory=False)
+            dannots=del_Unnamed(dannots)
 
         logging.info(basename(dannotsaggp))
         if not exists(dannotsaggp) or cfg['force']:
@@ -275,18 +268,15 @@ def dguides2offtargets(cfg):
                 if len(dannoti.shape)==1:
                     dannoti=pd.DataFrame(dannoti).T
                 dannoti=dannoti.loc[dannoti['type']!='chromosome',:].drop_duplicates(subset=['start annotation','end annotation'])
-    #             if cfg['test']:
-    # #                 print(alignid)
-    #                 print(dannoti.shape)
                 for col in ['type','gene name','gene id','transcript id','protein id','exon id']:    
-            #         print(";".join(dannoti[col].fillna('nan').tolist()))
                     dannotsagg.loc[alignid,col+'s']=";".join(np.unique(dannoti[col].fillna('nan').tolist()))
             logging.debug('end of the slowest step')
                 
             del dannots    
+            dannotsagg=dannotsagg.reset_index()
             dannotsagg.to_csv(dannotsaggp,sep='\t')
         else:
-            dannotsagg=pd.read_csv(dannotsaggp,sep='\t',low_memory=False)
+            dannotsagg=pd.read_csv(dannotsaggp,sep='\t')
             dannotsagg=del_Unnamed(dannotsagg)
 
         dalignbedannotp='{}/09_dalignbedannot.tsv'.format(datatmpd)  
@@ -295,7 +285,6 @@ def dguides2offtargets(cfg):
             dalignbedannot=set_index(dalignbed,'id').join(set_index(dannotsagg,'id'),
                                                   rsuffix=' annotation')
             dalignbedannot['NM']=dalignbedannot['NM'].apply(int)
-            
             from beditor.lib.get_scores import get_beditorscore_per_alignment,get_cfdscore
             dalignbedannot['beditor score']=dalignbedannot.apply(lambda x : get_beditorscore_per_alignment(x['NM'],cfg['mismatches_max'],
                             True if x['region']=='genic' else False,

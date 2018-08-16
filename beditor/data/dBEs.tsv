@@ -7,3 +7,11 @@ Target-AID yeast	C	T	+	-19	-17	-21	-17
 Target-AID yeast	C	G	+	-19	-17	-21	-17
 Target-AID yeast	G	A	-	-19	-17	-21	-17
 Target-AID yeast	G	C	-	-19	-17	-21	-17
+hypothetical_CtoG	C	G	+	-18	-15	-20	-15
+hypothetical_CtoG	G	C	-	-18	-15	-20	-15
+hypothetical_GtoT	G	T	+	-18	-15	-20	-15
+hypothetical_GtoT	C	A	-	-18	-15	-20	-15
+hypothetical_TtoG	T	G	+	-18	-15	-20	-15
+hypothetical_TtoG	A	C	-	-18	-15	-20	-15
+hypothetical_AtoT	A	T	+	-18	-15	-20	-15
+hypothetical_AtoT	T	A	-	-18	-15	-20	-15
