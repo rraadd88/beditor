@@ -21,12 +21,13 @@ from beditor.lib.io_sys import runbashcmd
 
 # GET INPTS 
 
-def pipeline_chunks(cfgp):
+def pipeline_chunks(cfgp=None,cfg=None):
     # from beditor.configure import get_deps
 
-    import yaml
-    cfg=yaml.load(open(cfgp, 'r'))
-    logging.info('processing: '+cfgp)
+    if cfg is None: 
+        import yaml 
+        cfg=yaml.load(open(cfgp, 'r'))
+        logging.info('processing: '+cfgp)
 
 #     print(cfg)    
 #     deps and genome are only needed if running step =1 or 4
@@ -71,7 +72,8 @@ def pipeline_chunks(cfgp):
     else:
         stepall=False
     # print(cfg['step'],stepall)
-    print('processing: '+cfgp)
+    if cfg is None: 
+        print('processing: '+cfgp)
     if cfg['step']==1 or stepall:
         from beditor.lib.get_seq import din2dseq
         cfg['step']=1
@@ -232,8 +234,13 @@ def pipeline(cfgp,step=None,test=False,force=False):
         if not exists(dinoutp) or cfg['force']:
             if not 'amino acid mutation' in din:
                 din.to_csv(dinoutp,sep='\t')
-        chunkps=df2chucks(din,chunksize=cfg['chunksize'],
-                          outd='{}/chunks'.format(cfg['prjd']),
+        cfg_=cfg.copy()
+        cfg_['step']=1 #gotta run step 1 isolated because of memory buid up otherwise
+        pipeline_chunks(cfg=cfg_)
+
+        dseq=pd.read_csv(f"{cfg[1]}/dsequences.tsv",sep='\t')
+        chunkps=df2chucks(dseq,chunksize=cfg['chunksize'],
+                          outd=f"{cfg['prjd']}/chunks",
                           fn='din',return_fmt='\t',
                           force=cfg['force'])
         chunkcfgps=[]
@@ -275,7 +282,7 @@ def pipeline(cfgp,step=None,test=False,force=False):
     if len(chunkcfgps)!=0 and (not '/chunk' in cfgp):
         if cfg['test']:
             for chunkcfgp in chunkcfgps:
-                pipeline_chunks(chunkcfgp)
+                pipeline_chunks(cfgp=chunkcfgp)
         else:
             pool=Pool(processes=cfg['cores']) # T : get it from xls
             pool.map(pipeline_chunks, chunkcfgps)
@@ -284,7 +291,7 @@ def pipeline(cfgp,step=None,test=False,force=False):
             # get_outputs
             _=make_outputs(cfg)        
     else:
-        pipeline_chunks(cfgoutp)
+        pipeline_chunks(cfgp=cfgoutp)
         _=make_outputs(cfg)        
 
 #     pipeline_chunks(cfgp)
