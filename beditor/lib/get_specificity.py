@@ -174,9 +174,9 @@ def dguides2offtargets(cfg):
         dalignbedguidesp='{}/04_dalignbedguides.tsv'.format(datatmpd)
         logging.info(basename(dalignbedguidesp))
         if not exists(dalignbedguidesp) or cfg['force']:
+            dalignbed.to_csv('test_dalignbed.csv')
+            dguides.to_csv('test_dguides.csv')
             dalignbed=pd.merge(dalignbed,dguides,on='guide: id',suffixes=('', '.1'))
-            # dalignbed=set_index(dalignbed,'guide: id').join(dguides,rsuffix='.1')
-            # dalignbed=set_index(dalignbed,'guide: id')
             dalignbed.to_csv(dalignbedguidesp,'\t')
         else:
             dalignbed=pd.read_csv(dalignbedguidesp,'\t')
@@ -227,7 +227,7 @@ def dguides2offtargets(cfg):
             dalignbed=pd.read_csv(dalignbedstatsp,sep='\t',low_memory=False)
             dalignbed=del_Unnamed(dalignbed)
             # df2info(dalignbed)
-            
+
         daannotp='{}/08_dannot.tsv'.format(datatmpd)  
         dannotsaggp='{}/08_dannotsagg.tsv'.format(datatmpd)  
         logging.info(basename(daannotp))
