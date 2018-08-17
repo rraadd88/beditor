@@ -174,8 +174,6 @@ def dguides2offtargets(cfg):
         dalignbedguidesp='{}/04_dalignbedguides.tsv'.format(datatmpd)
         logging.info(basename(dalignbedguidesp))
         if not exists(dalignbedguidesp) or cfg['force']:
-            dalignbed.to_csv('test_dalignbed.csv')
-            dguides.to_csv('test_dguides.csv')
             dalignbed=pd.merge(dalignbed,dguides,on='guide: id',suffixes=('', '.1'))
             dalignbed.to_csv(dalignbedguidesp,'\t')
         else:
