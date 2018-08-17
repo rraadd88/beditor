@@ -55,6 +55,7 @@ def pipeline_chunks(cfgp=None,cfg=None):
     if not exists(cfgoutp) or cfg['force']:
         with open(cfgoutp, 'w') as f:
             yaml.dump(cfg, f, default_flow_style=False)
+    logging.info(cfgp)
     logging.info(cfg)
     if cfg['step']==None or cfg['step']==1:
         if not exists(dinoutp) or cfg['force']:
@@ -74,19 +75,19 @@ def pipeline_chunks(cfgp=None,cfg=None):
     # print(cfg['step'],stepall)
     if cfg is None: 
         print('processing: '+cfgp)
-    if cfg['step']==1 or stepall:
+    if (cfg['step']==1 or stepall)  and cfg['step2ignore']!=1:
         from beditor.lib.get_seq import din2dseq
         cfg['step']=1
         din2dseq(cfg)
-    if cfg['step']==2 or stepall:
+    if (cfg['step']==2 or stepall)  and cfg['step2ignore']!=2:
         from beditor.lib.get_mutations import dseq2dmutagenesis 
         cfg['step']=2
         dseq2dmutagenesis(cfg)
-    if cfg['step']==3 or stepall:
+    if (cfg['step']==3 or stepall)  and cfg['step2ignore']!=3:
         from beditor.lib.make_guides import dseq2dguides
         cfg['step']=3
         dseq2dguides(cfg)
-    if cfg['step']==4 or stepall:
+    if (cfg['step']==4 or stepall)  and cfg['step2ignore']!=4:
         from beditor.lib.get_specificity import dguides2offtargets
         cfg['step']=4
         dguides2offtargets(cfg)
@@ -202,7 +203,10 @@ def pipeline(cfgp,step=None,test=False,force=False):
     cfg['force']=force
     cfg['cfgp']=cfgp
     
-#     deps and genome are only needed if running step =1 or 4
+    if not 'step2ignore' in cfg:
+        cfg['step2ignore']=None
+
+    # deps and genome are only needed if running step =1 or 4
     cfg['step2ignoredl']=[2,3]
     if not cfg['step'] in cfg['step2ignoredl']:
         cfg=get_deps(cfg)
@@ -291,8 +295,9 @@ def pipeline(cfgp,step=None,test=False,force=False):
             # get_outputs
             _=make_outputs(cfg)        
     else:
-        pipeline_chunks(cfgp=cfgoutp)
-        _=make_outputs(cfg)        
+        pipeline_chunks(cfgp=cfgp)
+        if not not '/chunk' in cfgp:
+            _=make_outputs(cfg)        
 
 #     pipeline_chunks(cfgp)
     logging.shutdown()

@@ -12,3 +12,8 @@ def runbashcmd(cmd,test=False,logf=None):
     if err!=0:
         print('bash command error: {}\n{}\n'.format(err,cmd))
         sys.exit(1)
+
+def is_interactive():
+    # thanks to https://stackoverflow.com/a/22424821/3521099
+    import __main__ as main
+    return not hasattr(main, '__file__')
