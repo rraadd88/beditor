@@ -224,22 +224,26 @@ def make_guides(cfg,dseq,dmutagenesis,
         logging.info(dguides.shape)
         dguides=dguides.loc[(dguides.apply(lambda x : np.sum([x['activity sequence'].count(nt) for nt in  x['nucleotide']])==len(x['nucleotide']),axis=1)),:]
         logging.info(dguides.shape)
+        if len(dguides)!=0:
+            # if dbug:
+            #     dguides.to_csv('test.tsv',sep='\t')
+            logging.info('#filter by location of mutation within guide')
+            dguides['distance of mutation in codon from PAM']=dguides.apply(lambda x: get_pos_mut_from_pam(x['activity sequence'],x['nucleotide'],
+                                 x['original position'],
+                                 x['Position of mutation from PAM: minimum'],
+                                 x['Position of mutation from PAM: maximum']),axis=1) #FIXME if pam is up
+            dguides=dguides.loc[dguides.apply(lambda x : True if (x['distance of mutation from PAM: minimum']<=abs(x['distance of mutation in codon from PAM'])<=x['distance of mutation from PAM: maximum']) else False,axis=1),:]
+            if len(dguides)!=0:
 
-        # if dbug:
-        #     dguides.to_csv('test.tsv',sep='\t')
-
-        logging.info('#filter by location of mutation within guide')
-        dguides['distance of mutation in codon from PAM']=dguides.apply(lambda x: get_pos_mut_from_pam(x['activity sequence'],x['nucleotide'],
-                             x['original position'],
-                             x['Position of mutation from PAM: minimum'],
-                             x['Position of mutation from PAM: maximum']),axis=1) #FIXME if pam is up
-        dguides=dguides.loc[dguides.apply(lambda x : True if (x['distance of mutation from PAM: minimum']<=abs(x['distance of mutation in codon from PAM'])<=x['distance of mutation from PAM: maximum']) else False,axis=1),:]
-
-        dguides.loc[:,'strategy']=dguides.apply(lambda x: f"{x['method']};{x['strand']};@{int(x['distance of mutation in codon from PAM'])};{x['PAM']};{x['codon']}:{x['codon mutation']};{x['amino acid']}:{x['amino acid mutation']};",axis=1)
-        dguides.loc[:,'guide: id']=dguides.apply(lambda x: f"{x['id']}|{int(x['aminoacid: position'])}|({x['strategy']})",axis=1)
-        dguides.loc[:,'guide+PAM length']=dguides.apply(lambda x: len(x['guide+PAM sequence']),axis=1)
-        dguides=dguides.drop_duplicates(subset=['guide: id'])
-        return dguides,err2idxs
+                dguides.loc[:,'strategy']=dguides.apply(lambda x: f"{x['method']};{x['strand']};@{int(x['distance of mutation in codon from PAM'])};{x['PAM']};{x['codon']}:{x['codon mutation']};{x['amino acid']}:{x['amino acid mutation']};",axis=1)
+                dguides.loc[:,'guide: id']=dguides.apply(lambda x: f"{x['id']}|{int(x['aminoacid: position'])}|({x['strategy']})",axis=1)
+                dguides.loc[:,'guide+PAM length']=dguides.apply(lambda x: len(x['guide+PAM sequence']),axis=1)
+                dguides=dguides.drop_duplicates(subset=['guide: id'])
+                return dguides,err2idxs
+            else:
+                return None,None        
+        else:
+            return None,None        
     else:
         return None,None        
 
@@ -313,7 +317,7 @@ def dseq2dguides(cfg):
         if not ((dguideslin is None) and (err2idxs is None)):
             dguideslin.to_csv(dguideslinp,sep='\t')
             if cfg['test']:
-                print(err2idxs)            
+                logging.info(err2idxs)            
             with open(dguideslinp+'.err.json', 'w') as f:
                 json.dump(err2idxs, f)
         else:

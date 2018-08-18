@@ -22,7 +22,7 @@ def get_logger(program='program',argv=None,level=None,dp=None):
 # def initialize_logger(output_dir):
     import datetime
     date=make_pathable_string(str(datetime.datetime.now())).replace('-','_')
-    cmd='_'.join([str(s) for s in argv]).replace('/','|')
+    cmd='_'.join([str(s) for s in argv]).replace('/','_')
     if dp is None:
         dp=''
     else:

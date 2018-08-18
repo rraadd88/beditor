@@ -14,6 +14,9 @@ stepi2name= {
  3: 'guides',
  4: 'offtargets'}
 
+stepi2cols={
+}
+
 # # regex
 multint2reg={'R':'[AG]',
 'Y':'[CT]',

@@ -19,24 +19,12 @@ import logging
 from beditor.configure import get_deps,get_genomes
 from beditor.lib.io_sys import runbashcmd
 
-# GET INPTS 
-
 def pipeline_chunks(cfgp=None,cfg=None):
-    # from beditor.configure import get_deps
-
     if cfg is None: 
         import yaml 
         cfg=yaml.load(open(cfgp, 'r'))
         logging.info('processing: '+cfgp)
 
-#     print(cfg)    
-#     deps and genome are only needed if running step =1 or 4
-    cfg['step2ignoredl']=[2,3]
-    if not cfg['step'] in cfg['step2ignoredl']:
-        print('installing dependencies')
-        cfg=get_deps(cfg)
-        print('installing genomes')
-        cfg=get_genomes(cfg)
     #datads
     cfg[0]=cfg['prjd']+'/00_input/'
     cfg[1]=cfg['prjd']+'/01_sequences/'
@@ -44,59 +32,70 @@ def pipeline_chunks(cfgp=None,cfg=None):
     cfg[3]=cfg['prjd']+'/03_guides/'
     cfg[4]=cfg['prjd']+'/04_offtargets/'
 
-    #make dirs
-    for i in range(5):
-        if not exists(cfg[i]):
-            makedirs(cfg[i])
-    
-    #backup inputs
-    cfgoutp='{}/cfg.yml'.format(cfg[0])    
-    dinoutp='{}/dinput.tsv'.format(cfg[0])    
-    if not exists(cfgoutp) or cfg['force']:
-        with open(cfgoutp, 'w') as f:
-            yaml.dump(cfg, f, default_flow_style=False)
-    logging.info(cfgp)
-    logging.info(cfg)
-    if cfg['step']==None or cfg['step']==1:
-        if not exists(dinoutp) or cfg['force']:
-            from shutil import copyfile
-            copyfile(cfg['dinp'], dinoutp)
-    #         din.to_csv(dinoutp,sep='\t')
-    
-    if not exists(cfg['prjd']):
-        makedirs(cfg['prjd'])
-    for i in range(0,4+1,1):
-        if not exists(cfg[i]):
-            makedirs(cfg[i])            
-    if cfg['step']==None:
-        stepall=True
+    if not cfg['step2ignore'] is None:
+        step_last=cfg['step2ignore']-1
     else:
-        stepall=False
-    # print(cfg['step'],stepall)
-    if cfg is None: 
-        print('processing: '+cfgp)
-    if (cfg['step']==1 or stepall)  and cfg['step2ignore']!=1:
-        from beditor.lib.get_seq import din2dseq
-        cfg['step']=1
-        din2dseq(cfg)
-    if (cfg['step']==2 or stepall)  and cfg['step2ignore']!=2:
-        from beditor.lib.get_mutations import dseq2dmutagenesis 
-        cfg['step']=2
-        dseq2dmutagenesis(cfg)
-    if (cfg['step']==3 or stepall)  and cfg['step2ignore']!=3:
-        from beditor.lib.make_guides import dseq2dguides
-        cfg['step']=3
-        dseq2dguides(cfg)
-    if (cfg['step']==4 or stepall)  and cfg['step2ignore']!=4:
-        from beditor.lib.get_specificity import dguides2offtargets
-        cfg['step']=4
-        dguides2offtargets(cfg)
-    if 'datad' in cfg.keys():
-        print("Location of output data: {}".format(cfg['datad']))
-        print("Location of output plot: {}".format(cfg['plotd']))
-    # if not exists(f"{cfg['prjd']}/04_offtargets/dofftargets.tsv"):
-    # else:
-    #     print(f"skipped: {cfg['cfgp']}")
+        step_last=4
+    dstep_last_outputp=f"{cfg[step_last]}/d{cfg[step_last].replace('/','').split('_')[-1]}.tsv"
+    if not exists(dstep_last_outputp):
+    #     deps and genome are only needed if running step =1 or 4
+        cfg['step2ignoredl']=[2,3]
+        if not cfg['step'] in cfg['step2ignoredl']:
+            print('installing dependencies')
+            cfg=get_deps(cfg)
+            print('installing genomes')
+            cfg=get_genomes(cfg)
+
+        #make dirs
+        for i in range(5):
+            if not exists(cfg[i]):
+                makedirs(cfg[i])
+
+        #backup inputs
+        cfgoutp='{}/cfg.yml'.format(cfg[0])    
+        dinoutp='{}/dinput.tsv'.format(cfg[0])    
+        if not exists(cfgoutp) or cfg['force']:
+            with open(cfgoutp, 'w') as f:
+                yaml.dump(cfg, f, default_flow_style=False)
+        logging.info(cfgp)
+        logging.info(cfg)
+        if cfg['step']==None or cfg['step']==1:
+            if not exists(dinoutp) or cfg['force']:
+                from shutil import copyfile
+                copyfile(cfg['dinp'], dinoutp)
+        #         din.to_csv(dinoutp,sep='\t')
+
+        if not exists(cfg['prjd']):
+            makedirs(cfg['prjd'])
+        for i in range(0,4+1,1):
+            if not exists(cfg[i]):
+                makedirs(cfg[i])            
+        if cfg['step']==None:
+            stepall=True
+        else:
+            stepall=False
+        # print(cfg['step'],stepall)
+        if cfg is None: 
+            print('processing: '+cfgp)
+        if (cfg['step']==1 or stepall)  and cfg['step2ignore']!=1:
+            from beditor.lib.get_seq import din2dseq
+            cfg['step']=1
+            din2dseq(cfg)
+        if (cfg['step']==2 or stepall)  and cfg['step2ignore']!=2:
+            from beditor.lib.get_mutations import dseq2dmutagenesis 
+            cfg['step']=2
+            dseq2dmutagenesis(cfg)
+        if (cfg['step']==3 or stepall)  and cfg['step2ignore']!=3:
+            from beditor.lib.make_guides import dseq2dguides
+            cfg['step']=3
+            dseq2dguides(cfg)
+        if (cfg['step']==4 or stepall)  and cfg['step2ignore']!=4:
+            from beditor.lib.get_specificity import dguides2offtargets
+            cfg['step']=4
+            dguides2offtargets(cfg)
+    #     if 'datad' in cfg.keys():
+    #         print("Location of output data: {}".format(cfg['datad']))
+    #         print("Location of output plot: {}".format(cfg['plotd']))
 
 from beditor.lib.io_dfs import fhs2data_combo_appended
 from beditor.lib.global_vars import stepi2name
@@ -168,6 +167,7 @@ def make_outputs(cfg,plot=True):
     # plot
     if plot:
         plot_vizbysteps(cfg)
+    logging.info(f"Outputs are located at {cfg['datad']}")
     return doutput 
 
 def pipeline(cfgp,step=None,test=False,force=False):        
@@ -247,6 +247,7 @@ def pipeline(cfgp,step=None,test=False,force=False):
                           outd=f"{cfg['prjd']}/chunks",
                           fn='din',return_fmt='\t',
                           force=cfg['force'])
+        
         chunkcfgps=[]
         for ci,cp in enumerate(chunkps):
             cfg_=cfg.copy()
