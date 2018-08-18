@@ -103,6 +103,7 @@ def collect_chunks(cfg,chunkcfgps):
     """
     #collects chunks
     """    
+    print(f"{get_datetime()}: collecting chunks")    
     for step in stepi2name.keys():
         doutp=f"{cfg['prjd']}/{step:02d}_{stepi2name[step]}/d{stepi2name[step]}.tsv"
         if not exists(doutp) or cfg['force']:
@@ -129,6 +130,7 @@ def collect_chunks(cfg,chunkcfgps):
 from glob import glob
 from beditor.lib.plot_res import plot_vizbysteps
 def make_outputs(cfg,plot=True):
+    print(f"{get_datetime()}: generating outputs")        
     stepi2cols={0: ['transcript: id','aminoacid: position','amino acid mutation'],
             1: ['transcript: id','aminoacid: position','aminoacid: wild-type'],
             3: ['transcript: id','aminoacid: position','aminoacid: wild-type','amino acid mutation','guide: id','guide+PAM sequence'],
