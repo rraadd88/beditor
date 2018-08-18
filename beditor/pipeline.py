@@ -142,7 +142,7 @@ def make_outputs(cfg,plot=True):
         if 'doutput' in locals():
             del doutput
         for stepi in range(5):
-            if stepi!=2:
+            if stepi!=2 or cfg['step2ignore']!=stepi:
                 dstepp=f"{cfg[stepi]}/d{cfg[stepi].replace('/','').split('_')[-1]}.tsv"
                 if exists(dstepp):
                     logging.info(f'combining {stepi}')
@@ -296,7 +296,8 @@ def pipeline(cfgp,step=None,test=False,force=False):
             _=make_outputs(cfg)        
     else:
         pipeline_chunks(cfgp=cfgp)
-        if not not '/chunk' in cfgp:
+        if not '/chunk' in cfgp:
+            print(cfgp)
             _=make_outputs(cfg)        
 
 #     pipeline_chunks(cfgp)

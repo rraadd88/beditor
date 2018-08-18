@@ -240,6 +240,8 @@ def make_guides(cfg,dseq,dmutagenesis,
         dguides.loc[:,'guide+PAM length']=dguides.apply(lambda x: len(x['guide+PAM sequence']),axis=1)
         dguides=dguides.drop_duplicates(subset=['guide: id'])
         return dguides,err2idxs
+    else:
+        return None,None        
 
 def dpam2dpam_strands(dpam,pams):
     dpam=del_Unnamed(dpam)
@@ -308,12 +310,14 @@ def dseq2dguides(cfg):
                        test=cfg['test'],
                        # dbug=True,
                      )
-
-        dguideslin.to_csv(dguideslinp,sep='\t')
-        if cfg['test']:
-            print(err2idxs)            
-        with open(dguideslinp+'.err.json', 'w') as f:
-            json.dump(err2idxs, f)
-        
+        if not ((dguideslin is None) and (err2idxs is None)):
+            dguideslin.to_csv(dguideslinp,sep='\t')
+            if cfg['test']:
+                print(err2idxs)            
+            with open(dguideslinp+'.err.json', 'w') as f:
+                json.dump(err2idxs, f)
+        else:
+            logging.warning('no guides designed')
         import gc
         gc.collect()
+            
