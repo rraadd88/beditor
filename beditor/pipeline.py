@@ -18,12 +18,14 @@ from multiprocessing import Pool
 import logging
 from beditor.configure import get_deps,get_genomes
 from beditor.lib.io_sys import runbashcmd
+from beditor.lib.io_strs import get_datetime
 
 def pipeline_chunks(cfgp=None,cfg=None):
     if cfg is None: 
         import yaml 
         cfg=yaml.load(open(cfgp, 'r'))
-        logging.info('processing: '+cfgp)
+    print(f"{get_datetime()}: processing: {cfg['prjd']}")
+    logging.info(f"processing: {cfg['prjd']}")
 
     #datads
     cfg[0]=cfg['prjd']+'/00_input/'
@@ -41,9 +43,11 @@ def pipeline_chunks(cfgp=None,cfg=None):
     #     deps and genome are only needed if running step =1 or 4
         cfg['step2ignoredl']=[2,3]
         if not cfg['step'] in cfg['step2ignoredl']:
-            print('installing dependencies')
+            if cfg['test']:
+                logging.info('installing dependencies')
             cfg=get_deps(cfg)
-            print('installing genomes')
+            if cfg['test']:
+                logging.info('installing genomes')
             cfg=get_genomes(cfg)
 
         #make dirs
@@ -74,9 +78,6 @@ def pipeline_chunks(cfgp=None,cfg=None):
             stepall=True
         else:
             stepall=False
-        # print(cfg['step'],stepall)
-        if cfg is None: 
-            print('processing: '+cfgp)
         if (cfg['step']==1 or stepall)  and cfg['step2ignore']!=1:
             from beditor.lib.get_seq import din2dseq
             cfg['step']=1
@@ -93,9 +94,6 @@ def pipeline_chunks(cfgp=None,cfg=None):
             from beditor.lib.get_specificity import dguides2offtargets
             cfg['step']=4
             dguides2offtargets(cfg)
-    #     if 'datad' in cfg.keys():
-    #         print("Location of output data: {}".format(cfg['datad']))
-    #         print("Location of output plot: {}".format(cfg['plotd']))
 
 from beditor.lib.io_dfs import fhs2data_combo_appended
 from beditor.lib.global_vars import stepi2name
@@ -113,16 +111,21 @@ def collect_chunks(cfg,chunkcfgps):
             for chunkcfgp in chunkcfgps:
                 chunkprjd=chunkcfgp.replace('.yml','')
                 dps.append(f"{chunkprjd}/{step:02d}_{stepi2name[step]}/d{stepi2name[step]}.tsv")
-            dps=[p for p in dps if exists(p)]
-            tdpcp=[(dp,cp) for dp,cp in zip(dps,chunkcfgps) if exists(dp)]                
-            dps_,chunkcfgps_=zip(*tdpcp)
-            if len(dps)!=0:
-                dout=fhs2data_combo_appended(dps_,sep='\t',
-                                             labels=[str2num(basename(p)) for p in chunkcfgps_],
-                                             labels_coln='chunk#')
-                dout.to_csv(doutp,sep='\t')
-                del dout
-
+#             dps=[p if exists(p) else np.nan for p in dps]
+            tdpcp=[(dp,cp) for dp,cp in zip(dps,chunkcfgps) if exists(dp)]            
+            if len(tdpcp)!=0:
+                dps_,chunkcfgps_=zip(*tdpcp)
+                if len(dps_)!=0:                
+                    dout=fhs2data_combo_appended(dps_,sep='\t',
+                                                 labels=[str2num(basename(p)) for p in chunkcfgps_],
+                                                 labels_coln='chunk#')
+                    dout.to_csv(doutp,sep='\t')
+                    del dout
+                else:
+                    logging.warning(f"no chunks found for step {step}: {stepi2name[step]}")                    
+            else:
+                logging.warning(f"no chunks found for step {step}: {stepi2name[step]}")
+                
 from glob import glob
 from beditor.lib.plot_res import plot_vizbysteps
 def make_outputs(cfg,plot=True):
@@ -141,7 +144,7 @@ def make_outputs(cfg,plot=True):
         if 'doutput' in locals():
             del doutput
         for stepi in range(5):
-            if stepi!=2 or cfg['step2ignore']!=stepi:
+            if stepi!=2 and cfg['step2ignore']!=stepi:
                 dstepp=f"{cfg[stepi]}/d{cfg[stepi].replace('/','').split('_')[-1]}.tsv"
                 if exists(dstepp):
                     logging.info(f'combining {stepi}')
@@ -152,7 +155,6 @@ def make_outputs(cfg,plot=True):
                     else:
                         cols_on=list(set(doutput.columns.tolist()).intersection(dstep.columns.tolist()))
                         if len(cols_on)!=0:         
-                            print(dstepp)
                             doutput.to_csv('test_doutput.tsv',sep='\t')
                             dstep.to_csv('test_dstep.tsv',sep='\t')
                             doutput=pd.merge(doutput,dstep,on=cols_on,how='left')
@@ -167,7 +169,7 @@ def make_outputs(cfg,plot=True):
     # plot
     if plot:
         plot_vizbysteps(cfg)
-    logging.info(f"Outputs are located at {cfg['datad']}")
+    logging.info(f"Outputs are located at {datad}")
     return doutput 
 
 def pipeline(cfgp,step=None,test=False,force=False):        
@@ -242,7 +244,7 @@ def pipeline(cfgp,step=None,test=False,force=False):
         cfg_['step']=1 #gotta run step 1 isolated because of memory buid up otherwise
         pipeline_chunks(cfg=cfg_)
 
-        dseq=pd.read_csv(f"{cfg[1]}/dsequences.tsv",sep='\t')
+        dseq=pd.read_csv(f"{cfg[1]}/dsequences.tsv",sep='\t',low_memory=False)
         chunkps=df2chucks(dseq,chunksize=cfg['chunksize'],
                           outd=f"{cfg['prjd']}/chunks",
                           fn='din',return_fmt='\t',
@@ -276,7 +278,6 @@ def pipeline(cfgp,step=None,test=False,force=False):
                 cfg_['force']=False    
             if (not exists(chunkcfgp)) or cfg['force'] or cfg['test']:
                 with open(chunkcfgp, 'w') as f:
-                    print(f"created {chunkcfgp}")
                     yaml.dump(cfg_, f, default_flow_style=False) 
             chunkcfgps.append(chunkcfgp)
         # sys.exit(1)
@@ -298,7 +299,6 @@ def pipeline(cfgp,step=None,test=False,force=False):
     else:
         pipeline_chunks(cfgp=cfgp)
         if not '/chunk' in cfgp:
-            print(cfgp)
             _=make_outputs(cfg)        
 
 #     pipeline_chunks(cfgp)

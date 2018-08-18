@@ -353,7 +353,7 @@ def get_dntcompos(dguideslin_sub123,dpam,pos,pam):
 def plot_bar_dguides(dstep,plotp):
     cols=['method','PAM','strand']
     fig_ht=np.max([len(dstep[c].unique()) for c in cols])
-    fig,axes=plt.subplots(nrows=len(cols),figsize=[4,fig_ht*0.7],sharex=True)
+    fig,axes=plt.subplots(nrows=len(cols),figsize=[4,fig_ht],sharex=True)
     for i,col in enumerate(cols):
         dstep[col].value_counts().plot.barh(ax=axes[i])
         axes[i].set_ylabel(col)
@@ -436,10 +436,13 @@ def plot_vizbysteps(cfg):
     if len(plotps)==0 or cfg['force']:
         plotpf=plotp+"_{mutation_type}.png"
         dstepp=f"{cfg[stepi]}/d{cfg[stepi].replace('/','').split('_')[-1]}.tsv"
-        dstep=del_Unnamed(pd.read_table(dstepp)).drop_duplicates()
-        logging.info('plot_submap_possibilities')
-        plot_submap_possibilities(dmutagenesis=dstep,
-                                  plotpf=plotpf,test=False)
+        if exists(dstepp):
+            dstep=del_Unnamed(pd.read_table(dstepp)).drop_duplicates()
+            logging.info('plot_submap_possibilities')
+            plot_submap_possibilities(dmutagenesis=dstep,
+                                      plotpf=plotpf,test=False)
+        else:
+            logging.warning(f'not found: {dstepp}')
 
     # step3 
     # stats by strategies
@@ -447,9 +450,12 @@ def plot_vizbysteps(cfg):
     plotp=f"{datad}/plot_d{cfg[stepi].replace('/','').split('_')[-1]}_stats_by_strategies.png"
     if not exists(plotp) or cfg['force']:                               
         dstepp=f"{cfg[stepi]}/d{cfg[stepi].replace('/','').split('_')[-1]}.tsv"
-        dstep=del_Unnamed(pd.read_table(dstepp)).drop_duplicates()
-        logging.info('plot_bar_dguides')
-        plot_bar_dguides(dstep,plotp)
+        if exists(dstepp):
+            dstep=del_Unnamed(pd.read_table(dstepp)).drop_duplicates()
+            logging.info('plot_bar_dguides')
+            plot_bar_dguides(dstep,plotp)
+        else:
+            logging.warning(f'not found: {dstepp}')
 
     # make nt_composition plot
     stepi=3
@@ -458,11 +464,14 @@ def plot_vizbysteps(cfg):
     if len(plotps)==0 or cfg['force']:
         plotpf=plotp+"_{method}.png"
         dstepp=f"{cfg[stepi]}/d{cfg[stepi].replace('/','').split('_')[-1]}.tsv"
-        dstep=del_Unnamed(pd.read_table(dstepp)).drop_duplicates()
-        dpam=pd.read_table('{}/../data/dpam.tsv'.format(dirname(realpath(__file__))))
-        dpam=set_index(dpam,'PAM')
-        logging.info('plot_dist_dguides')
-        plot_dist_dguides(dstep,dpam,plotpf)
+        if exists(dstepp):
+            dstep=del_Unnamed(pd.read_table(dstepp)).drop_duplicates()
+            dpam=pd.read_table('{}/../data/dpam.tsv'.format(dirname(realpath(__file__))))
+            dpam=set_index(dpam,'PAM')
+            logging.info('plot_dist_dguides')
+            plot_dist_dguides(dstep,dpam,plotpf)
+        else:
+            logging.warning(f'not found: {dstepp}')
 
 #     # step2 # make submap #FIXME get all the columns used for plotting in the dguides.
 #     stepi=3
@@ -479,11 +488,14 @@ def plot_vizbysteps(cfg):
     # step4 offtargets correlations  
     stepi=4
     plotp=f"{datad}/plot_d{cfg[stepi].replace('/','').split('_')[-1]}_dist_beditor_score.png"
-    if not exists(plotp) or cfg['force']:                               
+    if not exists(plotp) or cfg['force']:
         dstepp=f"{cfg[stepi]}/d{cfg[stepi].replace('/','').split('_')[-1]}.tsv"
-        dstep=del_Unnamed(pd.read_table(dstepp)).drop_duplicates()
-        logging.info('plot_dist_dofftargets')
-        plot_dist_dofftargets(dstep,plotp)
+        if exists(dstepp):
+            dstep=del_Unnamed(pd.read_table(dstepp)).drop_duplicates()
+            logging.info('plot_dist_dofftargets')
+            plot_dist_dofftargets(dstep,plotp)
+        else:
+            logging.warning(f'not found: {dstepp}')
 
 #     # step5
 #     stepi=4
