@@ -353,7 +353,7 @@ def get_dntcompos(dguideslin_sub123,dpam,pos,pam):
 def plot_bar_dguides(dstep,plotp):
     cols=['method','PAM','strand']
     fig_ht=np.max([len(dstep[c].unique()) for c in cols])
-    fig,axes=plt.subplots(nrows=len(cols),figsize=[4,fig_ht],sharex=True)
+    fig,axes=plt.subplots(nrows=len(cols),figsize=[4,4+fig_ht*0.5],sharex=True)
     for i,col in enumerate(cols):
         dstep[col].value_counts().plot.barh(ax=axes[i])
         axes[i].set_ylabel(col)
@@ -438,9 +438,12 @@ def plot_vizbysteps(cfg):
         dstepp=f"{cfg[stepi]}/d{cfg[stepi].replace('/','').split('_')[-1]}.tsv"
         if exists(dstepp):
             dstep=del_Unnamed(pd.read_table(dstepp)).drop_duplicates()
-            logging.info('plot_submap_possibilities')
-            plot_submap_possibilities(dmutagenesis=dstep,
-                                      plotpf=plotpf,test=False)
+            if len(dstep)<1000:
+                logging.info('plot_submap_possibilities')
+                plot_submap_possibilities(dmutagenesis=dstep,
+                                          plotpf=plotpf,test=False)
+            else:
+                logging.warning(f'skipped: plot_submap_possibilities')
         else:
             logging.warning(f'not found: {dstepp}')
 

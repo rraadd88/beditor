@@ -20,7 +20,7 @@ def get_beditorscore_per_alignment(NM,mismatches_max,genic,alignment,
     """
     if not pd.isnull(alignment):
         if NM!=0:            
-            pentalty_hamming_distance=(mismatches_max+1-NM)/float(mismatches_max)
+            # pentalty_hamming_distance=(mismatches_max+1-NM)/float(mismatches_max)
 
             pentalty_region_of_alignment=pentalty_genic if genic else pentalty_intergenic 
 
@@ -34,9 +34,9 @@ def get_beditorscore_per_alignment(NM,mismatches_max,genic,alignment,
                 print(pentalty_hamming_distance,
                       pentalty_region_of_alignment,
                       penality_cum_dist_from_pam)
-                print(pentalty_hamming_distance*pentalty_region_of_alignment*penality_cum_dist_from_pam)
+                print(pentalty_region_of_alignment*penality_cum_dist_from_pam)
                 print(sfd)
-            return pentalty_hamming_distance*pentalty_region_of_alignment*penality_cum_dist_from_pam
+            return pentalty_region_of_alignment*penality_cum_dist_from_pam
         else:
             return 1
     else:

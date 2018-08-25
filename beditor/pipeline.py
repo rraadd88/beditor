@@ -24,8 +24,6 @@ def pipeline_chunks(cfgp=None,cfg=None):
     if cfg is None: 
         import yaml 
         cfg=yaml.load(open(cfgp, 'r'))
-    print(f"{get_datetime()}: processing: {cfg['prjd']}")
-    logging.info(f"processing: {cfg['prjd']}")
 
     #datads
     cfg[0]=cfg['prjd']+'/00_input/'
@@ -34,12 +32,18 @@ def pipeline_chunks(cfgp=None,cfg=None):
     cfg[3]=cfg['prjd']+'/03_guides/'
     cfg[4]=cfg['prjd']+'/04_offtargets/'
 
+    if not ('step2ignore' in cfg):
+        cfg['step2ignore']=None
+        
     if not cfg['step2ignore'] is None:
         step_last=cfg['step2ignore']-1
     else:
         step_last=4
+
     dstep_last_outputp=f"{cfg[step_last]}/d{cfg[step_last].replace('/','').split('_')[-1]}.tsv"
     if not exists(dstep_last_outputp):
+        print(f"{get_datetime()}: processing: {cfg['prjd']}")
+        logging.info(f"processing: {cfg['prjd']}")
     #     deps and genome are only needed if running step =1 or 4
         cfg['step2ignoredl']=[2,3]
         if not cfg['step'] in cfg['step2ignoredl']:
@@ -206,7 +210,11 @@ def pipeline(cfgp,step=None,test=False,force=False):
     cfg['test']=test
     cfg['force']=force
     cfg['cfgp']=cfgp
-    
+    # step 04 offtargets
+    if (not 'mismatches_max' in cfg) or (cfg['mismatches_max'] is None):
+        cfg['mismatches_max']=2
+        logging.info(f"setting mismatches_max to {cfg['mismatches_max']}") 
+
     if not 'step2ignore' in cfg:
         cfg['step2ignore']=None
 
