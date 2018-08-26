@@ -26,11 +26,12 @@ from beditor.lib.io_dfs import lambda2cols
 from beditor.lib.io_nums import str2num
 from beditor.lib.io_seqs import gffatributes2ids,hamming_distance,align
 
-def dguides2guidessam(dguidesp):    
+def dguides2guidessam(cfg,dguides):    
     #step1
-    dguides=pd.read_csv(dguidesp,sep='\t')
-#     dguides.to_csv('{}/{}'.format(cfg['datad'],basename(dguidesp)),sep='\t')
-    dguides=dguides.set_index('guide: id')
+    #     dguides.to_csv('{}/{}'.format(cfg['datad'],basename(dguidesp)),sep='\t')
+#     df2info(dguides)
+    datatmpd=cfg['datatmpd']
+    dguides=set_index(dguides,'guide: id')
     guidels=dguides.loc[:,'guide+PAM length'].unique()
     for guidel in guidels:
         logging.debug(f"now aligning guides of length {guidel}")
@@ -71,9 +72,10 @@ def dguides2guidessam(dguidesp):
                     cmd=f"{cfg['bwa']} samse -n {MAXOCC} {genomep} {guidessap} {guidesfap} > {guidessamp} 2> {guidessamp}.log"
                     runbashcmd(cmd)
 
-def guidessam2dalignbed():
+def guidessam2dalignbed(cfg):
     #----make tables-----------
     #output
+    datatmpd=cfg['datatmpd']
     alignmentbedp=f'{datatmpd}/02_alignment.bed'
     dalignbedp=f'{datatmpd}/02_dalignbed.tsv'
     logging.info(basename(dalignbedp))
@@ -133,7 +135,9 @@ def guidessam2dalignbed():
         dalignbed=pd.read_csv(dalignbedp,sep='\t')
         dalignbed=dalignbed.drop([c for c in dalignbed if 'Unnamed' in c],axis=1)
 
-def dalignbed2annotationsbed():
+def dalignbed2annotationsbed(cfg):
+    datatmpd=cfg['datatmpd']
+    
     alignmentbedsortedp=alignmentbedp+'.sorted.bed'
     logging.info(basename(alignmentbedsortedp))
     if not exists(alignmentbedsortedp) or cfg['force']:
@@ -152,7 +156,9 @@ def dalignbed2annotationsbed():
         cmd='{} intersect -wa -wb -loj -a {} -b {} > {}'.format(cfg['bedtools'],alignmentbedsortedp,genomegffsortedp,annotationsbedp)
         runbashcmd(cmd)
 
-def dalignbed2dalignbedguides():
+def dalignbed2dalignbedguides(cfg):
+    datatmpd=cfg['datatmpd']
+    
 #     if the error in human, use: `cut -f 1 data/alignment.bed.sorted.bed | sort| uniq -c | grep -v CHR | grep -v GL | grep -v KI`
     dalignbedguidesp='{}/04_dalignbedguides.tsv'.format(datatmpd)
     logging.info(basename(dalignbedguidesp))
@@ -163,7 +169,9 @@ def dalignbed2dalignbedguides():
         dalignbed=pd.read_csv(dalignbedguidesp,'\t')
         dalignbed=del_Unnamed(dalignbed)
 
-def alignmentbed2dalignedfasta():
+def alignmentbed2dalignedfasta(cfg):
+    datatmpd=cfg['datatmpd']
+    
     dalignedfastap='{}/05_dalignedfasta.tsv'.format(datatmpd)
     logging.info(basename(dalignedfastap))
     if not exists(dalignedfastap) or cfg['force']:
@@ -182,7 +190,9 @@ def alignmentbed2dalignedfasta():
         dalignedfasta=pd.read_csv(dalignedfastap,sep='\t')        
         dalignedfasta=del_Unnamed(dalignedfasta)
 
-def dalignbed2dalignbedguidesseq()
+def dalignbed2dalignbedguidesseq(cfg):
+    datatmpd=cfg['datatmpd']
+    
     # step#5
     dalignbedguidesseqp='{}/06_dalignbedguidesseq.tsv'.format(datatmpd)
     logging.info(basename(dalignbedguidesseqp))
@@ -197,7 +207,9 @@ def dalignbed2dalignbedguidesseq()
         dalignbed=pd.read_csv(dalignbedguidesseqp,sep='\t',low_memory=False)
         dalignbed=del_Unnamed(dalignbed)
 
-def dalignbed2dalignbed2dalignbedstats():
+def dalignbed2dalignbed2dalignbedstats(cfg):
+    datatmpd=cfg['datatmpd']
+    
     # step#7
     dalignbedstatsp='{}/07_dalignbedstats.tsv'.format(datatmpd)  
     logging.info(basename(dalignbedstatsp))
@@ -212,7 +224,9 @@ def dalignbed2dalignbed2dalignbedstats():
         dalignbed=pd.read_csv(dalignbedstatsp,sep='\t',low_memory=False)
         dalignbed=del_Unnamed(dalignbed)
         # df2info(dalignbed)
-def dannots2dalignbed2dannotsagg()
+def dannots2dalignbed2dannotsagg(cfg):
+    datatmpd=cfg['datatmpd']
+    
     # step#8
     daannotp='{}/08_dannot.tsv'.format(datatmpd)  
     dannotsaggp='{}/08_dannotsagg.tsv'.format(datatmpd)  
@@ -266,8 +280,10 @@ def dannots2dalignbed2dannotsagg()
         dannotsagg=pd.read_csv(dannotsaggp,sep='\t')
         dannotsagg=del_Unnamed(dannotsagg)        
 
-def dannotsagg2dannots2dalignbedannot():
+def dannotsagg2dannots2dalignbedannot(cfg):
     # step#9
+    datatmpd=cfg['datatmpd']
+    
     dalignbedannotp='{}/09_dalignbedannot.tsv'.format(datatmpd)  
     logging.info(basename(dalignbedannotp))
     if not exists(dalignbedannotp) or cfg['force']:
@@ -288,8 +304,10 @@ def dannotsagg2dannots2dalignbedannot():
         dalignbedannot=pd.read_csv(dalignbedannotp,sep='\t',low_memory=False)
         dalignbedannot=del_Unnamed(dalignbedannot)
 
-def dalignbedannot2daggbyguide():
+def dalignbedannot2daggbyguide(cfg):
     # step#10
+    datatmpd=cfg['datatmpd']
+    
     daggbyguidep='{}/10_daggbyguide.tsv'.format(datatmpd)      
     logging.info(basename(daggbyguidep))
     if not exists(daggbyguidep) or cfg['force']:
@@ -344,51 +362,70 @@ def dguides2offtargets(cfg):
     All the processes in offtarget detection are here.
     :param cfg: Configuration settings provided in .yml file
     """
+    from beditor.lib.global_vars import saveemptytable
+    
     cfg['datad']=cfg[cfg['step']]
     cfg['plotd']=cfg['datad']
     dofftargetsp='{}/dofftargets.tsv'.format(cfg['datad'])  
-    from beditor.lib.global_vars import stepi2cols
-    dout=pd.DataFrame(columns=stepi2cols[cfg['step']])
     
     stepn='04_offtargets'
     logging.info(stepn)
     dguidesp=f"{cfg[cfg['step']-1]}/dguides.tsv"
-    if exists(dguidesp):
-        datatmpd=f"{cfg['datad']}/tmp"
-        for dp in [datatmpd]:
-            if not exists(dp):
-                makedirs(dp)
-
-        step2dscr={1: 'align_guides',
-                   2: 'align_guides',
-                   3: 'align_guides',
-                  }
-        dofftargetsp='{}/dofftargets.tsv'.format(cfg['datad'])  
-        if not exists(dofftargetsp) or cfg['force']:
-            # step#1
-            dguides2guidessam(dguidesp)
-            # step#2
-            guidessam2dalignbed(cfg)
-            # step#3
-            dalignbed2annotationsbed(cfg)
-            # step#4
-            dalignbed2dalignbedguides(cfg)
-            # step#5
-            alignmentbed2dalignedfasta(cfg)
-            # step#6
-            dalignbed2dalignbedguidesseq(cfg)
-            # step#7
-            dalignbed2dalignbed2dalignbedstats(cfg)
-            # step#8
-            dannots2dalignbed2dannotsagg(cfg)
-            # step#9
-            dannotsagg2dannots2dalignbedannot(cfg)
-            # step#10
-            dalignbedannot2daggbyguide(cfg)
-            
-            import gc
-            gc.collect()
-    else:
+    if not exists(dguidesp):        
         logging.warning(f"not found {dguidesp}")
-        dout.to_csv(dofftargetsp,sep='\t')
+        return saveemptytable(cfg,dofftargetsp)
+    dguides=pd.read_csv(dguidesp,sep='\t')
+    if len(dguides)==0:
+        logging.warning(f"dguides is empty.")
+        return saveemptytable(cfg,dofftargetsp)       
+
+    cfg['datatmpd']=f"{cfg['datad']}/tmp"
+    for dp in [cfg['datatmpd']]:
+        if not exists(dp):
+            makedirs(dp)
+    step2doutp={
+    1:'01_guides_guidel*.fa',
+    2:'02_dalignbed.tsv',
+    3:'03_annotations.bed',
+    4:'04_dalignbedguides.tsv',
+    5:'05_dalignedfasta.tsv',
+    6:'06_dalignbedguidesseq.tsv',
+    7:'07_dalignbedstats.tsv',
+    8:'08_dannotsagg.tsv',
+    9:'09_dalignbedannot.tsv',
+    10:'10_daggbyguide.tsv',
+    }
+    #check which step to process
+    for step in range(2,10+1,1):
+        if not exists(f"{cfg['datatmpd']}/{step2doutp[step]}"):
+            break
+            if step==2:
+                step='all'
+    logging.debug(f'process from step:{step}')
+    dofftargetsp='{}/dofftargets.tsv'.format(cfg['datad'])
+    if not exists(dofftargetsp) or cfg['force']:
+        if step==1 or step=='all':
+            dguides2guidessam(cfg,dguides)
+        if step==2 or step=='all':
+            guidessam2dalignbed(cfg)
+        if step==3 or step=='all':
+            dalignbed2annotationsbed(cfg)
+        if step==4 or step=='all':
+            dalignbed2dalignbedguides(cfg)
+        if step==5 or step=='all':
+            alignmentbed2dalignedfasta(cfg)
+        if step==6 or step=='all':
+            dalignbed2dalignbedguidesseq(cfg)
+        if step==7 or step=='all':
+            dalignbed2dalignbed2dalignbedstats(cfg)
+        if step==8 or step=='all':
+            dannots2dalignbed2dannotsagg(cfg)
+        if step==9 or step=='all':
+            dannotsagg2dannots2dalignbedannot(cfg)
+        if step==10 or step=='all':
+            dalignbedannot2daggbyguide(cfg)
+
+        import gc
+        gc.collect()
+
         
