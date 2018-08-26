@@ -8,7 +8,7 @@ import logging
 
 from collections import defaultdict
 from os.path import join, basename, dirname, abspath, exists
-from os import makedirs
+from os import makedirs,stat
 
 import pandas as pd
 # import modin.pandas as pd
@@ -103,45 +103,47 @@ def dguides2offtargets(cfg):
             #input/s
             guidessamps=glob(f'{datatmpd}/01_guides_guidel*.sam')
             for guidessamp in guidessamps:
-                samfile=pysam.AlignmentFile(guidessamp, "rb")
-                dalignbed=pd.DataFrame(columns=bed_colns)
-                for read in samfile.fetch():
-                    algnids=[]
-                    algnids.append('{}|{}{}|{}|{}'.format(read.reference_name,
-                             ('-' if read.is_reverse else '+'),read.positions[0],read.cigarstring,read.get_tag('NM')))
-                    if read.has_tag('XA'):
-                        algnids+=['|'.join(s.split(',')) for s in read.get_tag('XA').split(';') if len(s.split(','))>1]
-                    chroms=[]
-                    starts=[]
-                    ends=[]
-                    ids=algnids
-                    NMs=[]
-                    strands=[]    
-                    for a in algnids:
-                        strand=a.split('|')[1][0]
-                        chroms.append(a.split('|')[0])
-                        if strand=='+':
-                            offset=0
-                        elif strand=='-':
-                            offset=0                    
-                        starts.append(int(a.split('|')[1][1:])+offset)
-                        ends.append(int(a.split('|')[1][1:])+str2num(a.split('|')[2])+offset)
-                        NMs.append(a.split('|')[3])
-                        strands.append(strand)
-                        del strand,offset
-                    col2dalignbed={'chromosome':chroms,
-                                   'start':starts,
-                                   'end':ends,
-                                   'id':ids,
-                                   'NM':NMs,
-                                   'strand':strands}
-                #     col2dalignbed=dict(zip(cols,[a.split('|')[0],a.split('|')[1],a.split('|')[2],a,a.split('|')[3],a.split('|')[4] for a in algnids]))
-                    dalignbed_=pd.DataFrame(col2dalignbed)
-                    dalignbed_['guide: id']=read.qname.replace('_',' ')
-                    dalignbed = dalignbed.append(dalignbed_,ignore_index=True,sort=True)
-                #     break
-                samfile.close()
-
+                if stat(guidessamp).st_size != 0:
+                    samfile=pysam.AlignmentFile(guidessamp, "rb")
+                    dalignbed=pd.DataFrame(columns=bed_colns)
+                    for read in samfile.fetch():
+                        algnids=[]
+                        algnids.append('{}|{}{}|{}|{}'.format(read.reference_name,
+                                 ('-' if read.is_reverse else '+'),read.positions[0],read.cigarstring,read.get_tag('NM')))
+                        if read.has_tag('XA'):
+                            algnids+=['|'.join(s.split(',')) for s in read.get_tag('XA').split(';') if len(s.split(','))>1]
+                        chroms=[]
+                        starts=[]
+                        ends=[]
+                        ids=algnids
+                        NMs=[]
+                        strands=[]    
+                        for a in algnids:
+                            strand=a.split('|')[1][0]
+                            chroms.append(a.split('|')[0])
+                            if strand=='+':
+                                offset=0
+                            elif strand=='-':
+                                offset=0                    
+                            starts.append(int(a.split('|')[1][1:])+offset)
+                            ends.append(int(a.split('|')[1][1:])+str2num(a.split('|')[2])+offset)
+                            NMs.append(a.split('|')[3])
+                            strands.append(strand)
+                            del strand,offset
+                        col2dalignbed={'chromosome':chroms,
+                                       'start':starts,
+                                       'end':ends,
+                                       'id':ids,
+                                       'NM':NMs,
+                                       'strand':strands}
+                    #     col2dalignbed=dict(zip(cols,[a.split('|')[0],a.split('|')[1],a.split('|')[2],a,a.split('|')[3],a.split('|')[4] for a in algnids]))
+                        dalignbed_=pd.DataFrame(col2dalignbed)
+                        dalignbed_['guide: id']=read.qname.replace('_',' ')
+                        dalignbed = dalignbed.append(dalignbed_,ignore_index=True,sort=True)
+                    #     break
+                    samfile.close()
+                else:
+                    logging.warning(f"file is empty: {guidessamp}")
             dalignbed.to_csv(dalignbedp,sep='\t')
             from beditor.lib.io_nums import str2numorstr
             dalignbed['chromosome']=dalignbed.apply(lambda x : str2numorstr(x['chromosome']),axis=1)
