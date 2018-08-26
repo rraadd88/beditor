@@ -321,7 +321,10 @@ def dseq2dguides(cfg):
             with open(dguideslinp+'.err.json', 'w') as f:
                 json.dump(err2idxs, f)
         else:
-            logging.warning('no guides designed')
+            from beditor.lib.global_vars import stepi2cols
+            dout=pd.DataFrame(columns=stepi2cols[cfg['step']])
+            logging.warning('no guides designed; saving an empty table.')
+            dout.to_csv(dguideslinp,sep='\t')
         import gc
         gc.collect()
             

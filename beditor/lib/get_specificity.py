@@ -348,7 +348,7 @@ def dguides2offtargets(cfg):
     cfg['plotd']=cfg['datad']
     dofftargetsp='{}/dofftargets.tsv'.format(cfg['datad'])  
     from beditor.lib.global_vars import stepi2cols
-    dofftargets=pd.DataFrame(columns=stepi2cols[cfg['step']])
+    dout=pd.DataFrame(columns=stepi2cols[cfg['step']])
     
     stepn='04_offtargets'
     logging.info(stepn)
@@ -390,4 +390,5 @@ def dguides2offtargets(cfg):
             gc.collect()
     else:
         logging.warning(f"not found {dguidesp}")
-        dofftargets.to_csv(dofftargetsp,sep='\t')
+        dout.to_csv(dofftargetsp,sep='\t')
+        
