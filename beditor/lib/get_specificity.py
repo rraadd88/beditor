@@ -176,7 +176,9 @@ def alignmentbed2dalignedfasta(cfg):
     datatmpd=cfg['datatmpd']
     alignmentbedp=cfg['alignmentbedp']
     
-    dalignedfastap='{}/05_dalignedfasta.tsv'.format(datatmpd)
+    dalignedfastap=f"{datatmpd}/05_dalignedfasta.tsv"
+    cfg['dalignedfastap']=dalignedfastap
+    
     logging.info(basename(dalignedfastap))
     if not exists(dalignedfastap) or cfg['force']:
         alignedfastap='{}/05_alignment.fa'.format(datatmpd)
@@ -190,15 +192,12 @@ def alignmentbed2dalignedfasta(cfg):
         dalignedfasta.index=[i.split('(')[0] for i in dalignedfasta.index] # for bedtools 2.27, the fasta header now has hanging (+) or (-)
         dalignedfasta.index.name='id'
         dalignedfasta.to_csv(dalignedfastap,sep='\t')
-    else:
-        dalignedfasta=pd.read_csv(dalignedfastap,sep='\t')        
-        dalignedfasta=del_Unnamed(dalignedfasta)
     return cfg
 
 def dalignbed2dalignbedguidesseq(cfg):
     datatmpd=cfg['datatmpd']
-    dalignbed=pd.read_csv(cfg['dalignbedp'],sep='\t')
-    dalignbed=del_Unnamed(dalignbed)
+    dalignbed=del_Unnamed(pd.read_csv(cfg['dalignbedp'],sep='\t'))
+    dalignedfasta=del_Unnamed(pd.read_csv(cfg['dalignedfastap'],sep='\t'))
     
     # step#5
     dalignbedguidesseqp='{}/06_dalignbedguidesseq.tsv'.format(datatmpd)
@@ -217,8 +216,7 @@ def dalignbed2dalignbedguidesseq(cfg):
 
 def dalignbed2dalignbed2dalignbedstats(cfg):
     datatmpd=cfg['datatmpd']
-    dalignbed=pd.read_csv(cfg['dalignbedp'],sep='\t')
-    dalignbed=del_Unnamed(dalignbed)
+    dalignbed=del_Unnamed(pd.read_csv(cfg['dalignbedp'],sep='\t'))
     
     # step#7
     dalignbedstatsp='{}/07_dalignbedstats.tsv'.format(datatmpd)  
