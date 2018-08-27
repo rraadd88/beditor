@@ -137,6 +137,7 @@ def guidessam2dalignbed(cfg):
     return cfg
 
 def dalignbed2annotationsbed(cfg):
+    #step3
     datatmpd=cfg['datatmpd']
     alignmentbedp=cfg['alignmentbedp']    
     alignmentbedsortedp=alignmentbedp+'.sorted.bed'
@@ -152,6 +153,7 @@ def dalignbed2annotationsbed(cfg):
         runbashcmd(cmd)
 
     annotationsbedp='{}/03_annotations.bed'.format(datatmpd)
+    cfg['annotationsbedp']=annotationsbedp
     logging.info(basename(annotationsbedp))
     if not exists(annotationsbedp) or cfg['force']:    
         cmd=f"{cfg['bedtools']} intersect -wa -wb -loj -a {alignmentbedsortedp} -b {genomegffsortedp} > {annotationsbedp}"
@@ -159,6 +161,7 @@ def dalignbed2annotationsbed(cfg):
     return cfg
 
 def dalignbed2dalignbedguides(cfg):
+    #step4
     datatmpd=cfg['datatmpd']
     dalignbed=del_Unnamed(pd.read_csv(cfg['dalignbedp'],sep='\t'))
     dguides=set_index(del_Unnamed(pd.read_csv(cfg['dguidesp'],sep='\t')),'guide: id')
@@ -177,6 +180,8 @@ def dalignbed2dalignbedguides(cfg):
     return cfg
 
 def alignmentbed2dalignedfasta(cfg):
+    #step5
+    
     datatmpd=cfg['datatmpd']
     alignmentbedp=cfg['alignmentbedp']
     
@@ -199,11 +204,12 @@ def alignmentbed2dalignedfasta(cfg):
     return cfg
 
 def dalignbed2dalignbedguidesseq(cfg):
+    #step6
+
     datatmpd=cfg['datatmpd']
     dalignbedguides=del_Unnamed(pd.read_csv(cfg['dalignbedguidesp'],sep='\t'))
     dalignedfasta=del_Unnamed(pd.read_csv(cfg['dalignedfastap'],sep='\t'))
     
-    # step#5
     dalignbedguidesseqp='{}/06_dalignbedguidesseq.tsv'.format(datatmpd)
     cfg['dalignbedguidesseqp']=dalignbedguidesseqp
     logging.info(basename(dalignbedguidesseqp))
@@ -239,11 +245,14 @@ def dannots2dalignbed2dannotsagg(cfg):
     datatmpd=cfg['datatmpd']
     
     # step#8
-    daannotp='{}/08_dannot.tsv'.format(datatmpd)  
-    dannotsaggp='{}/08_dannotsagg.tsv'.format(datatmpd)  
+    daannotp=f'{datatmpd}/08_dannot.tsv'
+    dannotsaggp=f'{datatmpd}/08_dannotsagg.tsv'
+    cfg['daannotp']=daannotp
+    cfg['dannotsaggp']=dannotsaggp
+    
     logging.info(basename(daannotp))
     if ((not exists(daannotp)) and (not exists(dannotsaggp))) or cfg['force']:
-        dannots=pd.read_csv(annotationsbedp,sep='\t',
+        dannots=pd.read_csv(cfg['annotationsbedp'],sep='\t',
                    names=bed_colns+[c+' annotation' if c in set(bed_colns).intersection(gff_colns) else c for c in gff_colns ],
                            low_memory=False)
         dannots=del_Unnamed(dannots)
