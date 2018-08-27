@@ -130,10 +130,11 @@ def fhs2data_combo_appended(fhs, cols=None,labels=None,labels_coln='labels',sep=
         for fhi,fh in enumerate(fhs):
             label=labels[fhi]
             data=pd.read_csv(fh,sep=sep)
-            data.loc[:,labels_coln]=label
-            if not cols is None:
-                data=data.loc[:,cols]
-            data_all=data_all.append(data,sort=True)
+            if len(data)!=0:
+                data.loc[:,labels_coln]=label
+                if not cols is None:
+                    data=data.loc[:,cols]
+                data_all=data_all.append(data,sort=True)
         return data_all
 
 def rename_cols(df,names,renames=None,prefix=None,suffix=None):
