@@ -158,8 +158,8 @@ def dalignbed2annotationsbed(cfg):
 
 def dalignbed2dalignbedguides(cfg):
     datatmpd=cfg['datatmpd']
-    dalignbed=pd.read_csv(cfg['dalignbedp'],sep='\t')
-    dalignbed=del_Unnamed(dalignbed)
+    dalignbed=del_Unnamed(pd.read_csv(cfg['dalignbedp'],sep='\t'))
+    dguides=set_index(del_Unnamed(pd.read_csv(cfg['dalignbedp'],sep='\t')),'guide: id')
     
 #     if the error in human, use: `cut -f 1 data/alignment.bed.sorted.bed | sort| uniq -c | grep -v CHR | grep -v GL | grep -v KI`
     dalignbedguidesp='{}/04_dalignbedguides.tsv'.format(datatmpd)
@@ -409,6 +409,7 @@ def dguides2offtargets(cfg):
     9:'09_dalignbedannot.tsv',
     10:'10_daggbyguide.tsv',
     }
+    cfg['dguidesp']=dguidesp
     cfg['alignmentbedp']=f"{cfg['datatmpd']}/02_alignment.bed"
     cfg['dalignbedp']=f"{cfg['datatmpd']}/02_dalignbed.tsv"
 
