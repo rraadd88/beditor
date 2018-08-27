@@ -174,13 +174,14 @@ def dalignbed2dalignbedguides(cfg):
 
 def alignmentbed2dalignedfasta(cfg):
     datatmpd=cfg['datatmpd']
+    alignmentbedp=cfg['alignmentbedp']
     
     dalignedfastap='{}/05_dalignedfasta.tsv'.format(datatmpd)
     logging.info(basename(dalignedfastap))
     if not exists(dalignedfastap) or cfg['force']:
         alignedfastap='{}/05_alignment.fa'.format(datatmpd)
         if not exists(alignedfastap) or cfg['force']:
-            cmd=f"{cfg['bedtools']} getfasta -s -name -fi {genomep} -bed {alignmentbedp} -fo {alignedfastap}"
+            cmd=f"{cfg['bedtools']} getfasta -s -name -fi {cfg['genomep']} -bed {alignmentbedp} -fo {alignedfastap}"
             runbashcmd(cmd)
 
         dalignedfasta=fa2df(alignedfastap)
