@@ -296,6 +296,7 @@ def pipeline(cfgp,step=None,test=False,force=False):
     
     chunkcfgps=np.sort(chunkcfgps)
     if len(chunkcfgps)!=0 and (not '/chunk' in cfgp):
+        print(f"{get_datetime()}: processing: {len(chunkcfgps)} chunks.")
         if cfg['test']:
             for chunkcfgp in chunkcfgps:
                 pipeline_chunks(cfgp=chunkcfgp)

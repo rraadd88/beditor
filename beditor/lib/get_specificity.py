@@ -165,7 +165,7 @@ def dalignbed2dalignbedguides(cfg):
     dguides=set_index(del_Unnamed(pd.read_csv(cfg['dguidesp'],sep='\t')),'guide: id')
     
 #     if the error in human, use: `cut -f 1 data/alignment.bed.sorted.bed | sort| uniq -c | grep -v CHR | grep -v GL | grep -v KI`
-    
+    dalignbedguidesp=cfg['dalignbedguidesp']
     logging.info(basename(dalignbedguidesp))
     if not exists(dalignbedguidesp) or cfg['force']:
         dalignbed=pd.merge(dalignbed,dguides,on='guide: id',suffixes=('', '.1'))
@@ -177,6 +177,7 @@ def alignmentbed2dalignedfasta(cfg):
     
     datatmpd=cfg['datatmpd']
     alignmentbedp=cfg['alignmentbedp']    
+    dalignedfastap=cfg['dalignedfastap']
     logging.info(basename(dalignedfastap))
     if not exists(dalignedfastap) or cfg['force']:
         alignedfastap='{}/05_alignment.fa'.format(datatmpd)
@@ -198,6 +199,7 @@ def dalignbed2dalignbedguidesseq(cfg):
     datatmpd=cfg['datatmpd']
     dalignbedguides=del_Unnamed(pd.read_csv(cfg['dalignbedguidesp'],sep='\t'))
     dalignedfasta=del_Unnamed(pd.read_csv(cfg['dalignedfastap'],sep='\t'))
+    dalignbedguidesseqp=cfg['dalignbedguidesseqp']
     logging.info(basename(dalignbedguidesseqp))
     if not exists(dalignbedguidesseqp) or cfg['force']:        
         dalignbedguidesseq=pd.merge(dalignbedguides,dalignedfasta,on='id',suffixes=('', '.2'))
@@ -229,7 +231,7 @@ def dannots2dalignbed2dannotsagg(cfg):
     # step#8
     daannotp=f'{datatmpd}/08_dannot.tsv'
     cfg['daannotp']=daannotp
-    
+    dannotsaggp=cfg['dannotsaggp']
     logging.info(basename(daannotp))
     if ((not exists(daannotp)) and (not exists(dannotsaggp))) or cfg['force']:
         dannots=pd.read_csv(cfg['annotationsbedp'],sep='\t',
@@ -284,7 +286,7 @@ def dannotsagg2dannots2dalignbedannot(cfg):
     
     dannotsagg=del_Unnamed(pd.read_csv(cfg['dannotsaggp'],sep='\t'))
     dalignbedstats=del_Unnamed(pd.read_csv(cfg['dalignbedstatsp'],sep='\t'))
-    
+    dalignbedannotp=cfg['dalignbedannotp']
     logging.info(basename(dalignbedannotp))
     if not exists(dalignbedannotp) or cfg['force']:
         # df2info(dalignbed)
@@ -350,12 +352,7 @@ def dalignbedannot2daggbyguide(cfg):
             dalignbedannot['alternate alignments count']=1
             daggbyguide=daggbyguide.join(pd.DataFrame(dalignbedannot.groupby('guide: id')['alternate alignments count'].agg('sum')))
             daggbyguide.to_csv(daggbyguidep,sep='\t')
-            daggbyguide.to_csv(dofftargetsp,sep='\t')
-            # daggbyguide.loc[:,['guide+PAM sequence','beditor score','beditor score (log10)','alternate alignments count',
-            #              'id',
-            #              'gene names',
-            #              'gene ids',
-            #              'transcript ids']].to_csv(dofftargetsp,sep='\t')
+            daggbyguide.to_csv(cfg['dofftargetsp'],sep='\t')
     return cfg
 
 def dguides2offtargets(cfg):
