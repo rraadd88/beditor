@@ -69,8 +69,10 @@ def dguides2guidessam(cfg,dguides):
         if not exists(guidessamp) or cfg['force']:
             cmd=f"{cfg['bwa']} samse -n {MAXOCC} {genomep} {guidessap} {guidesfap} > {guidessamp} 2> {guidessamp}.log"
             runbashcmd(cmd)
+    return cfg
 
 def guidessam2dalignbed(cfg):
+    #step2
     #----make tables-----------
     #output
     datatmpd=cfg['datatmpd']
@@ -159,17 +161,19 @@ def dalignbed2annotationsbed(cfg):
 def dalignbed2dalignbedguides(cfg):
     datatmpd=cfg['datatmpd']
     dalignbed=del_Unnamed(pd.read_csv(cfg['dalignbedp'],sep='\t'))
-    dguides=set_index(del_Unnamed(pd.read_csv(cfg['dalignbedp'],sep='\t')),'guide: id')
+    dguides=set_index(del_Unnamed(pd.read_csv(cfg['dguidesp'],sep='\t')),'guide: id')
     
 #     if the error in human, use: `cut -f 1 data/alignment.bed.sorted.bed | sort| uniq -c | grep -v CHR | grep -v GL | grep -v KI`
     dalignbedguidesp='{}/04_dalignbedguides.tsv'.format(datatmpd)
+    cfg['dalignbedguidesp']=dalignbedguidesp
+    
     logging.info(basename(dalignbedguidesp))
     if not exists(dalignbedguidesp) or cfg['force']:
         dalignbed=pd.merge(dalignbed,dguides,on='guide: id',suffixes=('', '.1'))
         dalignbed.to_csv(dalignbedguidesp,'\t')
-    else:
-        dalignbed=pd.read_csv(dalignbedguidesp,'\t')
-        dalignbed=del_Unnamed(dalignbed)
+#     else:
+#         dalignbed=pd.read_csv(dalignbedguidesp,'\t')
+#         dalignbed=del_Unnamed(dalignbed)
     return cfg
 
 def alignmentbed2dalignedfasta(cfg):
@@ -196,42 +200,40 @@ def alignmentbed2dalignedfasta(cfg):
 
 def dalignbed2dalignbedguidesseq(cfg):
     datatmpd=cfg['datatmpd']
-    dalignbed=del_Unnamed(pd.read_csv(cfg['dalignbedp'],sep='\t'))
+    dalignbedguides=del_Unnamed(pd.read_csv(cfg['dalignbedguidesp'],sep='\t'))
     dalignedfasta=del_Unnamed(pd.read_csv(cfg['dalignedfastap'],sep='\t'))
     
     # step#5
     dalignbedguidesseqp='{}/06_dalignbedguidesseq.tsv'.format(datatmpd)
+    cfg['dalignbedguidesseqp']=dalignbedguidesseqp
     logging.info(basename(dalignbedguidesseqp))
     if not exists(dalignbedguidesseqp) or cfg['force']:        
-        dalignbed=pd.merge(dalignbed,dalignedfasta,on='id',suffixes=('', '.2'))
-        dalignbed=dalignbed.dropna(subset=['aligned sequence'],axis=0)
+        dalignbedguidesseq=pd.merge(dalignbedguides,dalignedfasta,on='id',suffixes=('', '.2'))
+        dalignbedguidesseq=dalignbedguidesseq.dropna(subset=['aligned sequence'],axis=0)
 
         # dalignbed.index.name='id'
-        dalignbed=dalignbed.drop_duplicates()
-        dalignbed.to_csv(dalignbedguidesseqp,sep='\t')
-    else:
-        dalignbed=pd.read_csv(dalignbedguidesseqp,sep='\t',low_memory=False)
-        dalignbed=del_Unnamed(dalignbed)
+        dalignbedguidesseq=dalignbedguidesseq.drop_duplicates()
+        dalignbedguidesseq.to_csv(dalignbedguidesseqp,sep='\t')
     return cfg
 
-def dalignbed2dalignbed2dalignbedstats(cfg):
+def dalignbedguidesseq2dalignbedstats(cfg):
     datatmpd=cfg['datatmpd']
-    dalignbed=del_Unnamed(pd.read_csv(cfg['dalignbedp'],sep='\t'))
+    dalignbedguidesseq=del_Unnamed(pd.read_csv(cfg['dalignbedguidesseqp'],sep='\t'))
     
     # step#7
     dalignbedstatsp='{}/07_dalignbedstats.tsv'.format(datatmpd)  
     logging.info(basename(dalignbedstatsp))
     if not exists(dalignbedstatsp) or cfg['force']:
-        df=dalignbed.apply(lambda x: align(x['guide+PAM sequence'],x['aligned sequence']),
+        df=dalignbedguidesseq.apply(lambda x: align(x['guide+PAM sequence'],x['aligned sequence']),
                            axis=1).apply(pd.Series)
         df.columns=['alignment','alignment: score']
-        dalignbed=dalignbed.join(df)
+        dalignbedstats=dalignbedguidesseq.join(df)
         del df
-        dalignbed.to_csv(dalignbedstatsp,sep='\t')
-    else:
-        dalignbed=pd.read_csv(dalignbedstatsp,sep='\t',low_memory=False)
-        dalignbed=del_Unnamed(dalignbed)
-        # df2info(dalignbed)
+        dalignbedstats.to_csv(dalignbedstatsp,sep='\t')
+#     else:
+#         dalignbed=pd.read_csv(dalignbedstatsp,sep='\t',low_memory=False)
+#         dalignbed=del_Unnamed(dalignbed)
+#         # df2info(dalignbed)
     return cfg
 def dannots2dalignbed2dannotsagg(cfg):
     datatmpd=cfg['datatmpd']
@@ -434,7 +436,7 @@ def dguides2offtargets(cfg):
         if step==6 or step=='all' or (not cfg is None):
             cfg=dalignbed2dalignbedguidesseq(cfg)
         if step==7 or step=='all' or (not cfg is None):
-            cfg=dalignbed2dalignbed2dalignbedstats(cfg)
+            cfg=dalignbedguidesseq2dalignbedstats(cfg)
         if step==8 or step=='all' or (not cfg is None):
             cfg=dannots2dalignbed2dannotsagg(cfg)
         if step==9 or step=='all' or (not cfg is None):
