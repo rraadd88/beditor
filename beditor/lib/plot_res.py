@@ -350,10 +350,12 @@ def get_dntcompos(dguideslin_sub123,dpam,pos,pam):
         dp.loc[pamposs[pamnti],'PAM nt']=pamnt
     return dp
 
-def plot_bar_dguides(dstep,plotp):
+def plot_bar_dguides(dstep,plotp,figsize=None):
     cols=['method','PAM','strand']
     fig_ht=np.max([len(dstep[c].unique()) for c in cols])
-    fig,axes=plt.subplots(nrows=len(cols),figsize=[4,4+fig_ht*0.5],sharex=True)
+    if figsize is None:
+        figsize=[4,4+fig_ht*0.5]
+    fig,axes=plt.subplots(nrows=len(cols),figsize=figsize,sharex=True)
     for i,col in enumerate(cols):
         dstep[col].value_counts().plot.barh(ax=axes[i])
         axes[i].set_ylabel(col)
