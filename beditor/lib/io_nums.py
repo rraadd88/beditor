@@ -76,3 +76,11 @@ def float2int(x):
         if is_numeric(x):
             x=int(x)
     return x    
+
+def rescale(a,mn=None):
+    a=(a-a.min())/(a.max()-a.min())
+    if not mn is None:
+        a=1-a
+        a=a*(1-mn)
+        a=1-a        
+    return a

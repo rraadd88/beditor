@@ -1,12 +1,32 @@
 import numpy as np
 import pandas as pd
 
-def get_beditorscore_per_alignment(NM,mismatches_max,genic,alignment,
+from io_nums import rescale
+def get_ppamdist(guidelength,pamlength,pam_position,ppamdist_min,pmutatpam):
+    x=np.arange(pamlength)
+#     ppamdist_pam=np.zeros(pamlength)
+    ppamdist_pam=np.full([1, pamlength], pmutatpam)[0]
+    
+    guide_positions=np.arange(guidelength)
+    guide_positions=rescale(guide_positions)    
+    coeffs=np.array([ 0.86947513, -1.15561009, -0.0826878 ,  0.77644198])
+    ppamdist=np.polyval(coeffs,guide_positions)
+    ppamdist=rescale(ppamdist,mn=ppamdist_min)
+    ppamdist=np.concatenate((ppamdist,ppamdist_pam))
+#     ppamdist=1-ppamdist
+    if pam_position=='up':
+        ppamdist=ppamdist[::-1]
+    elif pam_position=='down':
+        ppamdist=ppamdist
+    else:
+        raise(ValueError('ppamdist is invalid: {ppamdist}'))
+    return ppamdist
+
+def get_beditorscore_per_alignment(NM,genic,alignment,pam_length,pam_position,
                     pentalty_genic=0.5,
                     pentalty_intergenic=0.9,
                     pentalty_dist_from_pam=0.1,
-                    test=False
-                ):
+                    test=False,debug=False):
     """
     Calculates beditor score per alignment between guide and genomic DNA.
     :param NM: Hamming distance
@@ -18,28 +38,43 @@ def get_beditorscore_per_alignment(NM,mismatches_max,genic,alignment,
     :param pentalty_dist_from_pam: maximum pentalty for a mismatch at PAM () 
     :returns: beditor score per alignment.
     """
+    pmutatpam=1e-300
     if not pd.isnull(alignment):
         if NM!=0:            
-            # pentalty_hamming_distance=(mismatches_max+1-NM)/float(mismatches_max)
-
             pentalty_region_of_alignment=pentalty_genic if genic else pentalty_intergenic 
 
-            mutations_penalties=np.array([1 if s!='|' else 0 for s in alignment])
-            dist_from_pam_penalties=np.arange(start=pentalty_dist_from_pam,stop=1+(1-pentalty_dist_from_pam)/len(alignment),step=(1-pentalty_dist_from_pam)/(len(alignment)-1))[::-1]
+            mutations_penalties=np.array([0 if s=='|' else 1 for s in alignment])
+            dist_from_pam_penalties=get_ppamdist(guidelength=len(alignment)-pam_length,
+                                                 pamlength=pam_length,
+                                                 pam_position=pam_position,
+                                                 ppamdist_min=pentalty_dist_from_pam,
+                                                pmutatpam=pmutatpam)
             mutations_penalties_multi=mutations_penalties*dist_from_pam_penalties
             mutations_penalties_multi=mutations_penalties_multi[mutations_penalties_multi != 0]
-            penality_cum_dist_from_pam=np.prod(mutations_penalties_multi)
+            if len(mutations_penalties_multi)==0:
+                # all the penalties are 0
+                penality_cum_dist_from_pam=0
+            else:
+                if pmutatpam in mutations_penalties_multi:
+                    # mutation at pam
+                    penality_cum_dist_from_pam=0
+                else:
+                    penality_cum_dist_from_pam=np.prod(mutations_penalties_multi)
             if test:
-                print(mismatches_max,NM,mismatches_max)
-                print(pentalty_hamming_distance,
-                      pentalty_region_of_alignment,
-                      penality_cum_dist_from_pam)
-                print(pentalty_region_of_alignment*penality_cum_dist_from_pam)
-                print(sfd)
+                print(dist_from_pam_penalties)
+                print(mutations_penalties)
+                print(mutations_penalties_multi)            
+                print(penality_cum_dist_from_pam)            
+            if debug:
+                return pentalty_region_of_alignment,penality_cum_dist_from_pam                
             return pentalty_region_of_alignment*penality_cum_dist_from_pam
         else:
+            if debug:
+                return np.nan,np.nan                
             return 1
     else:
+        if debug:
+            return np.nan,np.nan                
         return np.nan
 
 def get_beditorscore_per_guide(guide_seq, strategy,
@@ -61,12 +96,6 @@ def get_beditorscore_per_guide(guide_seq, strategy,
     from os.path import dirname,realpath
     dBEs=pd.read_table(f"{dirname(realpath(__file__))}/../data/dBEs.tsv")
     dBEs=dBEs.loc[dBEs['method'].isin(BEs),:]
-    # BEs2mutations={}
-    # for method in dBEs['method'].unique():
-    #     for strand in dBEs['strand'].unique():
-    #         dBEsi=dBEs.loc[(dBEs['method']==method) & (dBEs['strand']==strand),:]
-    #         BEs2mutations[f"{method} on {strand} strand"]=[dBEsi['nucleotide'].unique().tolist()[0],
-    #                                                        dBEsi['nucleotide mutation'].unique().tolist()]
     pos_muts=dBEs.loc[:,['method','Position of mutation from PAM: minimum',
      'Position of mutation from PAM: maximum',
      'Position of codon start from PAM: minimum',
@@ -79,7 +108,6 @@ def get_beditorscore_per_guide(guide_seq, strategy,
     if test:
         print(list(align_seqs_scores))
         print(penalty_align_seqs_scores)
-#         print(sdf)
     return penalty_activity_window*penalty_align_seqs_scores
 
         
