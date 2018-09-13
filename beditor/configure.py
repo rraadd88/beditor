@@ -81,7 +81,7 @@ def get_genomes(cfg):
     # os.environ['PYENSEMBL_CACHE_DIR'] = f"{dirname(realpath(__file__))}/cache"
                 
     
-    runbashcmd(f"pyensembl install --reference-name {cfg['genomeassembly']} --release {cfg['genomerelease']} --species {cfg['host']}",test=cfg['test'])
+    runbashcmd(f"pyensembl install --reference-name {cfg['genomeassembly']} --release {cfg['genomerelease']} --species {cfg['host']}")
 
     import pyensembl
     ensembl = pyensembl.EnsemblRelease(species=pyensembl.species.Species.register(
