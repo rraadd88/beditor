@@ -200,8 +200,6 @@ def get_df4features(dguideslin,id,types=['guide+pam']):
     if 'guide' in types:
         #guide
         df.loc[:,'sense_']=0
-        # df.loc[:,'guide ini']=df.apply(lambda x : x['position of PAM end'] if x['position']=='up' else x['position of PAM ini']-x['guide sequence length'],axis=1)
-        # df.loc[:,'guide end']=df.apply(lambda x : x['position of PAM ini']-1 if x['position']=='down' else x['position of PAM ini']+x['guide sequence length'],axis=1)
         df.loc[:,'guide ini']=df.apply(lambda x : x['position of PAM end'] if x['position']=='up' else x['position of PAM end']-x['guide sequence length']-1,axis=1)
         df.loc[:,'guide end']=df.apply(lambda x : x['position of PAM ini']-1 if x['position']=='down' else x['position of PAM ini']+x['guide sequence length'],axis=1)
         features_guide=df2features(df.loc[:,['guide ini','guide end','strategy','sense_']].drop_duplicates())
@@ -210,6 +208,9 @@ def get_df4features(dguideslin,id,types=['guide+pam']):
         #guide+pam
         df.loc[:,'guide+pam ini']=df.apply(lambda x : x['position of PAM ini'] if x['position']=='up' else x['position of PAM ini']-x['guide sequence length']-1,axis=1)
         df.loc[:,'guide+pam end']=df.apply(lambda x : x['position of PAM end'] if x['position']=='down' else x['position of PAM end']+x['guide sequence length'],axis=1)
+        
+        df['guide+pam ini']=df.apply(lambda x : x['guide+pam ini']+1 if x['strand']=='+' else x['guide+pam ini'],axis=1)
+        
         features_guidepam=df2features(df.loc[:,['guide+pam ini','guide+pam end','strategy','sense']].drop_duplicates())
         features+=features_guidepam
     return features
@@ -225,13 +226,10 @@ def df2features(df):
     features=[]
     df=df.reset_index()
     for name in df.index:
-#         print(int(df.loc[name,colini]),int(df.loc[name,colend]))
-        features.append(SeqFeature(FeatureLocation(start=int(df.loc[name,colini]), 
+        features.append(SeqFeature(FeatureLocation(start=int(df.loc[name,colini]),
                                                    end=int(df.loc[name,colend])+1,
-                                                   strand=int(df.loc[name,colsense]),                                                   
-                                                  ), 
+                                                   strand=int(df.loc[name,colsense]),), 
                                    type=df.loc[name,colname],
-                                   
                                   ))
     return features
 

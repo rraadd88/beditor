@@ -295,11 +295,13 @@ def dannotsagg2dannots2dalignbedannot(cfg):
                                               rsuffix=' annotation')
         dalignbedannot['NM']=dalignbedannot['NM'].apply(int)
         from beditor.lib.get_scores import get_beditorscore_per_alignment,get_cfdscore
-        dalignbedannot['beditor score']=dalignbedannot.apply(lambda x : get_beditorscore_per_alignment(x['NM'],cfg['mismatches_max'],
-                        True if x['region']=='genic' else False,
-                        x['alignment'],
-                        #                                                                                                        test=cfg['test'],
-                        ),axis=1) 
+        dalignbedannot['beditor score']=dalignbedannot.apply(lambda x : get_beditorscore_per_alignment(NM=x['NM'],
+                               genic=True if x['region']=='genic' else False,
+                               alignment=x['alignment'],
+                               pam_length=len(x['PAM']),
+                               pam_position=x['original position'],
+                               # test=cfg['test'],
+                                ),axis=1) 
         dalignbedannot['CFD score']=dalignbedannot.apply(lambda x : get_cfdscore(x['guide+PAM sequence'].upper(), x['aligned sequence'].upper()), axis=1)            
         dalignbedannot.to_csv(dalignbedannotp,sep='\t')
     return cfg

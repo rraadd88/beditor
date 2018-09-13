@@ -70,8 +70,18 @@ def get_deps(cfg):
     return cfg
 
 def get_genomes(cfg):
-    #pyensembl first
-    runbashcmd(f"pyensembl install --reference-name {cfg['genomeassembly']} --release {cfg['genomerelease']} --species {cfg['host']}")
+#     #pyensembl first
+#     if 'pysensembl_cache_dir' in cfg.keys():
+#         if (not cfg['pysensembl_cache_dir'] is None) and (cfg['pysensembl_cache_dir']!=''):
+#             if exists(cfg['pysensembl_cache_dir']):
+#                 import os
+#                 os.environ['PYENSEMBL_CACHE_DIR'] = cfg['pysensembl_cache_dir']
+#             else:
+    # import os
+    # os.environ['PYENSEMBL_CACHE_DIR'] = f"{dirname(realpath(__file__))}/cache"
+                
+    
+    runbashcmd(f"pyensembl install --reference-name {cfg['genomeassembly']} --release {cfg['genomerelease']} --species {cfg['host']}",test=cfg['test'])
 
     import pyensembl
     ensembl = pyensembl.EnsemblRelease(species=pyensembl.species.Species.register(

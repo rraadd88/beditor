@@ -9,6 +9,7 @@ dependencies:
   - python=3.6.5
   - setuptools=39.2.0
   - pyyaml
+  - datacache=1.1.4
   - pip:
     - matplotlib==2.2.2
     - pysam==0.14.1

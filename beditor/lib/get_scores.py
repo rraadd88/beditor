@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from io_nums import rescale
+from beditor.lib.io_nums import rescale
 def get_ppamdist(guidelength,pamlength,pam_position,ppamdist_min,pmutatpam):
     x=np.arange(pamlength)
 #     ppamdist_pam=np.zeros(pamlength)
