@@ -13,11 +13,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 plt.style.use('ggplot')
 from os.path import exists
+from os import makedirs
 
 from Bio import SeqIO, Alphabet, Data, Seq, SeqUtils
 from Bio import motifs,Seq,AlignIO
 
 import logging
+
+from beditor.lib.io_strs import make_pathable_string
 
 def data2sub_matrix(data_fit,
                     values_col,
@@ -281,6 +284,7 @@ def plot_seq(record,annot_residuei=8,
     ax.set_xlabel(xlabel)
 #     ax.plot([21,23],[-2,-2])
     if not plotp is None:
+        plt.tight_layout()
         ax.figure.savefig(plotp,format='png')
 
 from Bio import SeqIO, Alphabet, Data, Seq, SeqUtils
@@ -348,20 +352,34 @@ def get_dntcompos(dguideslin_sub123,dpam,pos,pam):
         dp.loc[pamposs[pamnti],'PAM nt']=pamnt
     return dp
 
+# def plot_bar_dguides(dstep,plotp,figsize=None):
+#     cols=['method','PAM','strand']
+#     fig_ht=np.max([len(dstep[c].unique()) for c in cols])
+#     if figsize is None:
+#         figsize=[4,4+fig_ht*0.5]
+#     fig,axes=plt.subplots(nrows=len(cols),figsize=figsize,sharex=True)
+#     for i,col in enumerate(cols):
+#         dstep[col].value_counts().plot.barh(ax=axes[i])
+#         axes[i].set_ylabel(col)
+#         if i==len(cols)-1:
+#             axes[i].set_xlabel('count of guides designed')
+#     plt.tight_layout()
+#     plt.savefig(plotp)
 def plot_bar_dguides(dstep,plotp,figsize=None):
     cols=['method','PAM','strand']
     fig_ht=np.max([len(dstep[c].unique()) for c in cols])
     if figsize is None:
-        figsize=[4,4+fig_ht*0.5]
+        figsize=[5,4+fig_ht*0.15]
     fig,axes=plt.subplots(nrows=len(cols),figsize=figsize,sharex=True)
     for i,col in enumerate(cols):
-        dstep[col].value_counts().plot.barh(ax=axes[i])
-        axes[i].set_ylabel(col)
+        pd.DataFrame(dstep[col].value_counts()).T.plot.barh(ax=axes[i],stacked=True)
+        axes[i].legend(bbox_to_anchor=[1,1.2])
+#         axes[i].set_ylabel(col)
         if i==len(cols)-1:
-            axes[i].set_xlabel('count of guides designed')
+            axes[i].set_xlabel('# of guides designed')            
     plt.tight_layout()
     plt.savefig(plotp)
-
+    
 def plot_dist_dguides(dguideslin,dpam,plotpf):
     #method fig
     for met in dguideslin['method'].unique():
@@ -416,9 +434,8 @@ def plot_dna_features_view(dsequences,dguides,plotd,more=False):
     makedirs(plotd,exist_ok=True)
     ids=[guideids[i] for i in np.sort(np.random.choice(range(guidesc), 10 if guidesc>10 else guidesc-1, replace=False))]
     for id in ids:
-        from os import makedirs        
-        gbp="{plotd}/{make_pathable_string(id)}.gb"
-        plotp="{gbp}.png"
+        gbp=f"{plotd}/{make_pathable_string(id)}.gb"
+        plotp=f"{gbp}.png"
         record=make_gb(sequence_string=dsequences.loc[(dsequences['id']==id),'transcript: sequence'].tolist()[0],
                 features=get_df4features(dguides,id,types=['guide+pam']),gbp=gbp,
                    )
@@ -502,8 +519,8 @@ def plot_vizbysteps(cfg):
     plotd=f"{datad}/plot_d{cfg[stepi].replace('/','').split('_')[-1]}_dna_features_view"
     plotps=glob(plotd+'/*')
     if len(plotps)==0 or cfg['force']:
-        dsequencesp=f"{cfg[stepi]}/d{cfg[stepi].replace('/','').split('_')[-1]}.tsv"
-        dguidesp=f"{cfg[stepi-2]}/d{cfg[stepi-2].replace('/','').split('_')[-1]}.tsv"
+        dguidesp=f"{cfg[stepi]}/d{cfg[stepi].replace('/','').split('_')[-1]}.tsv"
+        dsequencesp=f"{cfg[stepi-2]}/d{cfg[stepi-2].replace('/','').split('_')[-1]}.tsv"
         if exists(dstepp):
             logging.info('plot_dna_features_view')
             plot_dna_features_view(dsequences=del_Unnamed(pd.read_table(dsequencesp)).drop_duplicates(),
