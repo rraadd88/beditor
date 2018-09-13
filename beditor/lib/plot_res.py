@@ -369,11 +369,11 @@ def plot_bar_dguides(dstep,plotp,figsize=None):
     cols=['method','PAM','strand']
     fig_ht=np.max([len(dstep[c].unique()) for c in cols])
     if figsize is None:
-        figsize=[5,4+fig_ht*0.15]
+        figsize=[5,3+fig_ht*0.2]
     fig,axes=plt.subplots(nrows=len(cols),figsize=figsize,sharex=True)
     for i,col in enumerate(cols):
         pd.DataFrame(dstep[col].value_counts()).T.plot.barh(ax=axes[i],stacked=True)
-        axes[i].legend(bbox_to_anchor=[1,1.2])
+        axes[i].legend(bbox_to_anchor=[1,1])
 #         axes[i].set_ylabel(col)
         if i==len(cols)-1:
             axes[i].set_xlabel('# of guides designed')            
