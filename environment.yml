@@ -19,3 +19,4 @@ dependencies:
     - seaborn==0.8.1
     - pandas==0.23.3
     - git+https://github.com/rraadd88/pyensembl
+    - dna_features_viewer==0.1.9    

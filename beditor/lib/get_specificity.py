@@ -254,19 +254,19 @@ def dannots2dalignbed2dannotsagg(cfg):
         dannots=del_Unnamed(dannots)
     logging.info(basename(dannotsaggp))
     if not exists(dannotsaggp) or cfg['force']:
+        if not 'dannots' in locals():
+            dannots=pd.read_table(daannotp,low_memory=False)
+        dannots=del_Unnamed(dannots)
+        dannots=dannots.reset_index()
+        
         dannotsagg=pd.DataFrame(dannots.groupby('id')['annotations count'].agg('sum'))-1
         dannotsagg.loc[dannotsagg['annotations count']==0,'region']='intergenic'
         dannotsagg.loc[dannotsagg['annotations count']!=0,'region']='genic'
 
-        dannots=pd.read_csv(daannotp,sep='\t',low_memory=False)
-        dannots=del_Unnamed(dannots)
-        dannots=dannots.reset_index()
         alignids=dannots['id'].unique()#[:15]
-
         logging.debug('start of the slowest step')
         for alignidi in range(len(alignids)):
             alignid=alignids[alignidi]
-        #     if dannots.loc[i,'type'].value_counts().sum()==1:
             dannoti=dannots.loc[dannots['id']==alignid,:]
             if len(dannoti.shape)==1:
                 dannoti=pd.DataFrame(dannoti).T

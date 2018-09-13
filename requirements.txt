@@ -8,4 +8,5 @@ requests==2.19.1
 scipy==1.1.0
 tqdm==4.23.4
 seaborn==0.8.1
-
+datacache==1.1.4
+dna_features_viewer==0.1.9

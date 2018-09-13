@@ -193,25 +193,25 @@ def get_df4features(dguideslin,id,types=['guide+pam']):
         feature_codon=df2features(df)
         features+=feature_codon
     if 'pam' in types:
+        df.loc[:,'sense_']=0        
         #pam
-        df.loc[:,'PAM feature name']=''#df.apply(lambda x : f"{x['strand']}PAM",axis=1)
-        features_pam=df2features(df.loc[:,['position of PAM ini','position of PAM end','PAM feature name','sense']].drop_duplicates())
+        df.loc[:,'PAM feature name']=df.apply(lambda x : f"{x['PAM']}",axis=1)
+        features_pam=df2features(df.loc[:,['position of PAM ini','position of PAM end','PAM feature name','sense_']].drop_duplicates())
         features+=features_pam
     if 'guide' in types:
         #guide
         df.loc[:,'sense_']=0
-        df.loc[:,'guide ini']=df.apply(lambda x : x['position of PAM end'] if x['position']=='up' else x['position of PAM end']-x['guide sequence length']-1,axis=1)
-        df.loc[:,'guide end']=df.apply(lambda x : x['position of PAM ini']-1 if x['position']=='down' else x['position of PAM ini']+x['guide sequence length'],axis=1)
-        features_guide=df2features(df.loc[:,['guide ini','guide end','strategy','sense_']].drop_duplicates())
+        features_guide=df2features(df.loc[:,['position of guide ini','position of guide end','strategy','sense_']].drop_duplicates())
         features+=features_guide
     if 'guide+pam' in types:
+        df.loc[:,'sense_']=0
         #guide+pam
-        df.loc[:,'guide+pam ini']=df.apply(lambda x : x['position of PAM ini'] if x['position']=='up' else x['position of PAM ini']-x['guide sequence length']-1,axis=1)
-        df.loc[:,'guide+pam end']=df.apply(lambda x : x['position of PAM end'] if x['position']=='down' else x['position of PAM end']+x['guide sequence length'],axis=1)
+        df.loc[:,'guide+pam ini']=df.apply(lambda x : np.min([x['position of PAM ini'],x['position of guide ini']]),axis=1)
+        df.loc[:,'guide+pam end']=df.apply(lambda x : np.max([x['position of PAM end'],x['position of guide end']]),axis=1)        
+#         df['guide+pam ini']=df.apply(lambda x : x['guide+pam ini']+1 if x['strand']=='+' else x['guide+pam ini'],axis=1)
         
-        df['guide+pam ini']=df.apply(lambda x : x['guide+pam ini']+1 if x['strand']=='+' else x['guide+pam ini'],axis=1)
-        
-        features_guidepam=df2features(df.loc[:,['guide+pam ini','guide+pam end','strategy','sense']].drop_duplicates())
+#         print(df.loc[:,['guide+pam ini','guide+pam end','strategy','sense_']].drop_duplicates())
+        features_guidepam=df2features(df.loc[:,['guide+pam ini','guide+pam end','strategy','sense_']].drop_duplicates())
         features+=features_guidepam
     return features
 
@@ -274,7 +274,7 @@ def plot_seq(record,annot_residuei=8,
                                annotate_inline=True, 
                                 level_offset=0.5,
                                )
-    graphic_record.plot_sequence(ax=ax)
+    graphic_record.plot_sequence(ax=ax,)
     graphic_record.plot_translation(ax=ax,location=[0,45])    
     ax.plot([annot_residuei*3-3.5,annot_residuei*3-0.5],[-2,-2],lw=5,color='r')
     ax.set_title(title)
@@ -408,6 +408,26 @@ def plot_dist_dguides(dguideslin,dpam,plotpf):
             plotpf=plotpf+'_{method}.png'
         plt.savefig(plotpf.format(method=met))
 #         break                      
+def plot_dna_features_view(dsequences,dguides,plotd,more=False):
+    guideids=dguides['id'].unique()
+    if not more:
+        np.random.seed(seed=8888)
+    guidesc=len(guideids)
+    makedirs(plotd,exist_ok=True)
+    ids=[guideids[i] for i in np.sort(np.random.choice(range(guidesc), 10 if guidesc>10 else guidesc-1, replace=False))]
+    for id in ids:
+        from os import makedirs        
+        gbp="{plotd}/{make_pathable_string(id)}.gb"
+        plotp="{gbp}.png"
+        record=make_gb(sequence_string=dsequences.loc[(dsequences['id']==id),'transcript: sequence'].tolist()[0],
+                features=get_df4features(dguides,id,types=['guide+pam']),gbp=gbp,
+                   )
+        plot_seq(record,
+                 annot_residuei=8,
+                 xlabel=f'Sequence flanking target site\n bed id: {id}',
+                 plotp=plotp
+                )
+        
 
 def plot_dist_dofftargets(dofftargets,plotp):
     dofftargets=dofftargets.replace([np.inf, -np.inf], np.nan)
@@ -419,6 +439,7 @@ def plot_dist_dofftargets(dofftargets,plotp):
     ax.set_ylabel('number of guides')
     plt.tight_layout()
     plt.savefig(plotp)
+    
 
 def plot_vizbysteps(cfg):  
     from glob import glob
@@ -476,6 +497,21 @@ def plot_vizbysteps(cfg):
         else:
             logging.warning(f'not found: {dstepp}')
 
+    # make nt_composition plot
+    stepi=3
+    plotd=f"{datad}/plot_d{cfg[stepi].replace('/','').split('_')[-1]}_dna_features_view"
+    plotps=glob(plotd+'/*')
+    if len(plotps)==0 or cfg['force']:
+        dsequencesp=f"{cfg[stepi]}/d{cfg[stepi].replace('/','').split('_')[-1]}.tsv"
+        dguidesp=f"{cfg[stepi-2]}/d{cfg[stepi-2].replace('/','').split('_')[-1]}.tsv"
+        if exists(dstepp):
+            logging.info('plot_dna_features_view')
+            plot_dna_features_view(dsequences=del_Unnamed(pd.read_table(dsequencesp)).drop_duplicates(),
+                                   dguides=del_Unnamed(pd.read_table(dguidesp)).drop_duplicates(),
+                                   plotd=plotd,more=False)
+        else:
+            logging.warning(f'not found: {dstepp}')
+            
 #     # step2 # make submap #FIXME get all the columns used for plotting in the dguides.
 #     stepi=3
 #     plotp=f"{datad}/plot_d{cfg[stepi].replace('/','').split('_')[-1]}_submap_used_for_mutagenesis"

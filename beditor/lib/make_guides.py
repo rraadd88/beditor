@@ -114,6 +114,31 @@ def get_pos_mut_from_pam(x,
         raise(ValueError(f'loc_pam or strand are invalid ({loc_pam},{strand})'))
     return dist_mut_frompam
 
+def get_poss_guide(x,debug=False):
+    loc_pam=x['original position']
+    strand=x['strand']
+    guide_length=x['guide sequence length']
+    pos_pam_ini=x['position of PAM ini']
+    pos_pam_end=x['position of PAM end']
+    if loc_pam=='down' and strand=='+':
+        pos_guide_ini=pos_pam_ini-guide_length
+        pos_guide_end=pos_pam_ini-1
+    elif loc_pam=='down' and strand=='-':
+        pos_guide_ini=pos_pam_end+1
+        pos_guide_end=pos_pam_end+guide_length
+    elif loc_pam=='up' and strand=='+':
+        pos_guide_ini=pos_pam_end+1
+        pos_guide_end=pos_pam_end+guide_length
+    elif loc_pam=='up' and strand=='-':
+        pos_guide_ini=pos_pam_ini-1
+        pos_guide_end=pos_pam_ini-guide_length
+    else:
+        raise(ValueError(f'loc_pam or strand are invalid ({loc_pam},{strand})'))
+    if debug:
+        return pos_guide_ini,pos_guide_end,loc_pam,strand,pos_pam_ini,pos_pam_end,x['strategy']
+    else:
+        return pos_guide_ini,pos_guide_end        
+    
 def make_guides(cfg,dseq,dmutagenesis,
                 dpam,
                test=False,
@@ -214,9 +239,11 @@ def make_guides(cfg,dseq,dmutagenesis,
         # 0-based indexing 'position of guide ini/end', 'position of PAM ini/end'
         # 1-based indexing 'position of mutation in codon'
         dguides['distance of mutation in codon from PAM']=dguides.apply(lambda x : get_pos_mut_from_pam(x),axis=1)
-        dguides.loc[:,'position of guide ini']=dguides.apply(lambda x : x['position of PAM end'] if x['position']=='up' else x['position of PAM end']-x['guide sequence length']-1,axis=1)
-        dguides.loc[:,'position of guide end']=dguides.apply(lambda x : x['position of PAM ini']-1 if x['position']=='down' else x['position of PAM ini']+x['guide sequence length'],axis=1)
-        
+        dguides_guidepos=dguides.apply(lambda x : get_poss_guide(x),axis=1).apply(pd.Series)
+        dguides_guidepos.columns=['position of guide ini','position of guide end']
+        for col in dguides_guidepos:
+            dguides[col]=dguides_guidepos[col]
+    
         # print(dguides.columns) #RMME
         logging.info('#reverse complement guides on negative strand sequences')
         dguides.loc[:,'PAM']=dguides.apply(lambda x : reverse_complement_multintseq(x['PAM'],nt2complement) if x['is a reverse complement'] else x['PAM'],axis=1)
