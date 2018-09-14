@@ -22,6 +22,9 @@ import logging
 
 from beditor.lib.io_strs import make_pathable_string
 
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
+
 def data2sub_matrix(data_fit,
                     values_col,
                     index_col,
