@@ -138,7 +138,7 @@ from glob import glob
 from beditor.lib.plot_res import plot_vizbysteps
 def make_outputs(cfg,plot=True):
     print(f"{get_datetime()}: generating outputs")        
-    stepi2cols={0: ['transcript: id','aminoacid: position','amino acid mutation'],
+    stepi2cols={0: None,
             1: ['transcript: id','aminoacid: position','aminoacid: wild-type'],
             3: ['transcript: id','aminoacid: position','aminoacid: wild-type','amino acid mutation','guide: id','guide+PAM sequence'],
             4: ['guide: id','beditor score','alternate alignments count','CFD score'],
@@ -157,7 +157,12 @@ def make_outputs(cfg,plot=True):
                 dstepp=f"{cfg[stepi]}/d{cfg[stepi].replace('/','').split('_')[-1]}.tsv"
                 if exists(dstepp):
                     logging.info(f'combining {stepi}')
-                    dstep=del_Unnamed(pd.read_table(dstepp)).loc[:,stepi2cols[stepi]].drop_duplicates()
+                    if (stepi==0) or (stepi==1):
+                        from beditor.lib.global_vars import mutation_format2cols
+                        cols_take=mutation_format2cols[cfg['mutation_format']]
+                    else:
+                        cols_take=stepi2cols[stepi]
+                    dstep=del_Unnamed(pd.read_table(dstepp)).loc[:,cols_take].drop_duplicates()
                     if not 'doutput' in locals():
                         doutput=dstep.copy()
                         del dstep
@@ -168,7 +173,9 @@ def make_outputs(cfg,plot=True):
                             dstep.to_csv('test_dstep.tsv',sep='\t')
                             doutput=pd.merge(doutput,dstep,on=cols_on,how='left')
                         else:
-                            logging.error(f'output of step {stepi-1} is missing.')
+                            logging.error(f'output of step {stepi-1} or {stepi} are missing.')
+                            print(doutput.columns.tolist())
+                            print(dstep.columns.tolist())
         #         if stepi==4:
         #             break
         makedirs(dirname(doutputp),exist_ok=True)

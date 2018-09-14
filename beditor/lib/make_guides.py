@@ -269,7 +269,7 @@ def make_guides(cfg,dseq,dmutagenesis,
             if len(dguides)!=0:
 
                 dguides.loc[:,'strategy']=dguides.apply(lambda x: f"{x['method']};{x['strand']};@{int(x['distance of mutation in codon from PAM'])};{x['PAM']};{x['codon']}:{x['codon mutation']};{x['amino acid']}:{x['amino acid mutation']};",axis=1)
-                dguides.loc[:,'guide: id']=dguides.apply(lambda x: f"{x['id']}|{int(x['aminoacid: position'])}|({x['strategy']})",axis=1)
+                dguides.loc[:,'guide: id']=dguides.apply(lambda x: f"{x['id']}|{int(x['aminoacid: position']) if not pd.isnull(x['aminoacid: position']) else 'nucleotide'}|({x['strategy']})",axis=1)
                 dguides.loc[:,'guide+PAM length']=dguides.apply(lambda x: len(x['guide+PAM sequence']),axis=1)
                 dguides=dguides.drop_duplicates(subset=['guide: id'])
                 return dguides,dguides_noflt,err2idxs
@@ -320,6 +320,7 @@ def dinnucleotide2dsequencesproper(dsequences,dmutagenesis):
         dsequences['aminoacid mutation']=dsequences['amino acid mutation']
         dsequences['aminoacid: wild-type']=dsequences['amino acid']
         dsequences['codon: wild-type']=dsequences['codon']
+        dsequences['id']=dsequences.apply(lambda x: f"{x['id']}|{x['method']}|{x['strand']}|{x['nucleotide wild-type']}:{x['nucleotide mutation']}|{x['codon: wild-type']}:{x['codon mutation']}",axis=1)
     else:
         logging.warning('empty dsequences after merging with dmutagenesis')
     cols_missing=[c for c in stepi2cols[1] if not c in dsequences]
@@ -339,11 +340,13 @@ def dseq2dguides(cfg):
     dmutagenesisp=f"{cfg['datad']}/dmutagenesis.tsv"
     dpam_strandsp=f"{cfg['datad']}/dpam_strands.csv"
     if not exists(dguideslinp) or cfg['force']:
-        dsequences=pd.read_csv(f"{cfg[cfg['step']-2]}/dsequences.tsv",sep='\t') #FIXME if numbering of steps is changed, this is gonna blow
         dmutagenesis=pd.read_csv(f"{cfg[cfg['step']-1]}/dmutagenesis.tsv",sep='\t')
-
         if cfg['mutation_format']=='nucleotide':
+            dsequences=pd.read_csv(f"{cfg[cfg['step']-2]}/dsequences.tsv",sep='\t') #FIXME if numbering of steps is changed, this is gonna blow
             dsequences=dinnucleotide2dsequencesproper(dsequences,dmutagenesis)
+            dsequences.to_csv(f"{cfg[cfg['step']]}/dsequences.tsv",sep='\t') #FIXME if numbering of steps is changed, this is gonna blow
+        elif cfg['mutation_format']=='aminoacid':
+            dsequences=pd.read_csv(f"{cfg[cfg['step']-2]}/dsequences.tsv",sep='\t') #FIXME if numbering of steps is changed, this is gonna blow
         # make pam table
         dpam=pd.read_table('{}/../data/dpam.tsv'.format(dirname(realpath(__file__))))
         if sum(dpam['PAM'].isin(cfg['pams']))!=len(cfg['pams']):

@@ -11,7 +11,7 @@ import logging
 # input 
 # mutation_format and must-have columns
 mutation_format2cols={
-    'aminoacid': ['transcript: id','aminoacid: position'],
+    'aminoacid': ['transcript: id','aminoacid: position','amino acid mutation'],
     'nucleotide':['genome coordinate','nucleotide mutation'],
 }
 
