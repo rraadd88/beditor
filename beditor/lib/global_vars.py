@@ -8,6 +8,19 @@ from Bio import motifs,Seq,AlignIO
 
 import logging
 
+# input mutation_format and must-have columns
+mutation_format2cols={
+    'aminoacid': ['transcript: id','aminoacid: position'],
+    'nucleotide':['genome coordinate','nucleotide mutation'],
+}
+
+
+
+flankaac=7
+flankntc=22
+flankaal=15
+flankntl=45
+
 # steps
 # 0:'input',
 stepi2name= {
@@ -17,25 +30,7 @@ stepi2name= {
  4: 'offtargets'}
 
 stepi2cols={
-1: ['amino acid mutation',
- 'aminoacid wild-type',
- 'aminoacid: position',
- 'aminoacid: wild-type',
- 'codon end',
- 'codon start',
- 'codon: wild-type',
- 'contig',
- 'end',
- 'gene: id',
- 'gene: name',
- 'gvf id',
- 'id',
- 'labels',
- 'protein: id',
- 'start',
- 'strand',
- 'transcript: id',
- 'transcript: sequence'],    
+1: ['aminoacid: position', 'gene: id', 'gene: name', 'protein: id', 'transcript: id', 'transcript: sequence', 'aminoacid: wild-type', 'codon: wild-type', 'contig', 'strand', 'start', 'end', 'codon start', 'codon end'],
 2:  ['Position of codon start from PAM: maximum',
  'Position of codon start from PAM: minimum',
  'Position of mutation from PAM: maximum',

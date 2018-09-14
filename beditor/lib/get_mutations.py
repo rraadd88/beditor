@@ -425,13 +425,12 @@ def dseq2dmutagenesis(cfg):
     Generates mutagenesis strategies from identities of reference and mutated codons (from dseq).
     :param cfg: configurations from yml file  
     """
-
-
+    from .global_vars import stepi2cols
 
     cfg['datad']=cfg[cfg['step']]
     cfg['plotd']=cfg['datad']
-    dmutagenesisp='{}/dmutagenesis.tsv'.format(cfg['datad'])
-    dmutagenesisallp='{}/dmutagenesis_all.tsv'.format(cfg['datad'])
+    dmutagenesisp=f"{cfg['datad']}/dmutagenesis.tsv"
+    dmutagenesisallp=f"{cfg['datad']}/dmutagenesis_all.tsv"
     if not exists(dmutagenesisp) or cfg['force']:
         dseq=pd.read_csv('{}/dsequences.tsv'.format(cfg[cfg['step']-1]),sep='\t')
         aas=list(dseq['aminoacid: wild-type'].unique())#['S','T','Y']

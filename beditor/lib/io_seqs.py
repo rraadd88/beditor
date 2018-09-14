@@ -47,6 +47,40 @@ def fa2df(alignedfastap,ids2cols=False):
             dtmp.loc[i,'end']=end
     return dtmp
 
+def bedids2bed(df, col_genomeocoord):
+    bed_colns=['chromosome', 'start', 'end', 'id', 'NM', 'strand']
+    dbed=df.apply(lambda x: x[col_genomeocoord].split('|'),axis=1).apply(pd.Series)
+    dbed.columns=['gene id','chromosome', 'strand', 'start', 'end']
+
+    dbed['id']=df[col_genomeocoord]
+    dbed['NM']=np.nan
+    return dbed[bed_colns]
+
+def genomeocoords2sections(genomecoord):
+    chrom=genomecoord.split(':')[0]
+
+    start=genomecoord.split(':')[1].split('-')[0]
+
+    end=genomecoord.split(':')[1].split('-')[1].replace('+','').replace('-','')
+
+    tail=genomecoord.split(':')[1].replace(start,'')
+    if tail.endswith('+'):
+        strand='+'
+    elif tail.endswith('-'):
+        strand='-'
+    else:
+        strand=''
+#     print(tail,strand)
+    return chrom,start,end,strand
+
+def genomeocoords2bed(df, col_genomeocoord):
+    bed_colns=['chromosome', 'start', 'end', 'id', 'NM', 'strand']
+    dbed=df.apply(lambda x: genomeocoords2sections(x[col_genomeocoord]),axis=1).apply(pd.Series)
+    dbed.columns=['chromosome', 'start', 'end','strand']
+    dbed['id']=df[col_genomeocoord]
+    dbed['NM']=np.nan
+    return dbed[bed_colns]
+
 from Bio import Alphabet,Seq
 def str2seq(s,prt=False):
     if prt:

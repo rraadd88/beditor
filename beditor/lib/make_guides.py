@@ -25,6 +25,7 @@ from beditor.lib.io_dfs import *
 from beditor.lib.global_vars import multint2reg,multint2regcomplement,nt2complement
 from beditor.lib.io_seqs import reverse_complement_multintseq,reverse_complement_multintseqreg,str2seq
 from beditor.lib.io_strs import s2re
+from .global_vars import stepi2cols    
 
 
 def get_pam_searches(dpam,seq,pos_codon,
@@ -305,6 +306,22 @@ def dpam2dpam_strands(dpam,pams):
     dpam_strands=dpam_strands.loc[pams_strands,:]
     return dpam_strands
 
+def dinnucleotide2dsequencesproper(cfg,dsequences,dmutagenesis):
+    dsequences=pd.merge(dsequences,dmutagenesis,
+             left_on=['nucleotide wild-type','nucleotide mutation'],
+             right_on=['nucleotide','nucleotide mutation'],
+            )
+    dsequences['transcript: id']=dsequences['genome coordinate']
+    dsequences['strand']=dsequences.apply(lambda x : x['mutation on strand'].split(' ')[0],axis=1)
+    dsequences['aminoacid mutation']=dsequences['amino acid mutation']
+    dsequences['aminoacid: wild-type']=dsequences['amino acid']
+    dsequences['codon: wild-type']=dsequences['codon']
+
+    cols_missing=[c for c in stepi2cols[1] if not c in dsequences]
+    for c in cols_missing:
+        dsequences[c]=np.nan
+    return dsequences
+
 def dseq2dguides(cfg):
     """
     Wrapper around make guides function.
@@ -312,23 +329,16 @@ def dseq2dguides(cfg):
     """
     cfg['datad']=cfg[cfg['step']]
     cfg['plotd']=cfg['datad']
-    dguideslinp='{}/dguides.tsv'.format(cfg['datad'])
-    dguides_nofltp='{}/dguides_noflt.tsv'.format(cfg['datad'])
-    dmutagenesisp='{}/dmutagenesis.tsv'.format(cfg['datad'])
-    dpam_strandsp='{}/dpam_strands.csv'.format(cfg['datad'])
+    dguideslinp=f"{cfg['datad']}/dguides.tsv"
+    dguides_nofltp=f"{cfg['datad']}/dguides_noflt.tsv"
+    dmutagenesisp=f"{cfg['datad']}/dmutagenesis.tsv"
+    dpam_strandsp=f"{cfg['datad']}/dpam_strands.csv"
     if not exists(dguideslinp) or cfg['force']:
-        dseq=pd.read_csv(f"{cfg[cfg['step']-2]}/dsequences.tsv",sep='\t') #FIXME if numbering of steps is changed, this is gonna blow
-        if 'reverse_mutations' in cfg:
-            if cfg['reverse_mutations']:
-                dmutagenesis_all=pd.read_csv(f"{cfg[cfg['step']-1]}/dmutagenesis_all.tsv",sep='\t')
-                dmutagenesis=dmutagenesis_all.copy()
-            else:
-                cfg['reverse_mutations']=False
-        else:
-            cfg['reverse_mutations']=False
-            
-        if not cfg['reverse_mutations']:
-            dmutagenesis=pd.read_csv(f"{cfg[cfg['step']-1]}/dmutagenesis.tsv",sep='\t')
+        dsequences=pd.read_csv(f"{cfg[cfg['step']-2]}/dsequences.tsv",sep='\t') #FIXME if numbering of steps is changed, this is gonna blow
+        dmutagenesis=pd.read_csv(f"{cfg[cfg['step']-1]}/dmutagenesis.tsv",sep='\t')
+
+        if cfg['mutation_format']=='nucleotide':
+            dinnucleotide2dsequencesproper(cfg,dsequences,dmutagenesis)
         # make pam table
         dpam=pd.read_table('{}/../data/dpam.tsv'.format(dirname(realpath(__file__))))
         if sum(dpam['PAM'].isin(cfg['pams']))!=len(cfg['pams']):
@@ -348,7 +358,7 @@ def dseq2dguides(cfg):
         dmutagenesis.to_csv(dmutagenesisp,sep='\t')
 #         sys.exist(1)
         
-        dguideslin,dguides_noflt,err2idxs=make_guides(cfg,dseq,
+        dguideslin,dguides_noflt,err2idxs=make_guides(cfg,dsequences,
                     dmutagenesis,
                     dpam=dpam_strands,
                        test=cfg['test'],
