@@ -433,10 +433,12 @@ def dseq2dmutagenesis(cfg):
     dmutagenesisallp=f"{cfg['datad']}/dmutagenesis_all.tsv"
     if not exists(dmutagenesisp) or cfg['force']:
         dseq=pd.read_csv('{}/dsequences.tsv'.format(cfg[cfg['step']-1]),sep='\t')
-        aas=list(dseq['aminoacid: wild-type'].unique())#['S','T','Y']
+        if cfg['mutation_format']=='nucleotide':
+            from .global_vars import aminoacids as aas
+        else:
+            aas=list(dseq['aminoacid: wild-type'].unique())#['S','T','Y']
 
         dcodontable=get_codon_table(aa=aas)
-
         dcodonusage=get_codon_usage(cuspp='{}/../data/64_1_1_all_nuclear.cusp.txt'.format(abspath(dirname(__file__)))) #FIXME if prokaryote is used ?
 
         #create BEs and pos_muts for back-compatibility

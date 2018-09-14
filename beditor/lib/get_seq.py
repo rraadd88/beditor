@@ -176,12 +176,15 @@ def get_seq_aminoacid(cfg,din):
             dseq=reverse_mutations(dseq)
 
     dseq.to_csv(f"cfg['dsequencesp']",sep='\t')
+    del ensembl
 
-def genomiccoords2dsequences(cfg,din):
+from .io_seqs import genomeocoords2bed,fa2df
+from .global_vars import flankntc
+def get_seq_nucleotide(cfg,din):
     bedp=f"{cfg['datad']}/dbedntmuts.bed"
     fastap=f"{cfg['datad']}/dbedntmuts.fa"
     dbedntmutsp=f"{cfg['datad']}/dbedntmuts.tsv"
-    if not exists(dsequencesp) or cfg['force']:
+    if not exists(cfg['dsequencesp']) or cfg['force']:
         if not exists(bedp) or cfg['force']:
             dbed=genomeocoords2bed(din,col_genomeocoord='genome coordinate')
             dbed['start']=dbed['start'].astype(int)-flankntc-1
@@ -193,16 +196,19 @@ def genomiccoords2dsequences(cfg,din):
         if not exists(dbedntmutsp) or cfg['force']:
             dbedntmuts=fa2df(fastap)
             dbedntmuts.columns=['transcript: sequence']
+            dbedntmuts['transcript: sequence']=dbedntmuts.apply(lambda x: x['transcript: sequence'].upper(),axis=1)
             dbedntmuts=dbedntmuts.reset_index()
             dbedntmuts['genome coordinate']=dbedntmuts.apply(lambda x : x['id'].split('(')[0] ,axis=1)
             dbedntmuts.to_csv(dbedntmutsp,sep='\t')
         else:
-            dbedntmuts.read_table(dbedntmutsp)
+            dbedntmuts=pd.read_table(dbedntmutsp)
     dsequences=pd.merge(din,dbedntmuts,
-            on=['genome coordinate'],)
+            on=['genome coordinate'],suffixes=('', ': dbedntmuts'))
     dsequences=del_Unnamed(dsequences)
+    # print(dsequences.columns)
     dsequences['nucleotide wild-type']=dsequences.apply(lambda x: x['transcript: sequence'][flankntc],axis=1)
-    dsequences.to_csv(f"cfg['dsequencesp']",sep='\t')
+    dsequences['codon: wild-type']=dsequences.apply(lambda x: x['transcript: sequence'][flankntc-1:flankntc+2],axis=1)
+    dsequences.to_csv(f"{cfg['dsequencesp']}",sep='\t')
     # return dsequences
 
 def din2dseq(cfg):
@@ -217,9 +223,10 @@ def din2dseq(cfg):
     cfg['dsequencesp']=dsequencesp
     cfg['dseqtmpp']=dseqtmpp
     if not exists(dsequencesp) or cfg['force']:
-        din=pd.read_table(f"{cfg[cfg['step']-1]}/dinput.tsv")
+        cfg['dinp']=f"{cfg[cfg['step']-1]}/dinput.tsv"
+        din=pd.read_table(cfg['dinp'])
         din=del_Unnamed(din)
-        cfg['din']=dinp        
+                
         cols_dseq=stepi2cols[cfg['step']]#['aminoacid: position', 'gene: id', 'gene: name', 'protein: id', 'transcript: id', 'transcript: sequence', 'aminoacid: wild-type', 'codon: wild-type', 'contig', 'strand', 'start', 'end', 'codon start', 'codon end']
         ifdinpisdseq=all([True if c in din else False for c in cols_dseq])
         if not ifdinpisdseq:
@@ -232,11 +239,10 @@ def din2dseq(cfg):
             else:
                 raise(ValueError(f"invalid value of cfg['mutation_format']: {cfg['mutation_format']}"))
             
-            logging.info('Counts of amino acids to mutate:')
-            logging.info(dseq['aminoacid: wild-type'].value_counts())
+            # logging.info('Counts of amino acids to mutate:')
+            # logging.info(dsequences['aminoacid: wild-type'].value_counts())
 
             import gc
             gc.collect()
-            del ensembl
         else:
             din.to_csv(dsequencesp,sep='\t')

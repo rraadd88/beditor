@@ -25,7 +25,7 @@ from beditor.lib.io_dfs import *
 from beditor.lib.global_vars import multint2reg,multint2regcomplement,nt2complement
 from beditor.lib.io_seqs import reverse_complement_multintseq,reverse_complement_multintseqreg,str2seq
 from beditor.lib.io_strs import s2re
-from .global_vars import stepi2cols    
+from beditor.lib.global_vars import stepi2cols    
 
 
 def get_pam_searches(dpam,seq,pos_codon,
@@ -306,17 +306,22 @@ def dpam2dpam_strands(dpam,pams):
     dpam_strands=dpam_strands.loc[pams_strands,:]
     return dpam_strands
 
-def dinnucleotide2dsequencesproper(cfg,dsequences,dmutagenesis):
+def dinnucleotide2dsequencesproper(dsequences,dmutagenesis):
+    # from beditor.lib.io_dfs import df2info
+    # df2info(dsequences)
+    # df2info(dmutagenesis)
     dsequences=pd.merge(dsequences,dmutagenesis,
              left_on=['nucleotide wild-type','nucleotide mutation'],
              right_on=['nucleotide','nucleotide mutation'],
             )
-    dsequences['transcript: id']=dsequences['genome coordinate']
-    dsequences['strand']=dsequences.apply(lambda x : x['mutation on strand'].split(' ')[0],axis=1)
-    dsequences['aminoacid mutation']=dsequences['amino acid mutation']
-    dsequences['aminoacid: wild-type']=dsequences['amino acid']
-    dsequences['codon: wild-type']=dsequences['codon']
-
+    if len(dsequences)!=0:
+        dsequences['transcript: id']=dsequences['genome coordinate']
+        dsequences['strand']=dsequences.apply(lambda x : x['mutation on strand'].split(' ')[0],axis=1)
+        dsequences['aminoacid mutation']=dsequences['amino acid mutation']
+        dsequences['aminoacid: wild-type']=dsequences['amino acid']
+        dsequences['codon: wild-type']=dsequences['codon']
+    else:
+        logging.warning('empty dsequences after merging with dmutagenesis')
     cols_missing=[c for c in stepi2cols[1] if not c in dsequences]
     for c in cols_missing:
         dsequences[c]=np.nan
@@ -338,7 +343,7 @@ def dseq2dguides(cfg):
         dmutagenesis=pd.read_csv(f"{cfg[cfg['step']-1]}/dmutagenesis.tsv",sep='\t')
 
         if cfg['mutation_format']=='nucleotide':
-            dinnucleotide2dsequencesproper(cfg,dsequences,dmutagenesis)
+            dsequences=dinnucleotide2dsequencesproper(dsequences,dmutagenesis)
         # make pam table
         dpam=pd.read_table('{}/../data/dpam.tsv'.format(dirname(realpath(__file__))))
         if sum(dpam['PAM'].isin(cfg['pams']))!=len(cfg['pams']):

@@ -181,6 +181,29 @@ def make_outputs(cfg,plot=True):
     logging.info(f"Outputs are located at {datad}")
     return doutput 
 
+def validcfg(cfg): 
+    from beditor.lib.global_vars import cfgoption2allowed
+    opt_validity=[]
+    for opt in ['mutations','mutation_format']:
+        opts=cfgoption2allowed[opt]
+        if cfg[opt] in opts:
+            opt_validity.append(True)
+        else:
+            opt_validity.append(False)
+            logging.error(f"invalid option: {cfg[opt]} is not in [{','.join([s if not s is None else 'None' for s in opts])}]")
+    return all(opt_validity)
+
+def validinput(cfg,din): 
+    from beditor.lib.global_vars import mutation_format2cols
+    opt_validity=[]
+    for col in mutation_format2cols[cfg['mutation_format']]:
+        if col in din:
+            opt_validity.append(True)
+        else:
+            opt_validity.append(False)
+            logging.error(f"invalid column name: {col} is not in [{','.join(mutation_format2cols[cfg['mutation_format']])}]")
+    return all(opt_validity)
+
 def pipeline(cfgp,step=None,test=False,force=False):        
 
     import yaml
@@ -191,12 +214,16 @@ def pipeline(cfgp,step=None,test=False,force=False):
     if not exists(cfg['dinp']):
         logging.error(f"input file {cfg['dinp']} is not found.")
         sys.exit(1)
+
+    if not validcfg(cfg):
+        logging.error(f"configuration file {cfgp} is not valid.")
+        sys.exit(1)
+
     if (cfg['mutations']=='substitutions'):    
         if not exists(cfg['dsubmap_preferred_path']):
             logging.critical(f"dsubmap_preferred_path is {cfg['dsubmap_preferred_path']}")
             logging.critical(cfg)
             sys.exit(1)
-
     # get names right
     import pyensembl
     cfg['host']=pyensembl.species.normalize_species_name(cfg['host'])        
@@ -249,6 +276,10 @@ def pipeline(cfgp,step=None,test=False,force=False):
     if (not '/chunk' in cfgp) and (step==1 or (step is None)):
         from beditor.lib.io_dfs import df2chucks
         din=pd.read_csv(cfg['dinp'],sep='\t')
+        if not validinput(cfg,din):
+            logging.error(f"configuration file {cfgp} is not valid.")
+            sys.exit(1)
+        
         din=din.drop_duplicates()
         if not exists(dinoutp) or cfg['force']:
             if not 'amino acid mutation' in din:

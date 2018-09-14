@@ -8,12 +8,19 @@ from Bio import motifs,Seq,AlignIO
 
 import logging
 
-# input mutation_format and must-have columns
+# input 
+# mutation_format and must-have columns
 mutation_format2cols={
     'aminoacid': ['transcript: id','aminoacid: position'],
     'nucleotide':['genome coordinate','nucleotide mutation'],
 }
 
+# configuration 
+# allowed options
+cfgoption2allowed={
+'mutations':['mutations','substitutions','mimetic',None],
+'mutation_format':['aminoacid','nucleotide'],
+}
 
 
 flankaac=7
@@ -124,3 +131,9 @@ bed_colns = ['chromosome','start','end','id','NM','strand']
 ## ref coordinate system
 # UCSC : 0 based 
 # ENSEMBL : 1 based
+
+
+# common 
+aminoacids=["A","C","D","E","F","G","H","I","K","L","M","N","P","Q","R","S","T","V","W","X","Y","*"] #for indexing
+aminoacids_3letter=['ALA','ARG','ASN','ASP','CYS','GLN','GLU','GLY','HIS','ILE','LEU','LYS','MET','PHE','PRO','SER','THR','TRP','TYR','VAL']
+codons=["TTT",    "TTC",    "TTA",  "TTG",  "TCT",  "TCC",  "TCA",  "TCG",  "TAT",  "TAC",  "TAA",  "TAG",  "TGT",  "TGC",  "TGA",  "TGG",  "CTT",  "CTC",  "CTA",  "CTG",  "CCT",  "CCC",  "CCA",  "CCG",  "CAT",  "CAC",  "CAA",  "CAG",  "CGT",  "CGC",  "CGA",  "CGG",  "ATT",  "ATC",  "ATA",  "ATG",  "ACT",  "ACC",  "ACA",  "ACG",  "AAT",  "AAC",  "AAA",  "AAG",  "AGT",  "AGC",  "AGA",  "AGG",  "GTT",  "GTC",  "GTA",  "GTG",  "GCT",  "GCC",  "GCA",  "GCG",  "GAT",  "GAC",  "GAA",  "GAG",  "GGT",  "GGC",  "GGA",  "GGG"]
