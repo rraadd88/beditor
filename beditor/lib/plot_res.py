@@ -49,22 +49,23 @@ def plot_submap_possibilities(dmutagenesis,plotpf,test=False):
 #     from Bio.Alphabet import IUPAC
 #     aas=IUPAC.IUPACData.protein_letters+'*'    
 
-    d=dmutagenesis.copy()
-    for i in d.index:
-    #     print(BEs['{} on {}'.format(d.loc[i,'method'],d.loc[i,'mutation on strand'])])
-        cd=d.loc[i,'codon']
-        ns=list(d.loc[i,'nucleotide'])
-        if d.loc[i,'mutation on strand']=='- strand':
-    #         cd=Seq.reverse_complement(cd)
-            ns=[Seq.reverse_complement(n) for n in ns]
-        nc=0
-        for n in np.unique(ns):
-            nc+=cd.count(n)
-        if nc!=d.loc[i,'nucleotide mutation: count']:
-            d.loc[i,:]=np.nan
+#     d=dmutagenesis.copy()
+#     for i in d.index:
+#     #     print(BEs['{} on {}'.format(d.loc[i,'method'],d.loc[i,'mutation on strand'])])
+#         cd=d.loc[i,'codon']
+#         ns=list(d.loc[i,'nucleotide'])
+#         if d.loc[i,'mutation on strand']=='- strand':
+#     #         cd=Seq.reverse_complement(cd)
+#             ns=[Seq.reverse_complement(n) for n in ns]
+#         nc=0
+#         for n in np.unique(ns):
+#             nc+=cd.count(n)
+#         if nc!=d.loc[i,'nucleotide mutation: count']:
+#             d.loc[i,:]=np.nan
     # 
 
-    dmutagenesis=d.dropna(how='all')
+#     dmutagenesis=d.dropna(how='all')
+    dmutagenesis=dmutagenesis.dropna(how='all')
     muttype2c={'All mutations':0,
                'Single nucleotide mutations':1,
                'Double nucleotide mutations':2,

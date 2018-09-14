@@ -19,12 +19,15 @@ import logging
 from beditor.configure import get_deps,get_genomes
 from beditor.lib.io_sys import runbashcmd
 from beditor.lib.io_strs import get_datetime
+import yaml 
 
 def pipeline_chunks(cfgp=None,cfg=None):
     if cfg is None: 
-        import yaml 
         cfg=yaml.load(open(cfgp, 'r'))
-
+#     if not 'prjd' in cfg:
+#         cfg['prjd']=cfgp.replace('.yml','').replace('.yaml','')
+#     print(cfgp)
+#     print(cfg)
     #datads
     cfg[0]=cfg['prjd']+'/00_input/'
     cfg[1]=cfg['prjd']+'/01_sequences/'
@@ -236,8 +239,8 @@ def pipeline(cfgp,step=None,test=False,force=False):
         if not exists(cfg[i]):
             makedirs(cfg[i])
     #backup combo inputs
-    cfgoutp='{}/cfg.yml'.format(cfg[0])    
-    dinoutp='{}/dinput.tsv'.format(cfg[0])    
+    cfgoutp=f'{cfg[0]}/cfg.yml'
+    dinoutp=f'{cfg[0]}/dinput.tsv'    
     if not exists(cfgoutp) or cfg['force']:
         with open(cfgoutp, 'w') as f:
             yaml.dump(cfg, f
@@ -308,7 +311,7 @@ def pipeline(cfgp,step=None,test=False,force=False):
             # get_outputs
             _=make_outputs(cfg)        
     else:
-        pipeline_chunks(cfgp=cfgp)
+        pipeline_chunks(cfg=cfg)
         if not '/chunk' in cfgp:
             _=make_outputs(cfg)        
 

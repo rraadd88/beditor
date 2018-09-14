@@ -304,7 +304,7 @@ def dpam2dpam_strands(dpam,pams):
     pams_strands=pams+dpam_strands.loc[pams,'reverse complement'].dropna().tolist()
     dpam_strands=dpam_strands.loc[pams_strands,:]
     return dpam_strands
-    
+
 def dseq2dguides(cfg):
     """
     Wrapper around make guides function.
@@ -317,8 +317,18 @@ def dseq2dguides(cfg):
     dmutagenesisp='{}/dmutagenesis.tsv'.format(cfg['datad'])
     dpam_strandsp='{}/dpam_strands.csv'.format(cfg['datad'])
     if not exists(dguideslinp) or cfg['force']:
-        dseq=pd.read_csv('{}/dsequences.tsv'.format(cfg[cfg['step']-2]),sep='\t') #FIXME if numbering of steps is changed, this is gonna blow
-        dmutagenesis=pd.read_csv(f"{cfg[cfg['step']-1]}/dmutagenesis.tsv",sep='\t')
+        dseq=pd.read_csv(f"{cfg[cfg['step']-2]}/dsequences.tsv",sep='\t') #FIXME if numbering of steps is changed, this is gonna blow
+        if 'reverse_mutations' in cfg:
+            if cfg['reverse_mutations']:
+                dmutagenesis_all=pd.read_csv(f"{cfg[cfg['step']-1]}/dmutagenesis_all.tsv",sep='\t')
+                dmutagenesis=dmutagenesis_all.copy()
+            else:
+                cfg['reverse_mutations']=False
+        else:
+            cfg['reverse_mutations']=False
+            
+        if not cfg['reverse_mutations']:
+            dmutagenesis=pd.read_csv(f"{cfg[cfg['step']-1]}/dmutagenesis.tsv",sep='\t')
         # make pam table
         dpam=pd.read_table('{}/../data/dpam.tsv'.format(dirname(realpath(__file__))))
         if sum(dpam['PAM'].isin(cfg['pams']))!=len(cfg['pams']):
@@ -335,7 +345,6 @@ def dseq2dguides(cfg):
             dmutagenesis[col.replace('Position','distance')+mum2]=dmutagenesis.apply(lambda x : np.max([abs(x[col+'minimum']),abs(x[col+'maximum'])]),axis=1)
 
         dmutagenesis['strand']=dmutagenesis.apply(lambda x : x['mutation on strand'].replace(' strand',''),axis=1)        
-
         dmutagenesis.to_csv(dmutagenesisp,sep='\t')
 #         sys.exist(1)
         

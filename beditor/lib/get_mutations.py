@@ -362,54 +362,60 @@ def filterdmutagenesis(dmutagenesis,cfg):
     :param dmutagenesis: mutagenesis strategies (pd.DataFrame)
     :param cfg: configurations from yml file
     """
-    logging.info('filtering: dmutagenesis.shape: '+str(dmutagenesis.shape))    
+    logging.info('filtering: dmutagenesis.shape: '+str(dmutagenesis.shape))
     # filter by mutation_type
-    if not cfg['mutation_type'] is None:
-        if cfg['mutation_type']=='S':
-            dmutagenesis=dmutagenesis.loc[(dmutagenesis['amino acid']==dmutagenesis['amino acid mutation'])]
-        elif cfg['mutation_type']=='N':
-            dmutagenesis=dmutagenesis.loc[(dmutagenesis['amino acid']!=dmutagenesis['amino acid mutation'])]
-        logging.info('dmutagenesis.shape: '+str(dmutagenesis.shape))    
+    if 'mutation_type' in cfg:
+        if not cfg['mutation_type'] is None:
+            if cfg['mutation_type']=='S':
+                dmutagenesis=dmutagenesis.loc[(dmutagenesis['amino acid']==dmutagenesis['amino acid mutation'])]
+            elif cfg['mutation_type']=='N':
+                dmutagenesis=dmutagenesis.loc[(dmutagenesis['amino acid']!=dmutagenesis['amino acid mutation'])]
+            logging.info('dmutagenesis.shape: '+str(dmutagenesis.shape))    
     # filter by nonsense
-    if not cfg['keep_mutation_nonsense'] is None:
-        if not cfg['keep_mutation_nonsense']:
-            dmutagenesis=dmutagenesis.loc[(dmutagenesis['amino acid mutation']!='*'),:]
-        logging.info('dmutagenesis.shape: '+str(dmutagenesis.shape))    
+    if 'keep_mutation_nonsense' in cfg:
+        if not cfg['keep_mutation_nonsense'] is None:
+            if not cfg['keep_mutation_nonsense']:
+                dmutagenesis=dmutagenesis.loc[(dmutagenesis['amino acid mutation']!='*'),:]
+            logging.info('dmutagenesis.shape: '+str(dmutagenesis.shape))    
 
     # filter by mutation per codon
-    if not cfg['max_subs_per_codon'] is None:
-        dmutagenesis=dmutagenesis.loc[(dmutagenesis['nucleotide mutation: count']==cfg['max_subs_per_codon']),:]
-        logging.info('dmutagenesis.shape: '+str(dmutagenesis.shape))    
+    if 'max_subs_per_codon' in cfg:
+        if not cfg['max_subs_per_codon'] is None:
+            dmutagenesis=dmutagenesis.loc[(dmutagenesis['nucleotide mutation: count']==cfg['max_subs_per_codon']),:]
+            logging.info('dmutagenesis.shape: '+str(dmutagenesis.shape))    
 
     # filter by method
-    if not cfg['BEs'] is None:
-        dmutagenesis=dmutagenesis.loc[dmutagenesis['method'].isin(cfg['BEs']),:]
-        logging.info('dmutagenesis.shape: '+str(dmutagenesis.shape))    
+    if 'BEs' in cfg:
+        if not cfg['BEs'] is None:
+            dmutagenesis=dmutagenesis.loc[dmutagenesis['method'].isin(cfg['BEs']),:]
+            logging.info('dmutagenesis.shape: '+str(dmutagenesis.shape))    
 
     # filter by submap
-    if (cfg['mutations']=='mimetic') or (cfg['mutations']=='substitutions'):
-        if cfg['mutations']=='mimetic':                
-            dsubmap=get_submap(cfg)
-        elif cfg['mutations']=='substitutions':
-            dsubmap=pd.read_csv(cfg['dsubmap_preferred_path'],sep='\t') # has two cols: amino acid and amino acid mutation
+    if 'mutations' in cfg:
+        if (cfg['mutations']=='mimetic') or (cfg['mutations']=='substitutions'):
+            if cfg['mutations']=='mimetic':                
+                dsubmap=get_submap(cfg)
+            elif cfg['mutations']=='substitutions':
+                dsubmap=pd.read_csv(cfg['dsubmap_preferred_path'],sep='\t') # has two cols: amino acid and amino acid mutation
 
-        import seaborn as sns
-        dsubmap.to_csv(f"{cfg['datad']}/dsubmap.tsv",sep='\t')
-        dmutagenesis=pd.merge(dsubmap,dmutagenesis,on=['amino acid','amino acid mutation'],how='inner')
+            import seaborn as sns
+            dsubmap.to_csv(f"{cfg['datad']}/dsubmap.tsv",sep='\t')
+            dmutagenesis=pd.merge(dsubmap,dmutagenesis,on=['amino acid','amino acid mutation'],how='inner')
 
-        dsubmap['count']=1
-        sns.heatmap(dsubmap.pivot_table(columns='amino acid',index='amino acid mutation',values='count'),square=True)
-        plt.xlabel('wild-type amino acid')
-        plt.ylabel('mutated amino acid')
-        plt.savefig(f"{cfg['datad']}/heatmap_submap.svg")
+            dsubmap['count']=1
+            sns.heatmap(dsubmap.pivot_table(columns='amino acid',index='amino acid mutation',values='count'),square=True)
+            plt.xlabel('wild-type amino acid')
+            plt.ylabel('mutated amino acid')
+            plt.savefig(f"{cfg['datad']}/heatmap_submap.svg")
 
-        logging.info('dmutagenesis.shape: '+str(dmutagenesis.shape))    
+            logging.info('dmutagenesis.shape: '+str(dmutagenesis.shape))    
 
     # filter non interchageables
-    if 'non_intermutables' in cfg.keys():
+    if 'non_intermutables' in cfg:
         if not cfg['non_intermutables'] is None:
             non_intermutables=list(itertools.permutations(''.join(cfg['non_intermutables']),2))
-            dmutagenesis.loc[(dmutagenesis.apply(lambda row: not (row['amino acid'], row['amino acid mutation']) in non_intermutables, axis=1)),:]    
+            dmutagenesis.loc[(dmutagenesis.apply(lambda row: not (row['amino acid'], 
+                                                  row['amino acid mutation']) in non_intermutables, axis=1)),:]    
             logging.info('dmutagenesis.shape: '+str(dmutagenesis.shape))    
     return dmutagenesis
 
