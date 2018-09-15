@@ -96,14 +96,14 @@ def get_beditorscore_per_guide(guide_seq, strategy,
     from os.path import dirname,realpath
     dBEs=pd.read_table(f"{dirname(realpath(__file__))}/../data/dBEs.tsv")
     dBEs=dBEs.loc[dBEs['method'].isin(BEs),:]
-    pos_muts=dBEs.loc[:,['method','Position of mutation from PAM: minimum',
-     'Position of mutation from PAM: maximum',
-     'Position of codon start from PAM: minimum',
-     'Position of codon start from PAM: maximum']].drop_duplicates().set_index('method')
+    pos_muts=dBEs.loc[:,['method','distance of mutation from PAM: minimum',
+     'distance of mutation from PAM: maximum',
+     'distance of codon start from PAM: minimum',
+     'distance of codon start from PAM: maximum']].drop_duplicates().set_index('method')
 
     pos_mut=int(strategy.split(';')[2].replace('@',''))
     method=strategy.split(';')[0]
-    penalty_activity_window=1 if (pos_muts.loc[method,'Position of mutation from PAM: minimum']<=pos_mut<=pos_muts.loc[method,'Position of mutation from PAM: maximum']) else penalty_activity_window
+    penalty_activity_window=1 if (pos_muts.loc[method,'distance of mutation from PAM: minimum']<=pos_mut<=pos_muts.loc[method,'distance of mutation from PAM: maximum']) else penalty_activity_window
     penalty_align_seqs_scores=np.prod(align_seqs_scores)
     if test:
         print(list(align_seqs_scores))

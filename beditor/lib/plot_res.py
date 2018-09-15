@@ -52,20 +52,6 @@ def plot_submap_possibilities(dmutagenesis,plotpf,test=False):
 #     from Bio.Alphabet import IUPAC
 #     aas=IUPAC.IUPACData.protein_letters+'*'    
 
-#     d=dmutagenesis.copy()
-#     for i in d.index:
-#     #     print(BEs['{} on {}'.format(d.loc[i,'method'],d.loc[i,'mutation on strand'])])
-#         cd=d.loc[i,'codon']
-#         ns=list(d.loc[i,'nucleotide'])
-#         if d.loc[i,'mutation on strand']=='- strand':
-#     #         cd=Seq.reverse_complement(cd)
-#             ns=[Seq.reverse_complement(n) for n in ns]
-#         nc=0
-#         for n in np.unique(ns):
-#             nc+=cd.count(n)
-#         if nc!=d.loc[i,'nucleotide mutation: count']:
-#             d.loc[i,:]=np.nan
-    # 
 
 #     dmutagenesis=d.dropna(how='all')
     dmutagenesis=dmutagenesis.dropna(how='all')
@@ -214,10 +200,7 @@ def get_df4features(dguideslin,id,types=['guide+pam']):
         df.loc[:,'sense_']=0
         #guide+pam
         df.loc[:,'guide+pam ini']=df.apply(lambda x : np.min([x['position of PAM ini'],x['position of guide ini']]),axis=1)
-        df.loc[:,'guide+pam end']=df.apply(lambda x : np.max([x['position of PAM end'],x['position of guide end']]),axis=1)        
-#         df['guide+pam ini']=df.apply(lambda x : x['guide+pam ini']+1 if x['strand']=='+' else x['guide+pam ini'],axis=1)
-        
-#         print(df.loc[:,['guide+pam ini','guide+pam end','strategy','sense_']].drop_duplicates())
+        df.loc[:,'guide+pam end']=df.apply(lambda x : np.max([x['position of PAM end'],x['position of guide end']]),axis=1)   
         features_guidepam=df2features(df.loc[:,['guide+pam ini','guide+pam end','strategy','sense_']].drop_duplicates())
         features+=features_guidepam
     return features
@@ -337,38 +320,23 @@ def get_dntcompos(dguideslin_sub123,dpam,pos,pam):
 
     if dpam.loc[pam,'position']=='down':
         dp.index=(dp.index[::-1]-paml)*-1
-        pos=pos
         pamposs=dp.index.tolist()[-1*paml:]
-        windowmin=dguideslin_sub123['Position of mutation from PAM: minimum'].unique()[0]
-        windowmax=dguideslin_sub123['Position of mutation from PAM: maximum'].unique()[0]        
+        windowmin=dguideslin_sub123['distance of mutation from PAM: minimum'].unique()[0]*-1
+        windowmax=dguideslin_sub123['distance of mutation from PAM: maximum'].unique()[0]*-1        
     else:
         dp.index=dp.index-paml
-        pos=pos
         pamposs=dp.index.tolist()[:paml]        
-        windowmin=dguideslin_sub123['Position of mutation from PAM: minimum'].unique()[0]*-1
-        windowmax=dguideslin_sub123['Position of mutation from PAM: maximum'].unique()[0]*-1        
+        windowmin=dguideslin_sub123['distance of mutation from PAM: minimum'].unique()[0]
+        windowmax=dguideslin_sub123['distance of mutation from PAM: maximum'].unique()[0]        
 
-    dp.loc[dguideslin_sub123['Position of mutation from PAM: minimum'].unique()[0],'Activity window']=windowmin
-    dp.loc[dguideslin_sub123['Position of mutation from PAM: maximum'].unique()[0],'Activity window']=windowmax
+    dp.loc[dguideslin_sub123['distance of mutation from PAM: minimum'].unique()[0],'Activity window']=windowmin
+    dp.loc[dguideslin_sub123['distance of mutation from PAM: maximum'].unique()[0],'Activity window']=windowmax
     dp.loc[pos,'Mutation at']=pos
     for pamnti,pamnt in enumerate(list(pam)):
         dp.loc[pamposs[pamnti],'PAM']=pamposs[pamnti]
         dp.loc[pamposs[pamnti],'PAM nt']=pamnt
     return dp
 
-# def plot_bar_dguides(dstep,plotp,figsize=None):
-#     cols=['method','PAM','strand']
-#     fig_ht=np.max([len(dstep[c].unique()) for c in cols])
-#     if figsize is None:
-#         figsize=[4,4+fig_ht*0.5]
-#     fig,axes=plt.subplots(nrows=len(cols),figsize=figsize,sharex=True)
-#     for i,col in enumerate(cols):
-#         dstep[col].value_counts().plot.barh(ax=axes[i])
-#         axes[i].set_ylabel(col)
-#         if i==len(cols)-1:
-#             axes[i].set_xlabel('count of guides designed')
-#     plt.tight_layout()
-#     plt.savefig(plotp)
 def plot_bar_dguides(dstep,plotp,figsize=None):
     cols=['method','PAM','strand']
     fig_ht=np.max([len(dstep[c].unique()) for c in cols])
@@ -384,8 +352,9 @@ def plot_bar_dguides(dstep,plotp,figsize=None):
     plt.tight_layout()
     plt.savefig(plotp)
     
-def plot_dist_dguides(dguideslin,dpam,plotpf):
+def plot_dist_dguides(dguideslin,dpam,plotpf=None):
     #method fig
+    dps=[]
     for met in dguideslin['method'].unique():
         dps_met={}
         dguideslin_sub1=dguideslin.loc[((dguideslin['method']==met)),:]
@@ -395,8 +364,9 @@ def plot_dist_dguides(dguideslin,dpam,plotpf):
             dguideslin_sub12=dguideslin_sub1.loc[(dguideslin_sub1['PAM']==pam),:]
             #position
             dps_pos={}
-            for pos in np.sort(dguideslin_sub12['distance of mutation in codon from PAM'].unique()):
-                dguideslin_sub123=dguideslin_sub12.loc[(dguideslin_sub12['distance of mutation in codon from PAM']==pos),:]
+            poss=dguideslin_sub12['position of mutation in codon from PAM'].unique()
+            for pos in np.sort(poss):
+                dguideslin_sub123=dguideslin_sub12.loc[(dguideslin_sub12['position of mutation in codon from PAM']==pos),:]
                 #combine strands
                 dps_pos[pos]=get_dntcompos(dguideslin_sub123,dpam,pos,pam)
             dps_pam[pam]=dps_pos
@@ -410,7 +380,6 @@ def plot_dist_dguides(dguideslin,dpam,plotpf):
                               figsize=[8.25*(pamc),2*(posc)],
     #                          sharey=True,
                              )
-    #     for met in dps_met.keys():
         for pami,pam in enumerate(dps_met[met].keys()):
             for posi,pos in enumerate(dps_met[met][pam].keys()):
                 if len(np.shape(axes))==2:
@@ -426,9 +395,12 @@ def plot_dist_dguides(dguideslin,dpam,plotpf):
     #             break
     #         break
         plt.tight_layout()
-        if not '{method}' in plotpf:
-            plotpf=plotpf+'_{method}.png'
-        plt.savefig(plotpf.format(method=met))
+        dps.append(dps_met) 
+        if not plotpf is None:
+            if not '{method}' in plotpf:
+                plotpf=plotpf+'_{method}.png'
+            plt.savefig(plotpf.format(method=met))
+    return dps
 #         break                      
 def plot_dna_features_view(dsequences,dguides,plotd,more=False):
     guideids=dguides['id'].unique()
@@ -465,12 +437,10 @@ def plot_dist_dofftargets(dofftargets,plotp):
     plt.tight_layout()
     plt.savefig(plotp)
     
-
+from glob import glob
+from beditor.lib.io_dfs import del_Unnamed,set_index
+from os.path import exists,splitext,dirname,splitext,basename,realpath
 def plot_vizbysteps(cfg):  
-    from glob import glob
-    from beditor.lib.io_dfs import del_Unnamed,set_index
-    from os.path import exists,splitext,dirname,splitext,basename,realpath
-    
     prjd=cfg['prjd']
     #make one output table and stepwise plots
     datad=f"{prjd}/05_output"
@@ -522,7 +492,7 @@ def plot_vizbysteps(cfg):
         else:
             logging.warning(f'not found: {dstepp}')
 
-    # make nt_composition plot
+    # make plot_dna_features_view
     stepi=3
     plotd=f"{datad}/plot_d{cfg[stepi].replace('/','').split('_')[-1]}_dna_features_view"
     plotps=glob(plotd+'/*')

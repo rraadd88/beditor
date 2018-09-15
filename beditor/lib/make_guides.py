@@ -1,20 +1,14 @@
 import pandas as pd
 import numpy as np
-
 import json
-
 import sys
 from os.path import exists,realpath,dirname
-
 from Bio import SeqIO, Alphabet, Data, Seq, SeqUtils
 from Bio import motifs,Seq,AlignIO
-
 import logging
 from tqdm import trange
-
 import pandas as pd
 import numpy as np
-
 from os.path import exists
 
 from Bio import SeqIO, Alphabet, Data, Seq, SeqUtils
@@ -75,70 +69,79 @@ def get_pam_searches(dpam,seq,pos_codon,
     return dpamposs
 
 
-def get_activity_seq(guide_seq,pam_pos,pam_dist_min,pam_dist_max,dbug=False):
-    if dbug:
-        print(guide_seq,pam_pos,pam_dist_min,pam_dist_max)
-    if pam_pos=='up':
-        seq=guide_seq[pam_dist_min-1:pam_dist_max]
-    elif pam_pos=='down':
-        seq=guide_seq[::-1][pam_dist_min-1:pam_dist_max][::-1]
-    return seq
+# def get_activity_seq(guide_seq,
+#                      pam_pos,
+#                      pam_dist_min,
+#                      pam_dist_max,dbug=False):
+#     if dbug:
+#         print(guide_seq,pam_pos,pam_dist_min,pam_dist_max)
+#     if pam_pos=='up':
+#         seq=guide_seq[pam_dist_min-1:pam_dist_max]
+#     elif pam_pos=='down':
+#         seq=guide_seq[::-1][pam_dist_min-1:pam_dist_max][::-1]
+#     return seq
 
-def get_pos_mut_from_pam(x,
-    pos_codon_ini=22, #FIXME if fragment size if changed
-    pos_codon_end=24, #FIXME if fragment size if changed
-                        ):
-    # For debugging
-        # x=dguides.loc[0,:]
-    strand=x['strand'] #FIXME annotate the strand wrt to fragment(BE/dPAM) and genome
-    loc_pam=x['position']
-#     #keep all 1-based indexed
-#     pos_guide_ini=x['position of guide ini']+1
-#     pos_guide_end=x['position of guide end']+1
-    pos_pam_ini=x['position of PAM ini']+1
-    pos_pam_end=x['position of PAM end']+1
-    pos_mut_incodon=x['position of mutation in codon']
+# def get_pos_mut_from_pam(x,
+#     pos_codon_ini=22, #FIXME if fragment size if changed
+#     pos_codon_end=24, #FIXME if fragment size if changed
+#     dbug=False):
+#     strand=x['strand'] #FIXME annotate the strand wrt to fragment(BE/dPAM) and genome
+#     loc_pam=x['position']
+#     pos_pam_ini=x['position of PAM ini']+1
+#     pos_pam_end=x['position of PAM end']+1
+#     pos_mut_incodon=x['position of mutation in codon']
+#     if strand=='-':
+#         pos_mut_incodon=4-pos_mut_incodon
+#     pos_mut_infragment=pos_mut_incodon+pos_codon_ini-1
+    
+#     if dbug:
+#         print(loc_pam,strand)
+#     if loc_pam=='down' and strand=='+':
+#         dist_mut_frompam=pos_mut_infragment-pos_pam_ini
+#         if dbug:
+#             print(pos_mut_infragment,pos_pam_end)
+#     elif loc_pam=='down' and strand=='-':
+#         dist_mut_frompam=pos_mut_infragment-pos_pam_end
+#         dist_mut_frompam=dist_mut_frompam*-1
+#         if dbug:
+#             print(pos_mut_infragment,pos_pam_end)
+#     elif loc_pam=='up' and strand=='+':
+#         dist_mut_frompam=pos_mut_infragment-pos_pam_ini        
+#         dist_mut_frompam=dist_mut_frompam*-1
+#         if dbug:
+#             print(pos_mut_infragment,pos_pam_end)
+#     elif loc_pam=='up' and strand=='-':
+#         dist_mut_frompam=pos_mut_infragment-pos_pam_end
+#         if dbug:
+#             print(pos_mut_infragment,pos_pam_end)
+#     else:
+#         raise(ValueError(f'loc_pam or strand are invalid ({loc_pam},{strand})'))
+#     return dist_mut_frompam
 
-    pos_mut_infragment=pos_mut_incodon+pos_codon_ini-1
-
-    if loc_pam=='down' and strand=='+':
-        dist_mut_frompam=pos_mut_infragment-pos_pam_ini
-    elif loc_pam=='down' and strand=='-':
-        dist_mut_frompam=pos_mut_infragment-pos_pam_end
-        dist_mut_frompam=dist_mut_frompam*-1
-    elif loc_pam=='up' and strand=='+':
-        dist_mut_frompam=pos_mut_infragment-pos_pam_end        
-    elif loc_pam=='up' and strand=='-':
-        dist_mut_frompam=pos_mut_infragment-pos_pam_end        
-        dist_mut_frompam=dist_mut_frompam*-1
-    else:
-        raise(ValueError(f'loc_pam or strand are invalid ({loc_pam},{strand})'))
-    return dist_mut_frompam
-
-def get_poss_guide(x,debug=False):
-    loc_pam=x['original position']
-    strand=x['strand']
-    guide_length=x['guide sequence length']
-    pos_pam_ini=x['position of PAM ini']
-    pos_pam_end=x['position of PAM end']
-    if loc_pam=='down' and strand=='+':
-        pos_guide_ini=pos_pam_ini-guide_length
-        pos_guide_end=pos_pam_ini-1
-    elif loc_pam=='down' and strand=='-':
-        pos_guide_ini=pos_pam_end+1
-        pos_guide_end=pos_pam_end+guide_length
-    elif loc_pam=='up' and strand=='+':
-        pos_guide_ini=pos_pam_end+1
-        pos_guide_end=pos_pam_end+guide_length
-    elif loc_pam=='up' and strand=='-':
-        pos_guide_ini=pos_pam_ini-1
-        pos_guide_end=pos_pam_ini-guide_length
-    else:
-        raise(ValueError(f'loc_pam or strand are invalid ({loc_pam},{strand})'))
-    if debug:
-        return pos_guide_ini,pos_guide_end,loc_pam,strand,pos_pam_ini,pos_pam_end,x['strategy']
-    else:
-        return pos_guide_ini,pos_guide_end        
+# def get_poss_guide(x,debug=False):
+#     loc_pam=x['original position']
+#     strand=x['strand']
+#     guide_length=x['guide sequence length']
+#     pos_pam_ini=x['position of PAM ini']
+#     pos_pam_end=x['position of PAM end']
+#     if loc_pam=='down' and strand=='+':
+#         pos_guide_ini=pos_pam_ini-guide_length
+#         pos_guide_end=pos_pam_ini-1
+#     elif loc_pam=='down' and strand=='-':
+#         pos_guide_ini=pos_pam_end+1
+#         pos_guide_end=pos_pam_end+guide_length
+#     elif loc_pam=='up' and strand=='+':
+#         pos_guide_ini=pos_pam_end+1
+#         pos_guide_end=pos_pam_end+guide_length
+#     elif loc_pam=='up' and strand=='-':
+#         pos_guide_ini=pos_pam_ini-1
+#         pos_guide_end=pos_pam_ini-guide_length
+#     else:
+#         raise(ValueError(f'loc_pam or strand are invalid ({loc_pam},{strand})'))
+#     if debug:
+#         return pos_guide_ini,pos_guide_end,loc_pam,strand,pos_pam_ini,pos_pam_end,x['strategy']
+#     else:
+#         return pos_guide_ini,pos_guide_end        
     
 def make_guides(cfg,dseq,dmutagenesis,
                 dpam,
@@ -239,11 +242,12 @@ def make_guides(cfg,dseq,dmutagenesis,
     if 'dguides' in locals():        
         # 0-based indexing 'position of guide ini/end', 'position of PAM ini/end'
         # 1-based indexing 'position of mutation in codon'
-        dguides['distance of mutation in codon from PAM']=dguides.apply(lambda x : get_pos_mut_from_pam(x),axis=1)
-        dguides_guidepos=dguides.apply(lambda x : get_poss_guide(x),axis=1).apply(pd.Series)
-        dguides_guidepos.columns=['position of guide ini','position of guide end']
-        for col in dguides_guidepos:
-            dguides[col]=dguides_guidepos[col]
+#         dguides['position of mutation in codon from PAM']=dguides.apply(lambda x : get_pos_mut_from_pam(x),axis=1)
+#         dguides['distance of mutation in codon from PAM']=dguides['position of mutation in codon from PAM'].apply(abs)
+#         dguides_guidepos=dguides.apply(lambda x : get_poss_guide(x),axis=1).apply(pd.Series)
+#         dguides_guidepos.columns=['position of guide ini','position of guide end']
+#         for col in dguides_guidepos:
+#             dguides[col]=dguides_guidepos[col]
     
         # print(dguides.columns) #RMME
         logging.info('#reverse complement guides on negative strand sequences')
@@ -251,16 +255,13 @@ def make_guides(cfg,dseq,dmutagenesis,
         for colseq in ['guide+PAM sequence','guide sequence','PAM sequence']:
             dguides.loc[:,colseq]=dguides.apply(lambda x : str(str2seq(x[colseq]).reverse_complement()) if x['is a reverse complement'] else x[colseq],axis=1)
 
-        logging.info('get activity sequence')
-        dguides['activity sequence']=dguides.apply(lambda x: get_activity_seq(x['guide sequence'],x['original position'],
-                     int(x['distance of mutation from PAM: minimum']),
-                     int(x['distance of mutation from PAM: maximum'])),axis=1)   
+        logging.info('get dposition')
 
         logging.info('filter by # of editable nts in activity seq')
         logging.info(dguides.shape)
+        dguides_noflt=dguides.copy()
         dguides=dguides.loc[(dguides.apply(lambda x : np.sum([x['activity sequence'].count(nt) for nt in  x['nucleotide']])==len(x['nucleotide']),axis=1)),:]
         logging.info(dguides.shape)
-        dguides_noflt=dguides.copy()
         if len(dguides)!=0:
             # if dbug:
             #     dguides.to_csv('test.tsv',sep='\t')
@@ -274,9 +275,9 @@ def make_guides(cfg,dseq,dmutagenesis,
                 dguides=dguides.drop_duplicates(subset=['guide: id'])
                 return dguides,dguides_noflt,err2idxs
             else:
-                return None,None,None        
+                return None,dguides_noflt,None        
         else:
-            return None,None,None        
+            return None,dguides_noflt,None        
     else:
         return None,None,None        
 
@@ -355,13 +356,6 @@ def dseq2dguides(cfg):
         dpam_strands=dpam2dpam_strands(dpam,pams=cfg['pams'])
         dpam_strands.to_csv(dpam_strandsp,sep='\t')
 
-        for col in ['Position of mutation from PAM: ','Position of mutation from PAM: ',
-                    'Position of codon start from PAM: ','Position of codon start from PAM: ']:    
-            mum1,mum2=('minimum','maximum')
-        #             for mum1,mum2 in zip(['minimum','maximum'],['minimum','maximum']):
-            dmutagenesis[col.replace('Position','distance')+mum1]=dmutagenesis.apply(lambda x : np.min([abs(x[col+'minimum']),abs(x[col+'maximum'])]),axis=1)
-            dmutagenesis[col.replace('Position','distance')+mum2]=dmutagenesis.apply(lambda x : np.max([abs(x[col+'minimum']),abs(x[col+'maximum'])]),axis=1)
-
         dmutagenesis['strand']=dmutagenesis.apply(lambda x : x['mutation on strand'].replace(' strand',''),axis=1)        
         dmutagenesis.to_csv(dmutagenesisp,sep='\t')
 #         sys.exist(1)
@@ -372,11 +366,12 @@ def dseq2dguides(cfg):
                        test=cfg['test'],
                        # dbug=True,
                      )
+        if not dguides_noflt is None:
+            dguides_noflt.to_csv(dguides_nofltp,sep='\t')
         if not ((dguideslin is None) and (err2idxs is None)):
             dguideslin.to_csv(dguideslinp,sep='\t')
-            dguides_noflt.to_csv(dguides_nofltp,sep='\t')
             if cfg['test']:
-                logging.info(err2idxs)            
+                logging.info(err2idxs)
             with open(dguideslinp+'.err.json', 'w') as f:
                 json.dump(err2idxs, f)
         else:

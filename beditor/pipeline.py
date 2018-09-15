@@ -4,7 +4,7 @@
 # This program is distributed under General Public License v. 3.  
 
 import sys
-from os.path import exists,splitext,dirname,splitext,basename,realpath
+from os.path import exists,splitext,dirname,splitext,basename,realpath,abspath
 from os import makedirs
 import argparse
 import pkg_resources
@@ -24,10 +24,6 @@ import yaml
 def pipeline_chunks(cfgp=None,cfg=None):
     if cfg is None: 
         cfg=yaml.load(open(cfgp, 'r'))
-#     if not 'prjd' in cfg:
-#         cfg['prjd']=cfgp.replace('.yml','').replace('.yaml','')
-#     print(cfgp)
-#     print(cfg)
     #datads
     cfg[0]=cfg['prjd']+'/00_input/'
     cfg[1]=cfg['prjd']+'/01_sequences/'
@@ -45,7 +41,7 @@ def pipeline_chunks(cfgp=None,cfg=None):
 
     dstep_last_outputp=f"{cfg[step_last]}/d{cfg[step_last].replace('/','').split('_')[-1]}.tsv"
     if not exists(dstep_last_outputp):
-        print(f"{get_datetime()}: processing: {cfg['prjd']}")
+        print(f"{get_datetime()}: processing: {basename(cfg['prjd'])}")
         logging.info(f"processing: {cfg['prjd']}")
     #     deps and genome are only needed if running step =1 or 4
         cfg['step2ignoredl']=[2,3]
@@ -162,9 +158,9 @@ def make_outputs(cfg,plot=True):
                         del dstep
                     else:
                         cols_on=list(set(doutput.columns.tolist()).intersection(dstep.columns.tolist()))
-                        print('left',doutput.columns.tolist())
-                        print('right',dstep.columns.tolist())
-                        print('common',cols_on)
+#                         print('left',doutput.columns.tolist())
+#                         print('right',dstep.columns.tolist())
+#                         print('common',cols_on)
                         if len(cols_on)!=0:         
                             doutput.to_csv('test_doutput.tsv',sep='\t')
                             dstep.to_csv('test_dstep.tsv',sep='\t')
@@ -207,12 +203,12 @@ def validinput(cfg,din):
             logging.error(f"invalid column name: {col} is not in [{','.join(mutation_format2cols[cfg['mutation_format']])}]")
     return all(opt_validity)
 
-def pipeline(cfgp,step=None,test=False,force=False):        
-
+def pipeline(cfgp,step=None,test=False,force=False):
     import yaml
     from glob import glob
-
+    cfgp=abspath(cfgp)
     cfg=yaml.load(open(cfgp, 'r'))
+    
     # check inputs
     if not exists(cfg['dinp']):
         logging.error(f"input file {cfg['dinp']} is not found.")
@@ -232,10 +228,8 @@ def pipeline(cfgp,step=None,test=False,force=False):
     cfg['host']=pyensembl.species.normalize_species_name(cfg['host'])        
     #project dir
     cfg['prj']=splitext(basename(cfgp))[0]
-    if dirname(cfgp)!='':
-        cfg['prjd']=dirname(cfgp)+'/'+cfg['prj']
-    else:
-        cfg['prjd']=cfg['prj']
+    cfg['prjd']=dirname(cfgp)+'/'+cfg['prj']
+    cfg['beditor']=abspath(__file__)
 
     #step
     cfg['step']=step

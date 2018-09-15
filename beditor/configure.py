@@ -3,7 +3,6 @@
 # Copyright 2018, Rohan Dandage <rraadd_8@hotmail.com,rohan@igib.in>
 # This program is distributed under General Public License v. 3.  
 
-
 import sys
 from os.path import exists,splitext,dirname,splitext,basename,realpath,abspath
 from os import makedirs

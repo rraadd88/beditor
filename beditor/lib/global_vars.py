@@ -48,11 +48,7 @@ stepi2name= {
 
 stepi2cols={
 1: ['aminoacid: position', 'gene: id', 'gene: name', 'protein: id', 'transcript: id', 'transcript: sequence', 'aminoacid: wild-type', 'codon: wild-type', 'contig', 'strand', 'start', 'end', 'codon start', 'codon end'],
-2:  ['Position of codon start from PAM: maximum',
- 'Position of codon start from PAM: minimum',
- 'Position of mutation from PAM: maximum',
- 'Position of mutation from PAM: minimum',
- 'amino acid',
+2:  ['amino acid',
  'amino acid mutation',
  'codon',
  'codon mutation',
@@ -64,7 +60,7 @@ stepi2cols={
  'nucleotide mutation',
  'nucleotide mutation: count',
  'position of mutation in codon'],    
-3: ['PAM','Description','guide length','original','original position','position','rPAM','reverse complement','strand','is a reverse complement','guide+PAM sequence','guide sequence','PAM sequence','position of PAM ini','position of PAM end','distance of codon from PAM','codon','guide sequence length','index','transcript: id','aminoacid: position','aminoacid: wild-type','codon: wild-type','id','amino acid mutation','Unnamed: 0','method','amino acid','position of mutation in codon','codon mutation','nucleotide','nucleotide mutation','mutation on strand','codon mutation usage Fraction','codon mutation usage Frequency','nucleotide mutation: count','Position of mutation from PAM: minimum','Position of mutation from PAM: maximum','Position of codon start from PAM: minimum','Position of codon start from PAM: maximum','distance of mutation from PAM: minimum','distance of mutation from PAM: maximum','distance of codon start from PAM: minimum','distance of codon start from PAM: maximum','activity sequence','distance of mutation in codon from PAM','strategy','guide: id','guide+PAM length'],
+3: ['PAM','Description','guide length','original','original position','position','rPAM','reverse complement','strand','is a reverse complement','guide+PAM sequence','guide sequence','PAM sequence','position of PAM ini','position of PAM end','distance of codon from PAM','codon','guide sequence length','index','transcript: id','aminoacid: position','aminoacid: wild-type','codon: wild-type','id','amino acid mutation','Unnamed: 0','method','amino acid','position of mutation in codon','codon mutation','nucleotide','nucleotide mutation','mutation on strand','codon mutation usage Fraction','codon mutation usage Frequency','nucleotide mutation: count','distance of mutation from PAM: minimum','distance of mutation from PAM: maximum','distance of codon start from PAM: minimum','distance of codon start from PAM: maximum','activity sequence','distance of mutation in codon from PAM','strategy','guide: id','guide+PAM length'],
 4: ['guide: id','id','guide+PAM sequence','gene names','gene ids','transcript ids','types','protein ids','exon ids','beditor score','CFD score','beditor score (log10)','alternate alignments count'],    
 5:['transcript: id',
  'aminoacid: position',

@@ -451,10 +451,10 @@ def dseq2dmutagenesis(cfg):
                 dBEsi=dBEs.loc[(dBEs['method']==method) & (dBEs['strand']==strand),:]
                 BEs2mutations[f"{method} on {strand} strand"]=[dBEsi['nucleotide'].unique().tolist()[0],
                                                                dBEsi['nucleotide mutation'].unique().tolist()]
-        pos_muts=dBEs.loc[:,['method','Position of mutation from PAM: minimum',
-         'Position of mutation from PAM: maximum',
-         'Position of codon start from PAM: minimum',
-         'Position of codon start from PAM: maximum']].drop_duplicates().set_index('method')
+        pos_muts=dBEs.loc[:,['method']+['distance of mutation from PAM: minimum',
+         'distance of mutation from PAM: maximum',
+         'distance of codon start from PAM: minimum',
+         'distance of codon start from PAM: maximum']].drop_duplicates().set_index('method')
 
         dmutagenesis=get_possible_mutagenesis(dcodontable,dcodonusage,
                                     BEs=BEs2mutations,pos_muts=pos_muts,
