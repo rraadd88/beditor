@@ -21,7 +21,7 @@ from Bio import motifs,Seq,AlignIO
 import logging
 
 from beditor.lib.io_strs import make_pathable_string
-
+from beditor.lib.io_dfs import df2info
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
@@ -439,8 +439,13 @@ def plot_dna_features_view(dsequences,dguides,plotd,more=False):
     ids=[guideids[i] for i in np.sort(np.random.choice(range(guidesc), 10 if guidesc>10 else guidesc-1, replace=False))]
     for id in ids:
         gbp=f"{plotd}/{make_pathable_string(id)}.gb"
-        plotp=f"{gbp}.png"
-        record=make_gb(sequence_string=dsequences.loc[(dsequences['id']==id),'transcript: sequence'].tolist()[0],
+        plotp=f"{gbp}.png"        
+        if id in dsequences['id']:
+            seq_transcript=dsequences.loc[(dsequences['id']==id),'transcript: sequence'].tolist()[0]
+        else:
+            logging.info('mutation_format=nucleotide detected.')
+            seq_transcript=dsequences.loc[(dsequences['id']==id.split('|')[0]),'transcript: sequence'].tolist()[0] 
+        record=make_gb(sequence_string=seq_transcript,
                 features=get_df4features(dguides,id,types=['guide+pam']),gbp=gbp,
                    )
         plot_seq(record,
@@ -448,7 +453,6 @@ def plot_dna_features_view(dsequences,dguides,plotd,more=False):
                  xlabel=f'Sequence flanking target site\n bed id: {id}',
                  plotp=plotp
                 )
-        
 
 def plot_dist_dofftargets(dofftargets,plotp):
     dofftargets=dofftargets.replace([np.inf, -np.inf], np.nan)
@@ -525,11 +529,11 @@ def plot_vizbysteps(cfg):
     if len(plotps)==0 or cfg['force']:
         dguidesp=f"{cfg[stepi]}/d{cfg[stepi].replace('/','').split('_')[-1]}.tsv"
         dsequencesp=f"{cfg[stepi-2]}/d{cfg[stepi-2].replace('/','').split('_')[-1]}.tsv"
-        if exists(dstepp):
+        if exists(dguidesp):
             logging.info('plot_dna_features_view')
             plot_dna_features_view(dsequences=del_Unnamed(pd.read_table(dsequencesp)).drop_duplicates(),
-                                   dguides=del_Unnamed(pd.read_table(dguidesp)).drop_duplicates(),
-                                   plotd=plotd,more=False)
+                       dguides=del_Unnamed(pd.read_table(dguidesp)).drop_duplicates(),
+                       plotd=plotd,more=False)
         else:
             logging.warning(f'not found: {dstepp}')
             
