@@ -208,6 +208,7 @@ def get_seq_nucleotide(cfg,din):
     # print(dsequences.columns)
     dsequences['nucleotide wild-type']=dsequences.apply(lambda x: x['transcript: sequence'][flankntc],axis=1)
     dsequences['codon: wild-type']=dsequences.apply(lambda x: x['transcript: sequence'][flankntc-1:flankntc+2],axis=1)
+    dsequences['transcript: id']=dsequences['genome coordinate']
     dsequences.to_csv(f"{cfg['dsequencesp']}",sep='\t')
     # return dsequences
 

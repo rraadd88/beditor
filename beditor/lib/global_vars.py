@@ -22,6 +22,16 @@ cfgoption2allowed={
 'mutation_format':['aminoacid','nucleotide'],
 }
 
+#output 
+# cols
+stepi2colsoutput={
+    0: mutation_format2cols['nucleotide']+mutation_format2cols['aminoacid'],
+    1: mutation_format2cols['nucleotide']+['nucleotide wild-type','codon: wild-type']+['transcript: id','aminoacid: position','aminoacid: wild-type'],
+    3: ['nucleotide mutation', 'nucleotide wild-type']+['transcript: id','aminoacid: position','aminoacid: wild-type',
+        'amino acid mutation','guide: id','guide+PAM sequence'],
+    4: ['guide: id','beditor score','alternate alignments count','CFD score'],
+   }
+
 
 flankaac=7
 flankntc=22

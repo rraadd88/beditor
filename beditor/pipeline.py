@@ -138,11 +138,7 @@ from glob import glob
 from beditor.lib.plot_res import plot_vizbysteps
 def make_outputs(cfg,plot=True):
     print(f"{get_datetime()}: generating outputs")        
-    stepi2cols={0: None,
-            1: ['transcript: id','aminoacid: position','aminoacid: wild-type'],
-            3: ['transcript: id','aminoacid: position','aminoacid: wild-type','amino acid mutation','guide: id','guide+PAM sequence'],
-            4: ['guide: id','beditor score','alternate alignments count','CFD score'],
-           }
+    from beditor.lib.global_vars import stepi2colsoutput
     prjd=cfg['prjd']
     #make one output table and stepwise plots
     datad=f"{prjd}/05_output"
@@ -157,27 +153,27 @@ def make_outputs(cfg,plot=True):
                 dstepp=f"{cfg[stepi]}/d{cfg[stepi].replace('/','').split('_')[-1]}.tsv"
                 if exists(dstepp):
                     logging.info(f'combining {stepi}')
-                    if (stepi==0) or (stepi==1):
-                        from beditor.lib.global_vars import mutation_format2cols
-                        cols_take=mutation_format2cols[cfg['mutation_format']]
-                    else:
-                        cols_take=stepi2cols[stepi]
-                    dstep=del_Unnamed(pd.read_table(dstepp)).loc[:,cols_take].drop_duplicates()
+                    colsoutput=stepi2colsoutput[stepi]
+                    dstep=del_Unnamed(pd.read_table(dstepp))
+                    colsoutput=[col for col in colsoutput if col in dstep] 
+                    dstep=dstep.loc[:,colsoutput].drop_duplicates()
                     if not 'doutput' in locals():
                         doutput=dstep.copy()
                         del dstep
                     else:
                         cols_on=list(set(doutput.columns.tolist()).intersection(dstep.columns.tolist()))
+                        print('left',doutput.columns.tolist())
+                        print('right',dstep.columns.tolist())
+                        print('common',cols_on)
                         if len(cols_on)!=0:         
                             doutput.to_csv('test_doutput.tsv',sep='\t')
                             dstep.to_csv('test_dstep.tsv',sep='\t')
                             doutput=pd.merge(doutput,dstep,on=cols_on,how='left')
                         else:
                             logging.error(f'output of step {stepi-1} or {stepi} are missing.')
-                            print(doutput.columns.tolist())
-                            print(dstep.columns.tolist())
-        #         if stepi==4:
-        #             break
+                        del dstep
+        if cfg['mutation_format']=='nucleotide':
+            doutput=doutput.drop([c for c in doutput if (('codon' in c) or ('amino' in c) or ('transcript' in c))],axis=1)
         makedirs(dirname(doutputp),exist_ok=True)
         doutput.to_csv(doutputp,sep='\t')
     else:
