@@ -296,6 +296,7 @@ def dinnucleotide2dsequencesproper(dsequences,dmutagenesis):
     # from beditor.lib.io_dfs import df2info
     # df2info(dsequences)
     # df2info(dmutagenesis)
+    dmutagenesis=dmutagenesis.loc[(dmutagenesis['position of mutation in codon']==2),:]
     dsequences=pd.merge(dsequences,dmutagenesis,
              left_on=['nucleotide wild-type','nucleotide mutation'],
              right_on=['nucleotide','nucleotide mutation'],
