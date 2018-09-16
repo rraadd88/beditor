@@ -364,9 +364,9 @@ def plot_dist_dguides(dguideslin,dpam,plotpf=None):
             dguideslin_sub12=dguideslin_sub1.loc[(dguideslin_sub1['PAM']==pam),:]
             #position
             dps_pos={}
-            poss=dguideslin_sub12['position of mutation in codon from PAM'].unique()
+            poss=dguideslin_sub12['position of mutation from PAM'].unique()
             for pos in np.sort(poss):
-                dguideslin_sub123=dguideslin_sub12.loc[(dguideslin_sub12['position of mutation in codon from PAM']==pos),:]
+                dguideslin_sub123=dguideslin_sub12.loc[(dguideslin_sub12['position of mutation from PAM']==pos),:]
                 #combine strands
                 dps_pos[pos]=get_dntcompos(dguideslin_sub123,dpam,pos,pam)
             dps_pam[pam]=dps_pos
@@ -402,7 +402,7 @@ def plot_dist_dguides(dguideslin,dpam,plotpf=None):
             plt.savefig(plotpf.format(method=met))
     return dps
 #         break                      
-def plot_dna_features_view(dsequences,dguides,plotd,more=False):
+def plot_dna_features_view(cfg,dsequences,dguides,plotd,more=False):
     guideids=dguides['id'].unique()
     if not more:
         np.random.seed(seed=8888)
@@ -416,7 +416,10 @@ def plot_dna_features_view(dsequences,dguides,plotd,more=False):
             seq_transcript=dsequences.loc[(dsequences['id']==id),'transcript: sequence'].tolist()[0]
         else:
             logging.info('mutation_format=nucleotide detected.')
-            seq_transcript=dsequences.loc[(dsequences['id']==id.split('|')[0]),'transcript: sequence'].tolist()[0] 
+            if cfg['mutation_format']=='nucleotide':
+                seq_transcript=dsequences.loc[(dsequences['id']==id.split('|')[0]),'transcript: sequence'].tolist()[0] 
+            elif cfg['mutation_format']=='aminoacid':
+                seq_transcript=dsequences.loc[(dsequences['id']==id),'transcript: sequence'].tolist()[0] 
         record=make_gb(sequence_string=seq_transcript,
                 features=get_df4features(dguides,id,types=['guide+pam']),gbp=gbp,
                    )
@@ -501,7 +504,7 @@ def plot_vizbysteps(cfg):
         dsequencesp=f"{cfg[stepi-2]}/d{cfg[stepi-2].replace('/','').split('_')[-1]}.tsv"
         if exists(dguidesp):
             logging.info('plot_dna_features_view')
-            plot_dna_features_view(dsequences=del_Unnamed(pd.read_table(dsequencesp)).drop_duplicates(),
+            plot_dna_features_view(cfg,dsequences=del_Unnamed(pd.read_table(dsequencesp)).drop_duplicates(),
                        dguides=del_Unnamed(pd.read_table(dguidesp)).drop_duplicates(),
                        plotd=plotd,more=False)
         else:

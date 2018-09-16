@@ -181,12 +181,30 @@ def make_outputs(cfg,plot=True):
     return doutput 
 
 def validcfg(cfg): 
-    from beditor.lib.global_vars import cfgoption2allowed
+    from beditor.lib.global_vars import cfgoption2allowed,cfgoption2reguired
     opt_validity=[]
     for opt in ['mutations','mutation_format']:
         opts=cfgoption2allowed[opt]
         if cfg[opt] in opts:
             opt_validity.append(True)
+            if opt in cfgoption2reguired:
+                for opt_opt in cfgoption2reguired[opt]:
+                    opt_opt_opt=cfgoption2reguired[opt][opt_opt]
+                    if opt_opt_opt in cfg:
+                        opt_validity.append(True)
+                        if 'path' in opt_opt_opt:
+                            if not cfg[opt_opt_opt] is None:
+                                if exists(cfg[opt_opt_opt]):
+                                    opt_validity.append(True)
+                                else:
+                                    opt_validity.append(False)
+                                    logging.error(f"{opt_opt_opt}:{cfg[opt_opt_opt]} is not found.")
+                            else:
+                                opt_validity.append(False)
+                                logging.error(f"{opt_opt_opt} is {cfg[opt_opt_opt]}.")
+                    else:
+                        opt_validity.append(False)
+                        logging.error(f"{opt_opt_opt} is not found in cfg")
         else:
             opt_validity.append(False)
             logging.error(f"invalid option: {cfg[opt]} is not in [{','.join([s if not s is None else 'None' for s in opts])}]")
@@ -216,6 +234,7 @@ def pipeline(cfgp,step=None,test=False,force=False):
 
     if not validcfg(cfg):
         logging.error(f"configuration file {cfgp} is not valid.")
+        print(cfg)
         sys.exit(1)
 
     if (cfg['mutations']=='substitutions'):    
@@ -223,6 +242,7 @@ def pipeline(cfgp,step=None,test=False,force=False):
             logging.critical(f"dsubmap_preferred_path is {cfg['dsubmap_preferred_path']}")
             logging.critical(cfg)
             sys.exit(1)
+            
     # get names right
     import pyensembl
     cfg['host']=pyensembl.species.normalize_species_name(cfg['host'])        

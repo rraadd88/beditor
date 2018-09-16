@@ -236,9 +236,9 @@ def make_guides(cfg,dseq,dmutagenesis,
         dpositions=dguides.apply(lambda x: guide2dpositions(x),axis=1).apply(pd.Series)
 #         posmut,posmutfrompam,distmutfrompam,posguideini,posguideend,activity_sequence
         dpositions.columns=['position of mutation','position of mutation from PAM','distance of mutation from PAM',
-                           'position guide ini','position guide end','activity sequence']
-        dguides.to_csv('test_dguides.csv',sep='\t')
-        dpositions.to_csv('test_dposition.csv',sep='\t')
+                           'position of guide ini','position of guide end','activity sequence']
+#         dguides.to_csv('test_dguides.csv',sep='\t')
+#         dpositions.to_csv('test_dposition.csv',sep='\t')
         for col in dpositions:
             dguides[col]=dpositions[col]
         
