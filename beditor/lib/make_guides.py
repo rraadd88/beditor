@@ -68,80 +68,64 @@ def get_pam_searches(dpam,seq,pos_codon,
     dpamposs.index.name='PAM'
     return dpamposs
 
+def guide2dpositions(x,dbug=False): 
+    # index and flank seq based indexing os 0based
+    # from pam is 1-based
+    dpositions=pd.DataFrame(index=range(45),
+                           columns=['guide+PAM sequence'])
+    dpositions.index.name='position'
 
-# def get_activity_seq(guide_seq,
-#                      pam_pos,
-#                      pam_dist_min,
-#                      pam_dist_max,dbug=False):
-#     if dbug:
-#         print(guide_seq,pam_pos,pam_dist_min,pam_dist_max)
-#     if pam_pos=='up':
-#         seq=guide_seq[pam_dist_min-1:pam_dist_max]
-#     elif pam_pos=='down':
-#         seq=guide_seq[::-1][pam_dist_min-1:pam_dist_max][::-1]
-#     return seq
+    dpositions.loc[x['position of PAM ini']:x['position of PAM end'],'location PAM']=True
+    if x['position']=='up':
+        dpositions.loc[x['position of PAM end']+1:x['position of PAM end']+x['guide sequence length'],'location guide']=True
+        dpositions.loc[x['position of PAM end']+x['distance of mutation from PAM: minimum']:x['position of PAM end']+x['distance of mutation from PAM: maximum'],'location window']=True        
+    elif x['position']=='down':
+        dpositions.loc[x['position of PAM ini']-x['guide sequence length']:x['position of PAM ini']-1,'location guide']=True
+        dpositions.loc[x['position of PAM ini']-x['distance of mutation from PAM: maximum']:x['position of PAM ini']-x['distance of mutation from PAM: minimum'],'location window']=True        
 
-# def get_pos_mut_from_pam(x,
-#     pos_codon_ini=22, #FIXME if fragment size if changed
-#     pos_codon_end=24, #FIXME if fragment size if changed
-#     dbug=False):
-#     strand=x['strand'] #FIXME annotate the strand wrt to fragment(BE/dPAM) and genome
-#     loc_pam=x['position']
-#     pos_pam_ini=x['position of PAM ini']+1
-#     pos_pam_end=x['position of PAM end']+1
-#     pos_mut_incodon=x['position of mutation in codon']
-#     if strand=='-':
-#         pos_mut_incodon=4-pos_mut_incodon
-#     pos_mut_infragment=pos_mut_incodon+pos_codon_ini-1
-    
-#     if dbug:
-#         print(loc_pam,strand)
-#     if loc_pam=='down' and strand=='+':
-#         dist_mut_frompam=pos_mut_infragment-pos_pam_ini
-#         if dbug:
-#             print(pos_mut_infragment,pos_pam_end)
-#     elif loc_pam=='down' and strand=='-':
-#         dist_mut_frompam=pos_mut_infragment-pos_pam_end
-#         dist_mut_frompam=dist_mut_frompam*-1
-#         if dbug:
-#             print(pos_mut_infragment,pos_pam_end)
-#     elif loc_pam=='up' and strand=='+':
-#         dist_mut_frompam=pos_mut_infragment-pos_pam_ini        
-#         dist_mut_frompam=dist_mut_frompam*-1
-#         if dbug:
-#             print(pos_mut_infragment,pos_pam_end)
-#     elif loc_pam=='up' and strand=='-':
-#         dist_mut_frompam=pos_mut_infragment-pos_pam_end
-#         if dbug:
-#             print(pos_mut_infragment,pos_pam_end)
-#     else:
-#         raise(ValueError(f'loc_pam or strand are invalid ({loc_pam},{strand})'))
-#     return dist_mut_frompam
+    dpositions.loc[21:23,'location codon']=True
+    dpositions.loc[21-1+x['position of mutation in codon'],'location mutation']=True
+    dpositions[[c for c in dpositions if 'location' in c]]=dpositions[[c for c in dpositions if 'location' in c]].fillna(False)
+    dpositions['location guide+PAM']=dpositions['location guide'] | dpositions['location PAM']
+    if x['original position']=='down' and x['strand']=='+':
+        dpositions['position from PAM']=np.array(dpositions.index.tolist())-dpositions.loc[dpositions['location PAM'],:].index.tolist()[0]
+    elif x['original position']=='down' and  x['strand']=='-':
+        dpositions['position from PAM']=np.array(dpositions.index.tolist())-dpositions.loc[dpositions['location PAM'],:].index.tolist()[-1]
+        dpositions['position from PAM']=dpositions['position from PAM']*-1    
+    elif x['original position']=='up' and x['strand']=='+':
+        dpositions['position from PAM']=dpositions.loc[dpositions['location PAM'],:].index.tolist()[-1]-np.array(dpositions.index.tolist())
+        dpositions['position from PAM']=dpositions['position from PAM']*-1    
+    elif x['original position']=='up' and  x['strand']=='-':
+        dpositions['position from PAM']=np.array(dpositions.index.tolist())-dpositions.loc[dpositions['location PAM'],:].index.tolist()[0]
+        dpositions['position from PAM']=dpositions['position from PAM']*-1    
 
-# def get_poss_guide(x,debug=False):
-#     loc_pam=x['original position']
-#     strand=x['strand']
-#     guide_length=x['guide sequence length']
-#     pos_pam_ini=x['position of PAM ini']
-#     pos_pam_end=x['position of PAM end']
-#     if loc_pam=='down' and strand=='+':
-#         pos_guide_ini=pos_pam_ini-guide_length
-#         pos_guide_end=pos_pam_ini-1
-#     elif loc_pam=='down' and strand=='-':
-#         pos_guide_ini=pos_pam_end+1
-#         pos_guide_end=pos_pam_end+guide_length
-#     elif loc_pam=='up' and strand=='+':
-#         pos_guide_ini=pos_pam_end+1
-#         pos_guide_end=pos_pam_end+guide_length
-#     elif loc_pam=='up' and strand=='-':
-#         pos_guide_ini=pos_pam_ini-1
-#         pos_guide_end=pos_pam_ini-guide_length
-#     else:
-#         raise(ValueError(f'loc_pam or strand are invalid ({loc_pam},{strand})'))
-#     if debug:
-#         return pos_guide_ini,pos_guide_end,loc_pam,strand,pos_pam_ini,pos_pam_end,x['strategy']
-#     else:
-#         return pos_guide_ini,pos_guide_end        
+    dpositions.loc[dpositions['location mutation'],'nucleotide wild-type']=x['nucleotide']
+    dpositions.loc[dpositions['location mutation'],'nucleotide mutation']=x['nucleotide mutation']
+
+    dpositions.loc[dpositions['location codon'],'codon wild-type']=list(x['codon: wild-type'])
+    dpositions.loc[dpositions['location codon'],'codon mutation']=list(x['codon mutation'])
+    if x['strand']=='+':
+        dpositions.loc[dpositions['location guide+PAM'],'guide+PAM sequence']=list(x['guide+PAM sequence'])
+        activity_sequence=''.join(dpositions.loc[dpositions['location window'],'guide+PAM sequence'].tolist())
+    elif x['strand']=='-':
+        dpositions.loc[dpositions['location guide+PAM'],'guide+PAM sequence']=list(x['guide+PAM sequence'])[::-1]
+        activity_sequence=''.join(dpositions.loc[dpositions['location window'],'guide+PAM sequence'].tolist())[::-1]
+    posmut=dpositions.loc[dpositions['location mutation'],:].index[0]
+    posmutfrompam=int(dpositions.loc[dpositions['location mutation'],'position from PAM'])
+    distmutfrompam=abs(posmutfrompam)
+    posguideini=dpositions.loc[dpositions['location guide'],:].index.min()
+    posguideend=dpositions.loc[dpositions['location guide'],:].index.max()
+    if dbug:
+        print(x[['strategy','strand','distance of mutation from PAM']+[s for s in x.index if ('sequence' in s) or ('length' in s)]])
+        print({'posmut':posmut,
+               'posmutfrompam':posmutfrompam,
+               'distmutfrompam':distmutfrompam,
+               'posguideini':posguideini,
+               'posguideend':posguideend,
+              'activity_sequence':activity_sequence})
+        return dpositions
+    else:
+        return posmut,posmutfrompam,distmutfrompam,posguideini,posguideend,activity_sequence
     
 def make_guides(cfg,dseq,dmutagenesis,
                 dpam,
@@ -242,21 +226,20 @@ def make_guides(cfg,dseq,dmutagenesis,
     if 'dguides' in locals():        
         # 0-based indexing 'position of guide ini/end', 'position of PAM ini/end'
         # 1-based indexing 'position of mutation in codon'
-#         dguides['position of mutation in codon from PAM']=dguides.apply(lambda x : get_pos_mut_from_pam(x),axis=1)
-#         dguides['distance of mutation in codon from PAM']=dguides['position of mutation in codon from PAM'].apply(abs)
-#         dguides_guidepos=dguides.apply(lambda x : get_poss_guide(x),axis=1).apply(pd.Series)
-#         dguides_guidepos.columns=['position of guide ini','position of guide end']
-#         for col in dguides_guidepos:
-#             dguides[col]=dguides_guidepos[col]
     
-        # print(dguides.columns) #RMME
         logging.info('#reverse complement guides on negative strand sequences')
         dguides.loc[:,'PAM']=dguides.apply(lambda x : reverse_complement_multintseq(x['PAM'],nt2complement) if x['is a reverse complement'] else x['PAM'],axis=1)
         for colseq in ['guide+PAM sequence','guide sequence','PAM sequence']:
             dguides.loc[:,colseq]=dguides.apply(lambda x : str(str2seq(x[colseq]).reverse_complement()) if x['is a reverse complement'] else x[colseq],axis=1)
 
         logging.info('get dposition')
-
+        dpositions=dguides.apply(lambda x: guide2dpositions(x),axis=1)
+#         posmut,posmutfrompam,distmutfrompam,posguideini,posguideend,activity_sequence
+        dpositions.columns=['position of mutation','position of mutation from PAM','distance of mutation from PAM',
+                           'position guide ini','position guide end','activity sequence']
+        for col in dpositions:
+            dguides[col]=dpositions[col]
+        
         logging.info('filter by # of editable nts in activity seq')
         logging.info(dguides.shape)
         dguides_noflt=dguides.copy()
@@ -266,10 +249,10 @@ def make_guides(cfg,dseq,dmutagenesis,
             # if dbug:
             #     dguides.to_csv('test.tsv',sep='\t')
             logging.info('#filter by location of mutation within guide')
-            dguides=dguides.loc[dguides.apply(lambda x : True if (x['distance of mutation from PAM: minimum']<=abs(x['distance of mutation in codon from PAM'])<=x['distance of mutation from PAM: maximum']) else False,axis=1),:]
+            dguides=dguides.loc[dguides.apply(lambda x : True if (x['distance of mutation from PAM: minimum']<=abs(x['distance of mutation from PAM'])<=x['distance of mutation from PAM: maximum']) else False,axis=1),:]
             if len(dguides)!=0:
 
-                dguides.loc[:,'strategy']=dguides.apply(lambda x: f"{x['method']};{x['strand']};@{int(x['distance of mutation in codon from PAM'])};{x['PAM']};{x['codon']}:{x['codon mutation']};{x['amino acid']}:{x['amino acid mutation']};",axis=1)
+                dguides.loc[:,'strategy']=dguides.apply(lambda x: f"{x['method']};{x['strand']};@{int(x['distance of mutation from PAM'])};{x['PAM']};{x['codon']}:{x['codon mutation']};{x['amino acid']}:{x['amino acid mutation']};",axis=1)
                 dguides.loc[:,'guide: id']=dguides.apply(lambda x: f"{x['id']}|{int(x['aminoacid: position']) if not pd.isnull(x['aminoacid: position']) else 'nucleotide'}|({x['strategy']})",axis=1)
                 dguides.loc[:,'guide+PAM length']=dguides.apply(lambda x: len(x['guide+PAM sequence']),axis=1)
                 dguides=dguides.drop_duplicates(subset=['guide: id'])
