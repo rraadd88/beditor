@@ -190,21 +190,22 @@ def validcfg(cfg):
             if opt in cfgoption2reguired:
                 for opt_opt in cfgoption2reguired[opt]:
                     opt_opt_opt=cfgoption2reguired[opt][opt_opt]
-                    if opt_opt_opt in cfg:
-                        opt_validity.append(True)
-                        if 'path' in opt_opt_opt:
-                            if not cfg[opt_opt_opt] is None:
-                                if exists(cfg[opt_opt_opt]):
-                                    opt_validity.append(True)
+                    if cfg[opt]==opt_opt: 
+                        if (opt_opt_opt in cfg):
+                            opt_validity.append(True)
+                            if 'path' in opt_opt_opt:
+                                if not cfg[opt_opt_opt] is None:
+                                    if exists(cfg[opt_opt_opt]):
+                                        opt_validity.append(True)
+                                    else:
+                                        opt_validity.append(False)
+                                        logging.error(f"{opt_opt_opt}:{cfg[opt_opt_opt]} is not found.")
                                 else:
                                     opt_validity.append(False)
-                                    logging.error(f"{opt_opt_opt}:{cfg[opt_opt_opt]} is not found.")
-                            else:
-                                opt_validity.append(False)
-                                logging.error(f"{opt_opt_opt} is {cfg[opt_opt_opt]}.")
-                    else:
-                        opt_validity.append(False)
-                        logging.error(f"{opt_opt_opt} is not found in cfg")
+                                    logging.error(f"path {opt_opt_opt} is {cfg[opt_opt_opt]}.")
+                        else:
+                            opt_validity.append(False)
+                            logging.error(f"{opt_opt} is not an option variable")
         else:
             opt_validity.append(False)
             logging.error(f"invalid option: {cfg[opt]} is not in [{','.join([s if not s is None else 'None' for s in opts])}]")
@@ -292,7 +293,7 @@ def pipeline(cfgp,step=None,test=False,force=False):
                      ) 
     if (not '/chunk' in cfgp) and (step==1 or (step is None)):
         from beditor.lib.io_dfs import df2chucks
-        din=pd.read_csv(cfg['dinp'],sep='\t')
+        din=pd.read_csv(cfg['dinp'],sep='\t',low_memory=False)
         if not validinput(cfg,din):
             logging.error(f"configuration file {cfgp} is not valid.")
             sys.exit(1)

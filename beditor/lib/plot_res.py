@@ -429,12 +429,12 @@ def plot_dna_features_view(cfg,dsequences,dguides,plotd,more=False):
                  plotp=plotp
                 )
 
-def plot_dist_dofftargets(dofftargets,plotp):
+def plot_dist_dofftargets(dofftargets,plotp=None):
     dofftargets=dofftargets.replace([np.inf, -np.inf], np.nan)
     plt.figure(figsize=[3,3])
     ax=plt.subplot(111)
     _=dofftargets['beditor score (log10)'].hist(bins=100,ax=ax)
-    ax.set_xlim(-100,0)
+    ax.set_xlim(-50,0)
     ax.set_xlabel('beditor score (log10 scale)')
     ax.set_ylabel('number of guides')
     plt.tight_layout()
