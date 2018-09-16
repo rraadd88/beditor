@@ -160,7 +160,7 @@ def get_seq_aminoacid(cfg,din):
     }
     if 'amino acid mutation' in dseq:
         dseq2compatible['amino acid mutation']='amino acid mutation'
-    dseq.to_csv(dseqtmpp,sep='\t')
+    dseq.to_csv(cfg['dseqtmpp'],sep='\t')
     
     dseq=dseq[list(dseq2compatible.values())]
     dseq.columns=list(dseq2compatible.keys())
@@ -175,7 +175,7 @@ def get_seq_aminoacid(cfg,din):
         if cfg['reverse_mutations']:
             dseq=reverse_mutations(dseq)
 
-    dseq.to_csv(f"cfg['dsequencesp']",sep='\t')
+    dseq.to_csv(f"{cfg['dsequencesp']}",sep='\t')
     del ensembl
 
 from .io_seqs import genomeocoords2bed,fa2df
