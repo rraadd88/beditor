@@ -209,6 +209,9 @@ def get_seq_nucleotide(cfg,din):
     dsequences['nucleotide wild-type']=dsequences.apply(lambda x: x['transcript: sequence'][flankntc],axis=1)
     dsequences['codon: wild-type']=dsequences.apply(lambda x: x['transcript: sequence'][flankntc-1:flankntc+2],axis=1)
     dsequences['transcript: id']=dsequences['genome coordinate']
+    dsequences_bedcols=genomeocoords2bed(dsequences, col_genomeocoord='genome coordinate')
+    for col in dsequences_bedcols:
+        dsequences[col]=dsequences_bedcols[col]
     dsequences.to_csv(f"{cfg['dsequencesp']}",sep='\t')
     # return dsequences
 

@@ -124,9 +124,6 @@ def guidessam2dalignbed(cfg):
                 logging.warning(f"file is empty: {guidessamp}")
         dalignbed.to_csv(dalignbedp,sep='\t')
         from beditor.lib.io_nums import str2numorstr
-        #
-        dalignbed.to_csv('test_dalignbed',sep='\t')
-        #
         dalignbed['chromosome']=dalignbed.apply(lambda x : str2numorstr(x['chromosome']),axis=1)
         dalignbed=dalignbed.sort_values(['chromosome','start','end'], ascending=[True, True, True])
         dalignbed.loc[:,bed_colns].to_csv(alignmentbedp,sep='\t',

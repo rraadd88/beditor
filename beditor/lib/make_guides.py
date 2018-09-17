@@ -63,7 +63,7 @@ def get_pam_searches(dpam,seq,pos_codon,
         return None
     dpamposs['guide sequence length']=dpamposs.apply(lambda x : len(x['guide sequence']),axis=1)
 
-    
+    dpamposs['franking sequence']=seq
     dpamposs=dpam.join(set_index(dpamposs,'PAM'),how='right')
     dpamposs.index.name='PAM'
     return dpamposs
@@ -184,14 +184,21 @@ def make_guides(cfg,dseq,dmutagenesis,
                     dpamsearches_strategy=pd.merge(dpamsearchesflt.reset_index(),dmutagenesis_gi.reset_index(),
                              how='inner',
                              on=['codon','strand'])
+# #RM                    
+#                     print(dpamsearchesflt['strand'].unique().tolist(),
+#                           dmutagenesis_gi['strand'].unique().tolist(),
+#                           dpamsearches_strategy['strand'].unique().tolist())                    
+#                     if dmutagenesis_gi['strand'].unique().tolist()[0]=='-':
+#                         dpamsearchesflt.to_csv('test_dpamsearchesflt.tsv',sep='\t') #RM
+#                         dmutagenesis_gi.to_csv('test_dmutagenesis_gi.tsv',sep='\t') #RM
+#                         dpamsearches_strategy.to_csv('test_dpamsearches_strategy.tsv',sep='\t') #RM
+#                         rohan
+# #RM                        
                     if len(dpamsearches_strategy)!=0:                                 
-                        # print(dpamsearches_strategy.columns) #RMME
                         if not 'dguides' in locals():
                             dguides=dpamsearches_strategy.copy()
                         else:
                             dguides=dguides.append(dpamsearches_strategy)
-#                             if dbug:
-#                                 return dpamsearches_strategy        
                         del dpamsearches_strategy
                     else:
                         gierrdenan.append(gi)
@@ -293,27 +300,25 @@ def dpam2dpam_strands(dpam,pams):
     return dpam_strands
 
 def dinnucleotide2dsequencesproper(dsequences,dmutagenesis):
-    # from beditor.lib.io_dfs import df2info
-    # df2info(dsequences)
-    # df2info(dmutagenesis)
     dmutagenesis=dmutagenesis.loc[(dmutagenesis['position of mutation in codon']==2),:]
     dsequences=pd.merge(dsequences,dmutagenesis,
-             left_on=['nucleotide wild-type','nucleotide mutation'],
-             right_on=['nucleotide','nucleotide mutation'],
-            )
+             left_on=['nucleotide wild-type','nucleotide mutation','codon: wild-type'],
+             right_on=['nucleotide: wild-type','nucleotide: mutation','codon'],
+             suffixes=['',': dmutagenesis'])
     if len(dsequences)!=0:
         dsequences['transcript: id']=dsequences['genome coordinate']
-        dsequences['strand']=dsequences.apply(lambda x : x['mutation on strand'].split(' ')[0],axis=1)
         dsequences['aminoacid mutation']=dsequences['amino acid mutation']
         dsequences['aminoacid: wild-type']=dsequences['amino acid']
         dsequences['codon: wild-type']=dsequences['codon']
-        dsequences['id']=dsequences.apply(lambda x: f"{x['id']}|{x['method']}|{x['strand']}|{x['nucleotide wild-type']}:{x['nucleotide mutation']}|{x['codon: wild-type']}:{x['codon mutation']}",axis=1)
+#         df2info(dsequences,'nucle')
+#         df2info(dmutagenesis,'nucle')
+        dsequences['id']=dsequences.apply(lambda x: f"{x['genome coordinate']}|{x['method']}|{x['mutation on strand'].replace(' strand','')}|{x['nucleotide wild-type']}:{x['nucleotide mutation']}|{x['codon: wild-type']}:{x['codon mutation']}",axis=1)
     else:
         logging.warning('empty dsequences after merging with dmutagenesis')
     cols_missing=[c for c in stepi2cols[1] if not c in dsequences]
     for c in cols_missing:
         dsequences[c]=np.nan
-    return dsequences
+    return dsequences,dmutagenesis
 
 def dseq2dguides(cfg):
     """
@@ -330,12 +335,12 @@ def dseq2dguides(cfg):
         dmutagenesis=pd.read_csv(f"{cfg[cfg['step']-1]}/dmutagenesis.tsv",sep='\t')
         if cfg['mutation_format']=='nucleotide':
             dsequences=pd.read_csv(f"{cfg[cfg['step']-2]}/dsequences.tsv",sep='\t') #FIXME if numbering of steps is changed, this is gonna blow
-            dsequences=dinnucleotide2dsequencesproper(dsequences,dmutagenesis)
-            dsequences.to_csv(f"{cfg[cfg['step']]}/dsequences.tsv",sep='\t') #FIXME if numbering of steps is changed, this is gonna blow
+            dsequences,dmutagenesis=dinnucleotide2dsequencesproper(dsequences,dmutagenesis)
         elif cfg['mutation_format']=='aminoacid':
             dsequences=pd.read_csv(f"{cfg[cfg['step']-2]}/dsequences.tsv",sep='\t') #FIXME if numbering of steps is changed, this is gonna blow
+        dsequences.to_csv(f"{cfg[cfg['step']]}/dsequences.tsv",sep='\t') #FIXME if numbering of steps is changed, this is gonna blow
         # make pam table
-        dpam=pd.read_table('{}/../data/dpam.tsv'.format(dirname(realpath(__file__))))
+        dpam=pd.read_table(f'{dirname(realpath(__file__))}/../data/dpam.tsv')
         if sum(dpam['PAM'].isin(cfg['pams']))!=len(cfg['pams']):
             logging.error(f"PAM/s {cfg['pams']} are not supported {dpam['PAM'].tolist()}")
             sys.exit(1)
@@ -344,7 +349,6 @@ def dseq2dguides(cfg):
 
         dmutagenesis['strand']=dmutagenesis.apply(lambda x : x['mutation on strand'].replace(' strand',''),axis=1)        
         dmutagenesis.to_csv(dmutagenesisp,sep='\t')
-#         sys.exist(1)
         
         dguideslin,dguides_noflt,err2idxs=make_guides(cfg,dsequences,
                     dmutagenesis,

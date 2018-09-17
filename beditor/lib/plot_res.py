@@ -25,6 +25,8 @@ from beditor.lib.io_dfs import df2info
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
+from beditor.lib.io_dfs import df2info
+
 def data2sub_matrix(data_fit,
                     values_col,
                     index_col,
@@ -45,14 +47,9 @@ def data2sub_matrix(data_fit,
     else:
         data_sub_matrix=pd.pivot_table(data_fit,values=values_col,index=index_col,columns=col_ref,aggfunc=aggfunc)            
     return data_sub_matrix
-
-from beditor.lib.io_dfs import df2info
+    
 def plot_submap_possibilities(dmutagenesis,plotpf,test=False):
     import seaborn as sns
-#     from Bio.Alphabet import IUPAC
-#     aas=IUPAC.IUPACData.protein_letters+'*'    
-
-
 #     dmutagenesis=d.dropna(how='all')
     dmutagenesis=dmutagenesis.dropna(how='all')
     muttype2c={'All mutations':0,

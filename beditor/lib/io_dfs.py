@@ -178,11 +178,13 @@ def df2unstack(df,coln='columns',idxn='index',col='value'):
     df.name=col
     return pd.DataFrame(df).reset_index()
 
-def df2info(df):
+def df2info(df,col_search=None):
     if len(df.columns)>5:
         print('**COLS**: ',df.columns.tolist())
     print('**HEAD**: ',df.loc[:,df.columns[:5]].head())
     print('**SHAPE**: ',df.shape)
+    if not col_search is None:
+        print('**SEARCHEDCOLS**:\n',[c for c in df if col_search in c])
     
 def lambda2cols(df,lambdaf,in_coln,to_colns):
     df_=df.apply(lambda x: lambdaf(x[in_coln]),
@@ -236,3 +238,25 @@ def filldiagonal(df,cols,filler=None):
     for r,c in zip(cols,cols):
         df.loc[r,c]=filler
     return df
+
+def df2submap(df,col,idx,aggfunc='sum',binary=False):
+    df['#']=1
+    dsubmap=df.pivot_table(columns=col,index=idx,values='#',
+                       aggfunc=aggfunc)
+    if binary:
+        dsubmap=~pd.isnull(dsubmap)
+    return dsubmap
+
+def completesubmap(dsubmap,fmt,
+    fmt2vals={'aminoacid':["A","C","D","E","F","G","H","I","K","L","M","N","P","Q","R","S","T","V","W","Y","*"], 
+    'aminoacid_3letter':['ALA','ARG','ASN','ASP','CYS','GLN','GLU','GLY','HIS','ILE','LEU','LYS','MET','PHE','PRO','SER','THR','TRP','TYR','VAL'],
+    'codons':["TTT",    "TTC",    "TTA",  "TTG",  "TCT",  "TCC",  "TCA",  "TCG",  "TAT",  "TAC",  "TAA",  "TAG",  "TGT",  "TGC",  "TGA",  "TGG",  "CTT",  "CTC",  "CTA",  "CTG",  "CCT",  "CCC",  "CCA",  "CCG",  "CAT",  "CAC",  "CAA",  "CAG",  "CGT",  "CGC",  "CGA",  "CGG",  "ATT",  "ATC",  "ATA",  "ATG",  "ACT",  "ACC",  "ACA",  "ACG",  "AAT",  "AAC",  "AAA",  "AAG",  "AGT",  "AGC",  "AGA",  "AGG",  "GTT",  "GTC",  "GTA",  "GTG",  "GCT",  "GCC",  "GCA",  "GCG",  "GAT",  "GAC",  "GAA",  "GAG",  "GGT",  "GGC",  "GGA",  "GGG"],
+    'nucleotide': ['A','T','G','C'],}):
+    
+    vals=fmt2vals[fmt]
+    for v in vals: 
+        if not v in dsubmap.columns:            
+            dsubmap[v]=np.nan
+        if not v in dsubmap.index:
+            dsubmap.loc[v,:]=np.nan
+    return dsubmap.loc[vals,vals]

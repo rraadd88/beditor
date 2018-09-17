@@ -162,8 +162,6 @@ def make_outputs(cfg,plot=True):
 #                         print('right',dstep.columns.tolist())
 #                         print('common',cols_on)
                         if len(cols_on)!=0:         
-                            doutput.to_csv('test_doutput.tsv',sep='\t')
-                            dstep.to_csv('test_dstep.tsv',sep='\t')
                             doutput=pd.merge(doutput,dstep,on=cols_on,how='left')
                         else:
                             logging.error(f'output of step {stepi-1} or {stepi} are missing.')

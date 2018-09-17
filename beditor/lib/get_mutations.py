@@ -94,6 +94,7 @@ def get_possible_mutagenesis(dcodontable,dcodonusage,
         dmutagenesis.loc[cdni,'amino acid']=aa
         dmutagenesis.loc[cdni,'amino acid mutation']=aamut
         dmutagenesis.loc[cdni,'mutation on strand']=method.split(' on ')[1]
+        dmutagenesis.loc[cdni,'strand: mutation']=method.split(' on ')[1].replace(' strand','')
         dmutagenesis.loc[cdni,'method']=method.split(' on ')[0]                        
         dmutagenesis.loc[cdni,'codon mutation usage Fraction']=dcodonusage.loc[codonmut,'Fraction']
         dmutagenesis.loc[cdni,'codon mutation usage Frequency']=dcodonusage.loc[codonmut,'Frequency']
@@ -312,6 +313,12 @@ def get_possible_mutagenesis(dcodontable,dcodonusage,
     # Adding information of Allowed activity window
     dmutagenesis=dmutagenesis.set_index('method').join(pos_muts)
     dmutagenesis=dmutagenesis.reset_index()
+    
+    from beditor.lib.io_seqs import reverse_complement_multintseq
+    from beditor.lib.global_vars import nt2complement
+    dmutagenesis['nucleotide: wild-type']=dmutagenesis.apply(lambda x : x['nucleotide'] if x['strand: mutation']=='+' else reverse_complement_multintseq(x['nucleotide'],nt2complement),axis=1) 
+    dmutagenesis['nucleotide: mutation']=dmutagenesis.apply(lambda x : x['nucleotide mutation'] if x['strand: mutation']=='+' else reverse_complement_multintseq(x['nucleotide mutation'],nt2complement),axis=1)    
+    
     return dmutagenesis
 
 from beditor.lib.io_dfs import df2unstack
@@ -331,11 +338,11 @@ def get_submap(cfg):
     else:
         host=cfg['host']
     try:
-        dsubmap=pd.read_csv('{}/../data/dsubmap_{}.csv'.format(dirname(realpath(__file__)),host)).set_index('AA1')
+        dsubmap=pd.read_csv(f'{dirname(realpath(__file__))}/../data/dsubmap_{host}.csv').set_index('AA1')
     except:
         if cfg['test']:
-            print('{}/data/dsubmap_{}.csv'.format(dirname(realpath(__file__)),host))
-        dsubmap=pd.read_csv('data/dsubmap_{}.csv'.format(host)).set_index('AA1')
+            print(f"{dirname(realpath(__file__))}/data/dsubmap_{host}.csv")
+        dsubmap=pd.read_csv(f'data/dsubmap_{host}.csv').set_index('AA1')
         
     dsubmap.index.name='amino acid'
     dsubmap.columns.name='amino acid mutation'
@@ -456,7 +463,7 @@ def dseq2dmutagenesis(cfg):
          'distance of codon start from PAM: minimum',
          'distance of codon start from PAM: maximum']].drop_duplicates().set_index('method')
 
-        dmutagenesis=get_possible_mutagenesis(dcodontable,dcodonusage,
+        dmutagenesis=get_possible_mutagenesis(dcodontable=dcodontable,dcodonusage=dcodonusage,
                                     BEs=BEs2mutations,pos_muts=pos_muts,
                                     host=cfg['host'])
         dmutagenesis.to_csv(dmutagenesisallp,sep='\t')
