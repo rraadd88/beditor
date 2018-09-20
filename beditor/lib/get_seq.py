@@ -45,12 +45,7 @@ def t2pmapper(t,coding_sequence_positions):
     dcoding['transcript index']=dcoding.index.values+1
     return dcoding.sort_values(by='transcript index',ascending=True)#.set_index('transcript index')
 
-def reverse_mutations(dsequences):
-    dsequences['_amino acid mutation']=dsequences['amino acid mutation']
-    dsequences['amino acid mutation']=dsequences['aminoacid: wild-type']
-    dsequences['aminoacid: wild-type']=dsequences['_amino acid mutation']
-    dsequences=dsequences.drop(['_amino acid mutation'],axis=1)
-    return dsequences
+
 
 def get_seq_aminoacid(cfg,din):
     import pyensembl
@@ -173,8 +168,9 @@ def get_seq_aminoacid(cfg,din):
     set_index(dseq,'id')
     if 'reverse_mutations' in cfg:
         if cfg['reverse_mutations']:
-            dseq=reverse_mutations(dseq)
-
+            from beditor.lib.io_dfs import dfswapcols
+            dseq=dfswapcols(dseq,['aminoacid: wild-type','amino acid mutation'])
+            dseq['aminoacid wild-type']=dseq['aminoacid: wild-type'].copy()
     dseq.to_csv(f"{cfg['dsequencesp']}",sep='\t')
     del ensembl
 
@@ -212,6 +208,10 @@ def get_seq_nucleotide(cfg,din):
     dsequences_bedcols=genomeocoords2bed(dsequences, col_genomeocoord='genome coordinate')
     for col in dsequences_bedcols:
         dsequences[col]=dsequences_bedcols[col]
+    if 'reverse_mutations' in cfg:
+        if cfg['reverse_mutations']:
+            from beditor.lib.io_dfs import dfswapcols
+            dseq=dfswapcols(dsequences,['nucleotide wild-type', 'nucleotide mutation'])
     dsequences.to_csv(f"{cfg['dsequencesp']}",sep='\t')
     # return dsequences
 

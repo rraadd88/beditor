@@ -263,3 +263,10 @@ def completesubmap(dsubmap,fmt,
         if not v in dsubmap.index:
             dsubmap.loc[v,:]=np.nan
     return dsubmap.loc[vals,vals]
+
+def dfswapcols(df,cols):
+    df[f"_{cols[0]}"]=df[cols[0]].copy()
+    df[cols[0]]=df[cols[1]].copy()
+    df[cols[1]]=df[f"_{cols[0]}"].copy()
+    df=df.drop([f"_{cols[0]}"],axis=1)
+    return df
