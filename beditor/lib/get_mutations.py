@@ -442,6 +442,14 @@ def dseq2dmutagenesis(cfg):
         dseq=pd.read_csv('{}/dsequences.tsv'.format(cfg[cfg['step']-1]),sep='\t')
         if cfg['mutation_format']=='nucleotide':
             from .global_vars import aminoacids as aas
+        elif cfg['mutation_format']=='aminoacid':
+            if 'reverse_mutations' in cfg:
+                if cfg['reverse_mutations']:
+                    from .global_vars import aminoacids as aas
+                else:
+                    aas=list(dseq['aminoacid: wild-type'].unique())#['S','T','Y']
+            else:
+                aas=list(dseq['aminoacid: wild-type'].unique())#['S','T','Y']
         else:
             aas=list(dseq['aminoacid: wild-type'].unique())#['S','T','Y']
 
