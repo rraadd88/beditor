@@ -202,10 +202,23 @@ def get_seq_nucleotide(cfg,din):
     dsequences=pd.merge(din,dbedntmuts,
             on=['genome coordinate'],suffixes=('', ': dbedntmuts'))
     dsequences=del_Unnamed(dsequences)
-    # print(dsequences.columns)
-    dsequences['nucleotide wild-type']=dsequences.apply(lambda x: x['transcript: sequence'][flankntc],axis=1)
-    dsequences['codon: wild-type']=dsequences.apply(lambda x: x['transcript: sequence'][flankntc-1:flankntc+2],axis=1)
-    dsequences['codon: mutation']=dsequences.apply(lambda x: f"{x['codon: wild-type'][0]}{x['nucleotide mutation']}{x['codon: wild-type'][2]}",axis=1)
+#     print(dsequences[['codon: wild-type']].head())
+    col_nt_wt='nucleotide wild-type' if not 'nucleotide wild-type' in dsequences else 'nucleotide wild-type: from flanking sequence'    
+    col_nt_mt='nucleotide mutation' if not 'nucleotide mutation' in dsequences else 'nucleotide mutation: from flanking sequence'    
+    col_cd_wt='codon: wild-type' if not 'codon: wild-type' in dsequences else 'codon: wild-type: from flanking sequence'
+    col_cd_mt='codon: mutation' if not 'codon: mutation' in dsequences else 'codon: mutation: from flanking sequence'        
+    dsequences[col_nt_wt]=dsequences.apply(lambda x: x['transcript: sequence'][flankntc],axis=1)        
+    
+#     print(dsequences[['codon: wild-type']].head())
+    dsequences[col_cd_wt]=dsequences.apply(lambda x: x['transcript: sequence'][flankntc-1:flankntc+2],axis=1)
+#     print(dsequences[['codon: wild-type']].head())
+            
+    dsequences[col_cd_mt]=dsequences.apply(lambda x: f"{x['codon: wild-type'][0]}{x['nucleotide mutation']}{x['codon: wild-type'][2]}",axis=1)
+#     if 'reverse_mutations' in cfg:
+#         if cfg['reverse_mutations']:
+#             dsequences[col_cd_mt]=dsequences.apply(lambda x: f"{x['codon: wild-type'][0]}{x['nucleotide wild-type']}{x['codon: wild-type'][2]}",axis=1)
+            
+#     print(dsequences[['codon: wild-type', 'codon: mutation']].head())
     dsequences['transcript: id']=dsequences['genome coordinate']
     dsequences_bedcols=genomeocoords2bed(dsequences, col_genomeocoord='genome coordinate')
     for col in dsequences_bedcols:
@@ -214,7 +227,8 @@ def get_seq_nucleotide(cfg,din):
         if cfg['reverse_mutations']:
             from beditor.lib.io_dfs import dfswapcols
             dseq=dfswapcols(dsequences,['nucleotide wild-type', 'nucleotide mutation'])
-            dseq=dfswapcols(dsequences,['codon: wild-type', 'codon: mutation'])
+#             dseq=dfswapcols(dsequences,['codon: wild-type', 'codon: mutation'])
+#     print(dsequences[['codon: wild-type', 'codon: mutation']].head())
     dsequences.to_csv(f"{cfg['dsequencesp']}",sep='\t')
     # return dsequences
 
