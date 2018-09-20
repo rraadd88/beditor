@@ -301,14 +301,14 @@ def dpam2dpam_strands(dpam,pams):
 def dinnucleotide2dsequencesproper(dsequences,dmutagenesis):
     dmutagenesis=dmutagenesis.loc[(dmutagenesis['position of mutation in codon']==2),:]
     dsequences=pd.merge(dsequences,dmutagenesis,
-             left_on=['nucleotide wild-type','nucleotide mutation','codon: wild-type'],
-             right_on=['nucleotide: wild-type','nucleotide: mutation','codon'],
+             left_on=['nucleotide wild-type','nucleotide mutation','codon: wild-type','codon: mutation'],
+             right_on=['nucleotide: wild-type','nucleotide: mutation','codon','codon mutation'],
              suffixes=['',': dmutagenesis'])
     if len(dsequences)!=0:
         dsequences['transcript: id']=dsequences['genome coordinate']
         dsequences['aminoacid mutation']=dsequences['amino acid mutation']
         dsequences['aminoacid: wild-type']=dsequences['amino acid']
-        dsequences['codon: wild-type']=dsequences['codon']
+#         dsequences['codon: wild-type']=dsequences['codon']
 #         df2info(dsequences,'nucle')
 #         df2info(dmutagenesis,'nucle')
         dsequences['id']=dsequences.apply(lambda x: f"{x['genome coordinate']}|{x['method']}|{x['mutation on strand'].replace(' strand','')}|{x['nucleotide wild-type']}:{x['nucleotide mutation']}|{x['codon: wild-type']}:{x['codon mutation']}",axis=1)
@@ -334,16 +334,17 @@ def dseq2dguides(cfg):
         dmutagenesis=pd.read_csv(f"{cfg[cfg['step']-1]}/dmutagenesis.tsv",sep='\t')
         if cfg['mutation_format']=='nucleotide':
             dsequences=pd.read_csv(f"{cfg[cfg['step']-2]}/dsequences.tsv",sep='\t') #FIXME if numbering of steps is changed, this is gonna blow
-            if 'reverse_mutations' in cfg:
-                if cfg['reverse_mutations']:
-                    cols_dsequences=dsequences.columns.tolist()
-                    dsequences=pd.merge(dsequences,dmutagenesis,
-                             left_on=['nucleotide wild-type','nucleotide mutation','codon: wild-type','aminoacid: wild-type'],
-                             right_on=['nucleotide: wild-type','nucleotide: mutation','codon mutation','amino acid'],
-                             suffixes=['',': dmutagenesis'])
-                    dsequences['codon: wild-type']=dsequences['codon'].copy()
-                    dsequences['aminoacid: wild-type']=dsequences['amino acid'].copy()
-                    dsequences=dsequences.loc[:,cols_dsequences]
+#             if 'reverse_mutations' in cfg:
+#                 if cfg['reverse_mutations']:
+#                     cols_dsequences=dsequences.columns.tolist()
+# #                     print(dsequences.columns.tolist())
+#                     dsequences=pd.merge(dsequences,dmutagenesis,
+#                              left_on=['nucleotide wild-type','nucleotide mutation','codon: wild-type',],
+#                              right_on=['nucleotide: wild-type','nucleotide: mutation','codon mutation'],
+#                              suffixes=['',': dmutagenesis'])
+#                     dsequences['codon: wild-type']=dsequences['codon'].copy()
+#                     dsequences['aminoacid: wild-type']=dsequences['amino acid'].copy()
+#                     dsequences=dsequences.loc[:,cols_dsequences]
             dsequences,dmutagenesis=dinnucleotide2dsequencesproper(dsequences,dmutagenesis)
         elif cfg['mutation_format']=='aminoacid':
             dsequences=pd.read_csv(f"{cfg[cfg['step']-2]}/dsequences.tsv",sep='\t') #FIXME if numbering of steps is changed, this is gonna blow

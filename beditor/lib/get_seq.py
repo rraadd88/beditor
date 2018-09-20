@@ -205,6 +205,7 @@ def get_seq_nucleotide(cfg,din):
     # print(dsequences.columns)
     dsequences['nucleotide wild-type']=dsequences.apply(lambda x: x['transcript: sequence'][flankntc],axis=1)
     dsequences['codon: wild-type']=dsequences.apply(lambda x: x['transcript: sequence'][flankntc-1:flankntc+2],axis=1)
+    dsequences['codon: mutation']=dsequences.apply(lambda x: f"{x['codon: wild-type'][0]}{x['nucleotide mutation']}{x['codon: wild-type'][2]}",axis=1)
     dsequences['transcript: id']=dsequences['genome coordinate']
     dsequences_bedcols=genomeocoords2bed(dsequences, col_genomeocoord='genome coordinate')
     for col in dsequences_bedcols:
@@ -213,6 +214,7 @@ def get_seq_nucleotide(cfg,din):
         if cfg['reverse_mutations']:
             from beditor.lib.io_dfs import dfswapcols
             dseq=dfswapcols(dsequences,['nucleotide wild-type', 'nucleotide mutation'])
+            dseq=dfswapcols(dsequences,['codon: wild-type', 'codon: mutation'])
     dsequences.to_csv(f"{cfg['dsequencesp']}",sep='\t')
     # return dsequences
 
