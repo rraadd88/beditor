@@ -129,7 +129,25 @@ def collect_chunks(cfg,chunkcfgps):
                     logging.warning(f"no chunks found for step {step}: {stepi2name[step]}")                    
             else:
                 logging.warning(f"no chunks found for step {step}: {stepi2name[step]}")
-                
+
+def collectchuckfiles(cfg,fpinchunk,force=False):
+    from beditor.lib.io_dfs import fhs2data_combo_appended
+    from beditor.lib.global_vars import stepi2name
+    from beditor.lib.io_nums import str2num
+    from os.path import basename
+    from glob import glob
+    doutp=f"{cfg['prjd']}/{fpinchunk}"
+    if not exists(doutp) or force:
+        dps_=glob(f"{cfg['prjd']}/chunks/chunk0*/{fpinchunk}")
+#         print(dps_)
+        dout=fhs2data_combo_appended(dps_,sep='\t',
+                                     labels_coln='chunk#')
+        makedirs(dirname(doutp),exist_ok=True)
+        dout.to_csv(doutp,sep='\t')
+    else:
+        dout=pd.read_table(doutp)        
+    return dout 
+
 from glob import glob
 from beditor.lib.plot_res import plot_vizbysteps
 def make_outputs(cfg,plot=True):

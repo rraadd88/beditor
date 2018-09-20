@@ -45,8 +45,6 @@ def t2pmapper(t,coding_sequence_positions):
     dcoding['transcript index']=dcoding.index.values+1
     return dcoding.sort_values(by='transcript index',ascending=True)#.set_index('transcript index')
 
-
-
 def get_seq_aminoacid(cfg,din):
     import pyensembl
     #import ensembl object that would fetch genes 
@@ -227,7 +225,7 @@ def get_seq_nucleotide(cfg,din):
         if cfg['reverse_mutations']:
             from beditor.lib.io_dfs import dfswapcols
             dseq=dfswapcols(dsequences,['nucleotide wild-type', 'nucleotide mutation'])
-#             dseq=dfswapcols(dsequences,['codon: wild-type', 'codon: mutation'])
+            dseq=dfswapcols(dsequences,['codon: wild-type', 'codon: mutation'])
 #     print(dsequences[['codon: wild-type', 'codon: mutation']].head())
     dsequences.to_csv(f"{cfg['dsequencesp']}",sep='\t')
     # return dsequences
@@ -236,6 +234,8 @@ def din2dseq(cfg):
     """
     Wrapper for converting input data (transcript ids and positions of mutation) to seqeunces flanking the codon. 
     """
+    from beditor.lib.global_vars import stepi2cols_nucleotide
+    
     cfg['datad']=cfg[cfg['step']]
     cfg['plotd']=cfg['datad']
     # get dna and protein sequences 
@@ -247,8 +247,10 @@ def din2dseq(cfg):
         cfg['dinp']=f"{cfg[cfg['step']-1]}/dinput.tsv"
         din=pd.read_table(cfg['dinp'])
         din=del_Unnamed(din)
-                
-        cols_dseq=stepi2cols[cfg['step']]#['aminoacid: position', 'gene: id', 'gene: name', 'protein: id', 'transcript: id', 'transcript: sequence', 'aminoacid: wild-type', 'codon: wild-type', 'contig', 'strand', 'start', 'end', 'codon start', 'codon end']
+        if cfg['mutation_format']=='aminoacid':        
+            cols_dseq=stepi2cols[cfg['step']]#['aminoacid: position', 'gene: id', 'gene: name', 'protein: id', 'transcript: id', 'transcript: sequence', 'aminoacid: wild-type', 'codon: wild-type', 'contig', 'strand', 'start', 'end', 'codon start', 'codon end']
+        elif cfg['mutation_format']=='nucleotide':
+            cols_dseq=stepi2cols_nucleotide[cfg['step']]
         ifdinpisdseq=all([True if c in din else False for c in cols_dseq])
         if not ifdinpisdseq:
             if cfg['mutation_format']=='aminoacid':

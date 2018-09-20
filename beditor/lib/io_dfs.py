@@ -184,7 +184,9 @@ def df2info(df,col_search=None):
     print('**HEAD**: ',df.loc[:,df.columns[:5]].head())
     print('**SHAPE**: ',df.shape)
     if not col_search is None:
-        print('**SEARCHEDCOLS**:\n',[c for c in df if col_search in c])
+        cols_searched=[c for c in df if col_search in c]
+        print('**SEARCHEDCOLS**:\n',cols_searched)
+        print('**HEAD**: ',df.loc[:,cols_searched].head())
     
 def lambda2cols(df,lambdaf,in_coln,to_colns):
     df_=df.apply(lambda x: lambdaf(x[in_coln]),

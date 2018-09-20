@@ -49,6 +49,9 @@ stepi2name= {
  3: 'guides',
  4: 'offtargets'}
 
+stepi2cols_nucleotide={
+1:['genome coordinate','nucleotide mutation','id','transcript: sequence','nucleotide wild-type','codon: wild-type','codon: mutation','transcript: id']}
+
 stepi2cols={
 1: ['aminoacid: position', 'gene: id', 'gene: name', 'protein: id', 'transcript: id', 'transcript: sequence', 'aminoacid: wild-type', 'codon: wild-type', 'contig', 'strand', 'start', 'end', 'codon start', 'codon end'],
 2:  ['amino acid',

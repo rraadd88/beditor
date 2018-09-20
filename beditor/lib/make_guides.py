@@ -57,7 +57,7 @@ def get_pam_searches(dpam,seq,pos_codon,
             =get_guide_pam(match,dpam.loc[pam,'position'],dpam.loc[pam,'guide length'],pos_codon)
             dpamposs.loc[pamposi,'PAM']=pam
             pamposi+=1
-    dpamposs['codon']=seq[pos_codon:pos_codon+3]
+    dpamposs['codon: from pam search']=seq[pos_codon:pos_codon+3]
     dpamposs['guide sequence']=dpamposs['guide sequence'].fillna('')
     if len(dpamposs)==0:
         return None
@@ -183,16 +183,6 @@ def make_guides(cfg,dseq,dmutagenesis,dpam,
                     dpamsearches_strategy=pd.merge(dpamsearchesflt.reset_index(),dmutagenesis_gi.reset_index(),
                              how='inner',
                              on=['strand'],suffixes=['',': dmutagenesis_gi'])
-# #RM                    
-#                     print(dpamsearchesflt['strand'].unique().tolist(),
-#                           dmutagenesis_gi['strand'].unique().tolist(),
-#                           dpamsearches_strategy['strand'].unique().tolist())                    
-#                     if dseq.loc[gi,'id']=='YAL002W|I|+|143754|143799':
-#                         dpamsearchesflt.to_csv('test_dpamsearchesflt.tsv',sep='\t') #RM
-#                         dmutagenesis_gi.to_csv('test_dmutagenesis_gi.tsv',sep='\t') #RM
-#                         dpamsearches_strategy.to_csv('test_dpamsearches_strategy.tsv',sep='\t') #RM
-#                         rohan
-# #RM                        
                     if len(dpamsearches_strategy)!=0:                                 
                         if not 'dguides' in locals():
                             dguides=dpamsearches_strategy.copy()
@@ -334,40 +324,9 @@ def dseq2dguides(cfg):
         dmutagenesis=pd.read_csv(f"{cfg[cfg['step']-1]}/dmutagenesis.tsv",sep='\t')
         if cfg['mutation_format']=='nucleotide':
             dsequences=pd.read_csv(f"{cfg[cfg['step']-2]}/dsequences.tsv",sep='\t') #FIXME if numbering of steps is changed, this is gonna blow
-#             if 'reverse_mutations' in cfg:
-#                 if cfg['reverse_mutations']:
-#                     cols_dsequences=dsequences.columns.tolist()
-# #                     print(dsequences.columns.tolist())
-#                     dsequences=pd.merge(dsequences,dmutagenesis,
-#                              left_on=['nucleotide wild-type','nucleotide mutation','codon: wild-type',],
-#                              right_on=['nucleotide: wild-type','nucleotide: mutation','codon mutation'],
-#                              suffixes=['',': dmutagenesis'])
-#                     dsequences['codon: wild-type']=dsequences['codon'].copy()
-#                     dsequences['aminoacid: wild-type']=dsequences['amino acid'].copy()
-#                     dsequences=dsequences.loc[:,cols_dsequences]
             dsequences,dmutagenesis=dinnucleotide2dsequencesproper(dsequences,dmutagenesis)
         elif cfg['mutation_format']=='aminoacid':
             dsequences=pd.read_csv(f"{cfg[cfg['step']-2]}/dsequences.tsv",sep='\t') #FIXME if numbering of steps is changed, this is gonna blow
-            if 'reverse_mutations' in cfg:
-                if cfg['reverse_mutations']:
-                    cols_dsequences=dsequences.columns.tolist()
-                    if cfg['mutations']=='mutations':
-                        dsequences=pd.merge(dsequences,
-                            dmutagenesis,
-                            how='inner',
-                            left_on=['aminoacid: wild-type','codon: wild-type','amino acid mutation'],
-                            right_on=['amino acid','codon mutation','amino acid mutation'],
-                                                 suffixes=['',': dmutagenesis'])
-                    else:
-                        dsequences=pd.merge(dsequences,
-                            dmutagenesis,
-                            how='inner',
-                            left_on=['aminoacid: wild-type','codon: wild-type'],
-                            right_on=['amino acid','codon mutation'],
-                                                 suffixes=['',': dmutagenesis'])        
-                    dsequences['codon: wild-type']=dsequences['codon'].copy()
-                    dsequences=dsequences.loc[:,cols_dsequences]
-            
         dsequences.to_csv(f"{cfg[cfg['step']]}/dsequences.tsv",sep='\t') #FIXME if numbering of steps is changed, this is gonna blow
         # make pam table
         dpam=pd.read_table(f'{dirname(realpath(__file__))}/../data/dpam.tsv')

@@ -103,7 +103,10 @@ def get_genomes(cfg):
     cfg['genomep']='{}/genome.fa'.format(genome_fastad)
     if not exists(cfg['genomep']):
         logging.error('not found: {}'.format(cfg['genomep']))
-        ifdlref = input("Download genome at {}?[Y/n]: ".format(genome_fastad))
+        if not '/test_beditor/' in cfg['cfgp']:
+            ifdlref = input("Download genome at {}?[Y/n]: ".format(genome_fastad))
+        else:
+            ifdlref='Y'
         if ifdlref=='Y':
         # #FIXME download contigs and cat and get index, sizes
             for contig in contigs:
@@ -141,7 +144,10 @@ def get_genomes(cfg):
     cfg['genomegffp']='{}/genome.gff3'.format(genome_gff3d)
     if not exists(cfg['genomegffp']):
         logging.error('not found: {}'.format(cfg['genomegffp']))
-        ifdlref = input("Download genome annotations at {}?[Y/n]: ".format(genome_gff3d))
+        if not '/test_beditor/' in cfg['cfgp']:
+            ifdlref = input("Download genome annotations at {}?[Y/n]: ".format(genome_gff3d))
+        else:
+            ifdlref = 'Y'
         if ifdlref=='Y':
         # #FIXME download contigs and cat and get index, sizes
             fn='{}.{}.{}.gff3.gz'.format(cfg['host'].capitalize(),cfg['genomeassembly'],cfg['genomerelease'])
