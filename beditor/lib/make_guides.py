@@ -127,8 +127,7 @@ def guide2dpositions(x,dbug=False):
     else:
         return posmut,posmutfrompam,distmutfrompam,posguideini,posguideend,activity_sequence
     
-def make_guides(cfg,dseq,dmutagenesis,
-                dpam,
+def make_guides(cfg,dseq,dmutagenesis,dpam,
                test=False,
                dbug=False):
     """
@@ -183,12 +182,12 @@ def make_guides(cfg,dseq,dmutagenesis,
                 if len(dpamsearchesflt)!=0:
                     dpamsearches_strategy=pd.merge(dpamsearchesflt.reset_index(),dmutagenesis_gi.reset_index(),
                              how='inner',
-                             on=['codon','strand'])
+                             on=['strand'],suffixes=['',': dmutagenesis_gi'])
 # #RM                    
 #                     print(dpamsearchesflt['strand'].unique().tolist(),
 #                           dmutagenesis_gi['strand'].unique().tolist(),
 #                           dpamsearches_strategy['strand'].unique().tolist())                    
-#                     if dmutagenesis_gi['strand'].unique().tolist()[0]=='-':
+#                     if dseq.loc[gi,'id']=='YAL002W|I|+|143754|143799':
 #                         dpamsearchesflt.to_csv('test_dpamsearchesflt.tsv',sep='\t') #RM
 #                         dmutagenesis_gi.to_csv('test_dmutagenesis_gi.tsv',sep='\t') #RM
 #                         dpamsearches_strategy.to_csv('test_dpamsearches_strategy.tsv',sep='\t') #RM
@@ -339,10 +338,11 @@ def dseq2dguides(cfg):
                 if cfg['reverse_mutations']:
                     cols_dsequences=dsequences.columns.tolist()
                     dsequences=pd.merge(dsequences,dmutagenesis,
-                             left_on=['nucleotide wild-type','nucleotide mutation','codon: wild-type'],
-                             right_on=['nucleotide: wild-type','nucleotide: mutation','codon mutation'],
+                             left_on=['nucleotide wild-type','nucleotide mutation','codon: wild-type','aminoacid: wild-type'],
+                             right_on=['nucleotide: wild-type','nucleotide: mutation','codon mutation','amino acid'],
                              suffixes=['',': dmutagenesis'])
                     dsequences['codon: wild-type']=dsequences['codon'].copy()
+                    dsequences['aminoacid: wild-type']=dsequences['amino acid'].copy()
                     dsequences=dsequences.loc[:,cols_dsequences]
             dsequences,dmutagenesis=dinnucleotide2dsequencesproper(dsequences,dmutagenesis)
         elif cfg['mutation_format']=='aminoacid':

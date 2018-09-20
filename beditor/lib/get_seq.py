@@ -170,7 +170,8 @@ def get_seq_aminoacid(cfg,din):
         if cfg['reverse_mutations']:
             from beditor.lib.io_dfs import dfswapcols
             dseq=dfswapcols(dseq,['aminoacid: wild-type','amino acid mutation'])
-            dseq['aminoacid wild-type']=dseq['aminoacid: wild-type'].copy()
+#             dseq['aminoacid wild-type']=dseq['aminoacid: wild-type'].copy()
+            
     dseq.to_csv(f"{cfg['dsequencesp']}",sep='\t')
     del ensembl
 

@@ -23,6 +23,7 @@ install:
 - python setup.py install --record installed_files.txt
 script:
 - python test/test_install.py
+- python test/test_datasets.py
 after_success:
 - coveralls
 deploy:

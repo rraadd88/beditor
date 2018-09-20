@@ -151,6 +151,10 @@ def make_outputs(cfg,plot=True):
                     logging.info(f'combining {stepi}')
                     colsoutput=stepi2colsoutput[stepi]
                     dstep=del_Unnamed(pd.read_table(dstepp))
+                    if 'reverse_mutations' in cfg:
+                        if cfg['reverse_mutations']:
+                            if stepi==0:
+                                continue
                     colsoutput=[col for col in colsoutput if col in dstep] 
                     dstep=dstep.loc[:,colsoutput].drop_duplicates()
                     if not 'doutput' in locals():
