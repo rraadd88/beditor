@@ -327,6 +327,19 @@ def dseq2dguides(cfg):
             dsequences,dmutagenesis=dinnucleotide2dsequencesproper(dsequences,dmutagenesis)
         elif cfg['mutation_format']=='aminoacid':
             dsequences=pd.read_csv(f"{cfg[cfg['step']-2]}/dsequences.tsv",sep='\t') #FIXME if numbering of steps is changed, this is gonna blow
+            if 'reverse_mutations' in cfg:
+                if cfg['reverse_mutations']: 
+#                     from beditor.lib.global_vars import stepi2cols
+                    cols_dsequences=dsequences.columns.tolist()
+                    dsequences=pd.merge(dsequences,
+                        dmutagenesis,
+                        how='inner',
+                        left_on=['aminoacid: wild-type','codon: mutation','amino acid mutation'],
+                        right_on=['amino acid','codon mutation','amino acid mutation'],
+                                       suffixes=['', ': dmutagenesis']) 
+                    dsequences['codon: wild-type']=dsequences['codon']
+                    dsequences=dsequences.loc[:,cols_dsequences]
+                    
         dsequences.to_csv(f"{cfg[cfg['step']]}/dsequences.tsv",sep='\t') #FIXME if numbering of steps is changed, this is gonna blow
         # make pam table
         dpam=pd.read_table(f'{dirname(realpath(__file__))}/../data/dpam.tsv')

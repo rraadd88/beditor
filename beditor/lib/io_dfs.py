@@ -178,13 +178,13 @@ def df2unstack(df,coln='columns',idxn='index',col='value'):
     df.name=col
     return pd.DataFrame(df).reset_index()
 
-def df2info(df,col_search=None):
+def df2info(df,col_searches=None):
     if len(df.columns)>5:
         print('**COLS**: ',df.columns.tolist())
     print('**HEAD**: ',df.loc[:,df.columns[:5]].head())
     print('**SHAPE**: ',df.shape)
-    if not col_search is None:
-        cols_searched=[c for c in df if col_search in c]
+    if not col_searches is None:
+        cols_searched=[c2 for c1 in col_searches for c2 in df if c1 in c2]
         print('**SEARCHEDCOLS**:\n',cols_searched)
         print('**HEAD**: ',df.loc[:,cols_searched].head())
     
