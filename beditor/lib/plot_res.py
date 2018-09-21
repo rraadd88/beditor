@@ -399,10 +399,11 @@ def plot_dist_dguides(dguideslin,dpam,plotpf=None):
             plt.savefig(plotpf.format(method=met))
     return dps
 #         break                      
-def plot_dna_features_view(cfg,dsequences,dguides,plotd,more=False):
-    guideids=dguides['id'].unique()
-    if not more:
-        np.random.seed(seed=8888)
+def plot_dna_features_view(cfg,dsequences,dguides,plotd,more=False,guideids=None):
+    if guideids is None:
+        guideids=dguides['id'].unique()
+        if not more:
+            np.random.seed(seed=8888)            
     guidesc=len(guideids)
     makedirs(plotd,exist_ok=True)
     ids=[guideids[i] for i in np.sort(np.random.choice(range(guidesc), 10 if guidesc>10 else guidesc-1, replace=False))]
