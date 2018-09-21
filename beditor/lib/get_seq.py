@@ -249,6 +249,9 @@ def din2dseq(cfg):
         din=del_Unnamed(din)
         if cfg['mutation_format']=='aminoacid':        
             cols_dseq=stepi2cols[cfg['step']]#['aminoacid: position', 'gene: id', 'gene: name', 'protein: id', 'transcript: id', 'transcript: sequence', 'aminoacid: wild-type', 'codon: wild-type', 'contig', 'strand', 'start', 'end', 'codon start', 'codon end']
+            if cfg['reverse_mutations']:
+                if not 'codon: mutation' in cols_dseq:
+                    cols_dseq+=['codon: mutation']
         elif cfg['mutation_format']=='nucleotide':
             cols_dseq=stepi2cols_nucleotide[cfg['step']]
         ifdinpisdseq=all([True if c in din else False for c in cols_dseq])
@@ -262,9 +265,6 @@ def din2dseq(cfg):
             else:
                 raise(ValueError(f"invalid value of cfg['mutation_format']: {cfg['mutation_format']}"))
             
-            # logging.info('Counts of amino acids to mutate:')
-            # logging.info(dsequences['aminoacid: wild-type'].value_counts())
-
             import gc
             gc.collect()
         else:

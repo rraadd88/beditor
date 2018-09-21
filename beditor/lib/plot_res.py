@@ -334,7 +334,7 @@ def get_dntcompos(dguideslin_sub123,dpam,pos,pam):
         dp.loc[pamposs[pamnti],'PAM nt']=pamnt
     return dp
 
-def plot_bar_dguides(dstep,plotp,figsize=None):
+def plot_bar_dguides(dstep,plotp,figsize=None,figfmt='png',):
     cols=['method','PAM','strand']
     fig_ht=np.max([len(dstep[c].unique()) for c in cols])
     if figsize is None:
@@ -347,7 +347,7 @@ def plot_bar_dguides(dstep,plotp,figsize=None):
         if i==len(cols)-1:
             axes[i].set_xlabel('# of guides designed')            
     plt.tight_layout()
-    plt.savefig(plotp)
+    plt.savefig(plotp,format=figfmt)
     
 def plot_dist_dguides(dguideslin,dpam,plotpf=None):
     #method fig

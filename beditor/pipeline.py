@@ -279,12 +279,18 @@ def pipeline(cfgp,step=None,test=False,force=False):
     cfg['force']=force
     cfg['cfgp']=cfgp
     # step 04 offtargets
-    if (not 'mismatches_max' in cfg) or (cfg['mismatches_max'] is None):
+    if not 'mismatches_max' in cfg:
         cfg['mismatches_max']=2
-        logging.info(f"setting mismatches_max to {cfg['mismatches_max']}") 
+    elif cfg['mismatches_max'] is None:
+        cfg['mismatches_max']=2
+        # logging.info(f"setting mismatches_max to {cfg['mismatches_max']}") 
+    if not 'reverse_mutations' in cfg:
+        cfg['reverse_mutations']=False
+    elif cfg['reverse_mutations'] is None:
+        cfg['reverse_mutations']=False
 
     if not 'step2ignore' in cfg:
-        cfg['step2ignore']=None
+            cfg['step2ignore']=None
 
     # deps and genome are only needed if running step =1 or 4
     cfg['step2ignoredl']=[2,3]
