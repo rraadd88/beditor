@@ -341,11 +341,13 @@ def plot_bar_dguides(dstep,plotp,figsize=None,figfmt='png',):
         figsize=[5,3+fig_ht*0.2]
     fig,axes=plt.subplots(nrows=len(cols),figsize=figsize,sharex=True)
     for i,col in enumerate(cols):
-        pd.DataFrame(dstep[col].value_counts()).T.plot.barh(ax=axes[i],stacked=True)
-        axes[i].legend(bbox_to_anchor=[1,1])
-#         axes[i].set_ylabel(col)
-        if i==len(cols)-1:
-            axes[i].set_xlabel('# of guides designed')            
+        dplot=pd.DataFrame(dstep[col].value_counts()).T
+        if dplot.shape[0]!=0:
+            if dplot.shape[1]!=0:
+                dplot.plot.barh(ax=axes[i],stacked=True)
+                axes[i].legend(bbox_to_anchor=[1,1])
+                if i==len(cols)-1:
+                    axes[i].set_xlabel('# of guides designed')            
     plt.tight_layout()
     plt.savefig(plotp,format=figfmt)
     
@@ -382,7 +384,10 @@ def plot_dist_dguides(dguideslin,dpam,plotpf=None):
                 if len(np.shape(axes))==2:
                     ax=axes[posi,pami]
                 else:
-                    ax=axes[posi]
+                    try:
+                        ax=axes[posi]
+                    except:
+                        ax=axes
                 plot_ntcompos(dp=dps_met[met][pam][pos],
                       legend=False,title=f"PAM={pam}; position of mutation={pos}",
                       ax=ax,fig=fig)
@@ -405,27 +410,28 @@ def plot_dna_features_view(cfg,dsequences,dguides,plotd,more=False,guideids=None
         if not more:
             np.random.seed(seed=8888)            
     guidesc=len(guideids)
-    makedirs(plotd,exist_ok=True)
-    ids=[guideids[i] for i in np.sort(np.random.choice(range(guidesc), 10 if guidesc>10 else guidesc-1, replace=False))]
-    for id in ids:
-        gbp=f"{plotd}/{make_pathable_string(id)}.gb"
-        plotp=f"{gbp}.png"        
-        if id in dsequences['id']:
-            seq_transcript=dsequences.loc[(dsequences['id']==id),'transcript: sequence'].tolist()[0]
-        else:
-            logging.info('mutation_format=nucleotide detected.')
-            if cfg['mutation_format']=='nucleotide':
-                seq_transcript=dsequences.loc[(dsequences['id']==id.split('|')[0]),'transcript: sequence'].tolist()[0] 
-            elif cfg['mutation_format']=='aminoacid':
-                seq_transcript=dsequences.loc[(dsequences['id']==id),'transcript: sequence'].tolist()[0] 
-        record=make_gb(sequence_string=seq_transcript,
-                features=get_df4features(dguides,id,types=['guide+pam']),gbp=gbp,
-                   )
-        plot_seq(record,
-                 annot_residuei=8,
-                 xlabel=f'Sequence flanking target site\n bed id: {id}',
-                 plotp=plotp
-                )
+    if guidesc!=0:
+        makedirs(plotd,exist_ok=True)
+        ids=[guideids[i] for i in np.sort(np.random.choice(range(guidesc), 10 if guidesc>10 else guidesc-1, replace=False))]
+        for id in ids:
+            gbp=f"{plotd}/{make_pathable_string(id)}.gb"
+            plotp=f"{gbp}.png"        
+            if id in dsequences['id']:
+                seq_transcript=dsequences.loc[(dsequences['id']==id),'transcript: sequence'].tolist()[0]
+            else:
+                logging.info('mutation_format=nucleotide detected.')
+                if cfg['mutation_format']=='nucleotide':
+                    seq_transcript=dsequences.loc[(dsequences['id']==id.split('|')[0]),'transcript: sequence'].tolist()[0] 
+                elif cfg['mutation_format']=='aminoacid':
+                    seq_transcript=dsequences.loc[(dsequences['id']==id),'transcript: sequence'].tolist()[0] 
+            record=make_gb(sequence_string=seq_transcript,
+                    features=get_df4features(dguides,id,types=['guide+pam']),gbp=gbp,
+                       )
+            plot_seq(record,
+                     annot_residuei=8,
+                     xlabel=f'Sequence flanking target site\n bed id: {id}',
+                     plotp=plotp
+                    )
 
 def plot_dist_dofftargets(dofftargets,plotp=None):
     dofftargets=dofftargets.replace([np.inf, -np.inf], np.nan)

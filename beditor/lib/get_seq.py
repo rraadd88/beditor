@@ -180,7 +180,7 @@ def get_seq_nucleotide(cfg,din):
     fastap=f"{cfg['datad']}/dbedntmuts.fa"
     dbedntmutsp=f"{cfg['datad']}/dbedntmuts.tsv"
     if not exists(cfg['dsequencesp']) or cfg['force']:
-        if not exists(bedp) or cfg['force']:
+        if not exists(bedp) or cfg['force']:            
             dbed=genomeocoords2bed(din,col_genomeocoord='genome coordinate')
             dbed['start']=dbed['start'].astype(int)-flankntc-1
             dbed['end']=dbed['end'].astype(int)+flankntc
@@ -248,12 +248,16 @@ def din2dseq(cfg):
         din=pd.read_table(cfg['dinp'])
         din=del_Unnamed(din)
         if cfg['mutation_format']=='aminoacid':        
-            cols_dseq=stepi2cols[cfg['step']]#['aminoacid: position', 'gene: id', 'gene: name', 'protein: id', 'transcript: id', 'transcript: sequence', 'aminoacid: wild-type', 'codon: wild-type', 'contig', 'strand', 'start', 'end', 'codon start', 'codon end']
+            cols_dseq=stepi2cols[cfg['step']]
             if cfg['reverse_mutations']:
                 if not 'codon: mutation' in cols_dseq:
                     cols_dseq+=['codon: mutation']
         elif cfg['mutation_format']=='nucleotide':
             cols_dseq=stepi2cols_nucleotide[cfg['step']]
+            din=din.dropna(subset=['genome coordinate'])
+            if len(din)==0:
+                din=pd.DataFrame(columns=cols_dseq)
+                logging.warning('no genome coordinates; saving an empty table.')                
         ifdinpisdseq=all([True if c in din else False for c in cols_dseq])
         if not ifdinpisdseq:
             if cfg['mutation_format']=='aminoacid':

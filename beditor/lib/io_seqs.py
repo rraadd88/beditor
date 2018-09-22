@@ -57,8 +57,10 @@ def bedids2bed(df, col_genomeocoord):
     return dbed[bed_colns]
 
 def genomeocoords2sections(genomecoord):
-    chrom=genomecoord.split(':')[0]
-
+    try:
+        chrom=genomecoord.split(':')[0]
+    except:
+        raise ValueError(genomecoord)
     start=genomecoord.split(':')[1].split('-')[0]
 
     end=genomecoord.split(':')[1].split('-')[1].replace('+','').replace('-','')
@@ -75,11 +77,15 @@ def genomeocoords2sections(genomecoord):
 
 def genomeocoords2bed(df, col_genomeocoord):
     bed_colns=['chromosome', 'start', 'end', 'id', 'NM', 'strand']
+    df=df.dropna(subset=[col_genomeocoord])
     dbed=df.apply(lambda x: genomeocoords2sections(x[col_genomeocoord]),axis=1).apply(pd.Series)
-    dbed.columns=['chromosome', 'start', 'end','strand']
-    dbed['id']=df[col_genomeocoord]
-    dbed['NM']=np.nan
-    return dbed[bed_colns]
+    if len(dbed)!=0:
+        dbed.columns=['chromosome', 'start', 'end','strand']
+        dbed['id']=df[col_genomeocoord]
+        dbed['NM']=np.nan
+        return dbed[bed_colns]
+    else:
+        return pd.DataFrame(columns=['chromosome', 'start', 'end','strand','id','NM'])
 
 from Bio import Alphabet,Seq
 def str2seq(s,prt=False):
