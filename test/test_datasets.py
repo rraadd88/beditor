@@ -8,7 +8,7 @@ def test_species(host='saccharomyces_cerevisiae'):
         runbashcmd('git clone https://github.com/rraadd88/test_beditor.git',test=True)
     else:
         runbashcmd('cd test_beditor;git pull',test=True)
-    com=f'source activate beditor;python test_beditor/test_datasets.py'
+    com=f'source activate beditor;cd test_beditor;python test_datasets.py'
     runbashcmd(com,test=True)
     
 #     cfgp='mutation_format_nucleotide_mutation_mutations_for.yml'
