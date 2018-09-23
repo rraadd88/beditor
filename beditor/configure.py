@@ -15,6 +15,8 @@ from beditor.lib.io_sys import runbashcmd
 # GET INPTS    
 def get_deps(cfg):
     """
+    Installs dependencies of `beditor`
+    :param cfg: configuration dict
     """
     depsd="%s/deps" % abspath(dirname(__file__)) 
     if not exists(depsd):
@@ -69,16 +71,10 @@ def get_deps(cfg):
     return cfg
 
 def get_genomes(cfg):
-#     #pyensembl first
-#     if 'pysensembl_cache_dir' in cfg.keys():
-#         if (not cfg['pysensembl_cache_dir'] is None) and (cfg['pysensembl_cache_dir']!=''):
-#             if exists(cfg['pysensembl_cache_dir']):
-#                 import os
-#                 os.environ['PYENSEMBL_CACHE_DIR'] = cfg['pysensembl_cache_dir']
-#             else:
-    # import os
-    # os.environ['PYENSEMBL_CACHE_DIR'] = f"{dirname(realpath(__file__))}/cache"
-                
+    """
+    Installs genomes
+    :param cfg: configuration dict
+    """
     
     runbashcmd(f"pyensembl install --reference-name {cfg['genomeassembly']} --release {cfg['genomerelease']} --species {cfg['host']}")
 

@@ -21,6 +21,8 @@ from .global_vars import mutation_format2cols,stepi2cols
 def tboundaries2positions(t):
     """
     Fetches positions from transcript boundaries.
+    :param t: pyensembl transcript object 
+    :returns coding_sequence_positions: reading frames
     """
     coding_sequence_positions=[]
     for ini,end in t.coding_sequence_position_ranges:
@@ -34,6 +36,9 @@ def tboundaries2positions(t):
 def t2pmapper(t,coding_sequence_positions):
     """
     Maps transcript id with protein id. 
+    :param t: pyensembl transcript object 
+    :param t: reading frames
+    :returns coding_sequence_positions: dataframe with mapped positions    
     """
     dcoding=pd.DataFrame(columns=['coding sequence positions','coding sequence'])
     # dcoding.index.name='transcript index'
@@ -46,6 +51,12 @@ def t2pmapper(t,coding_sequence_positions):
     return dcoding.sort_values(by='transcript index',ascending=True)#.set_index('transcript index')
 
 def get_seq_aminoacid(cfg,din):
+    """
+    Fetches sequences if mutation format is amino acid 
+    :param cfg: configuration dict
+    :param din: input data
+    :returns dsequences: dataframe with sequences
+    """
     import pyensembl
     #import ensembl object that would fetch genes 
     # ensembl = pyensembl.EnsemblRelease(release=cfg['genomerelease'])
@@ -176,6 +187,12 @@ def get_seq_aminoacid(cfg,din):
 from .io_seqs import genomeocoords2bed,fa2df
 from .global_vars import flankntc
 def get_seq_nucleotide(cfg,din):
+    """
+    Fetches sequences if mutation format is nucleotide
+    :param cfg: configuration dict
+    :param din: input data
+    :returns dsequences: dataframe with sequences
+    """    
     bedp=f"{cfg['datad']}/dbedntmuts.bed"
     fastap=f"{cfg['datad']}/dbedntmuts.fa"
     dbedntmutsp=f"{cfg['datad']}/dbedntmuts.tsv"
@@ -212,11 +229,6 @@ def get_seq_nucleotide(cfg,din):
 #     print(dsequences[['codon: wild-type']].head())
             
     dsequences[col_cd_mt]=dsequences.apply(lambda x: f"{x['codon: wild-type'][0]}{x['nucleotide mutation']}{x['codon: wild-type'][2]}",axis=1)
-#     if 'reverse_mutations' in cfg:
-#         if cfg['reverse_mutations']:
-#             dsequences[col_cd_mt]=dsequences.apply(lambda x: f"{x['codon: wild-type'][0]}{x['nucleotide wild-type']}{x['codon: wild-type'][2]}",axis=1)
-            
-#     print(dsequences[['codon: wild-type', 'codon: mutation']].head())
     dsequences['transcript: id']=dsequences['genome coordinate']
     dsequences_bedcols=genomeocoords2bed(dsequences, col_genomeocoord='genome coordinate')
     for col in dsequences_bedcols:
@@ -226,13 +238,12 @@ def get_seq_nucleotide(cfg,din):
             from beditor.lib.io_dfs import dfswapcols
             dseq=dfswapcols(dsequences,['nucleotide wild-type', 'nucleotide mutation'])
             dseq=dfswapcols(dsequences,['codon: wild-type', 'codon: mutation'])
-#     print(dsequences[['codon: wild-type', 'codon: mutation']].head())
     dsequences.to_csv(f"{cfg['dsequencesp']}",sep='\t')
-    # return dsequences
 
 def din2dseq(cfg):
     """
     Wrapper for converting input data (transcript ids and positions of mutation) to seqeunces flanking the codon. 
+    :param cfg: configuration dict    
     """
     from beditor.lib.global_vars import stepi2cols_nucleotide
     

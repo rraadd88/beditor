@@ -24,6 +24,14 @@ from beditor.lib.global_vars import stepi2cols
 
 def get_pam_searches(dpam,seq,pos_codon,
                     test=False):
+    """
+    Search PAM occurance
+    :param dpam: dataframe with PAM sequences
+    :param seq: target sequence
+    :param pos_codon: reading frame
+    :param test: debug mode on
+    :returns dpam_searches: dataframe with positions of pams
+    """
     import regex as re
     def get_guide_pam(match,pam_stream,guidel,pos_codon):  
         if pam_stream=='down':
@@ -69,8 +77,13 @@ def get_pam_searches(dpam,seq,pos_codon,
     return dpamposs
 
 def guide2dpositions(x,dbug=False): 
-    # index and flank seq based indexing os 0based
-    # from pam is 1-based
+    """
+    Get positions of guides relative to the target site and PAM sequence
+    Note:
+    Index and flank sequence based indexing are 0-based
+    Distances and positions from pam are 1-based
+    :param x: lambda section of dguides dataframe  
+    """
     dpositions=pd.DataFrame(index=range(45),
                            columns=['guide+PAM sequence'])
     dpositions.index.name='position'
@@ -131,11 +144,16 @@ def make_guides(cfg,dseq,dmutagenesis,dpam,
                test=False,
                dbug=False):
     """
-    Makes guides by
+    Wrapper around submodules that design guides by
     1. searching all PAM sequences on 'both' the strands,
     2. filtering guides by all possible strategies (given in dmutagenesis) e.g. activity window,
     Finally generates a table.
-    0-based indexing
+    :param cfg: configuration dict
+    :param dseq: dsequences dataframe
+    :param dmutagenesis: dmutagenesis dataframe
+    :param dpam: dpam dataframe
+    :param test: debug mode on
+    :param dbug: more verbose
     """
     from beditor.lib.io_strs import s2re
     flankaas=7#FIXME if flank length changes
@@ -263,6 +281,12 @@ def make_guides(cfg,dseq,dmutagenesis,dpam,
         return None,None,None        
 
 def dpam2dpam_strands(dpam,pams):
+    """
+    Duplicates dpam dataframe to be compatible for searching PAMs on - strand
+    :param dpam: dataframe with pam information
+    :param pams: pams to be used for actual designing of guides.
+    """
+    
     dpam=del_Unnamed(dpam)
     dpam['rPAM']=dpam.apply(lambda x : s2re(x['PAM'],multint2reg) ,axis=1)
     dpam=set_index(dpam,'PAM')
@@ -288,7 +312,12 @@ def dpam2dpam_strands(dpam,pams):
     dpam_strands=dpam_strands.loc[pams_strands,:]
     return dpam_strands
 
-def dinnucleotide2dsequencesproper(dsequences,dmutagenesis):
+def dinnucleotide2dsequencesproper(dsequences,dmutagenesis,dbug=False):
+    """
+    Makes dseqeunces dataframe of nucleotide mutation format compatible to guide design modules
+    :param dsequences: dsequences dataframe
+    :param dmutagenesis: dmutagenesis dataframe
+    """
     dmutagenesis=dmutagenesis.loc[(dmutagenesis['position of mutation in codon']==2),:]
     dsequences=pd.merge(dsequences,dmutagenesis,
              left_on=['nucleotide wild-type','nucleotide mutation','codon: wild-type','codon: mutation'],
@@ -298,9 +327,10 @@ def dinnucleotide2dsequencesproper(dsequences,dmutagenesis):
         dsequences['transcript: id']=dsequences['genome coordinate']
         dsequences['aminoacid mutation']=dsequences['amino acid mutation']
         dsequences['aminoacid: wild-type']=dsequences['amino acid']
-#         dsequences['codon: wild-type']=dsequences['codon']
-#         df2info(dsequences,'nucle')
-#         df2info(dmutagenesis,'nucle')
+        if dbug:
+            dsequences['codon: wild-type']=dsequences['codon']
+            df2info(dsequences,'nucle')
+            df2info(dmutagenesis,'nucle')
         dsequences['id']=dsequences.apply(lambda x: f"{x['genome coordinate']}|{x['method']}|{x['mutation on strand'].replace(' strand','')}|{x['nucleotide wild-type']}:{x['nucleotide mutation']}|{x['codon: wild-type']}:{x['codon mutation']}",axis=1)
     else:
         logging.warning('empty dsequences after merging with dmutagenesis')
@@ -312,7 +342,7 @@ def dinnucleotide2dsequencesproper(dsequences,dmutagenesis):
 def dseq2dguides(cfg):
     """
     Wrapper around make guides function.
-    :param cfg: conffguration settings given in yml file.    
+    :param cfg: configuration dict.    
     """
     cfg['datad']=cfg[cfg['step']]
     cfg['plotd']=cfg['datad']

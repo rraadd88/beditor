@@ -27,7 +27,12 @@ from beditor.lib.io_nums import str2num
 from beditor.lib.io_seqs import gffatributes2ids,hamming_distance,align
 
 def dguides2guidessam(cfg,dguides):    
-    #step1
+    """
+    Aligns guides to genome and gets SAM file
+    step#1
+    :param cfg: configuration dict
+    :param dguides: dataframe of guides
+    """
     datatmpd=cfg['datatmpd']
     dguides=set_index(dguides,'guide: id')
     guidels=dguides.loc[:,'guide+PAM length'].unique()
@@ -70,9 +75,11 @@ def dguides2guidessam(cfg,dguides):
     return cfg
 
 def guidessam2dalignbed(cfg):
-    #step2
-    #----make tables-----------
-    #output
+    """
+    Processes SAM file to get the genomic coordinates in BED format
+    step#2
+    :param cfg: configuration dict
+    """
     datatmpd=cfg['datatmpd']
     alignmentbedp=cfg['alignmentbedp']
     dalignbedp=cfg['dalignbedp']
@@ -132,7 +139,11 @@ def guidessam2dalignbed(cfg):
     return cfg
 
 def dalignbed2annotationsbed(cfg):
-    #step3
+    """
+    Get annotations from the aligned BED file
+    step#3
+    :param cfg: configuration dict
+    """
     datatmpd=cfg['datatmpd']
     alignmentbedp=cfg['alignmentbedp']    
     alignmentbedsortedp=alignmentbedp+'.sorted.bed'
@@ -156,7 +167,11 @@ def dalignbed2annotationsbed(cfg):
     return cfg
 
 def dalignbed2dalignbedguides(cfg):
-    #step4
+    """
+    Get guide seqeunces from the BED file
+    step#4
+    :param cfg: configuration dict
+    """
     datatmpd=cfg['datatmpd']
     dalignbed=del_Unnamed(pd.read_csv(cfg['dalignbedp'],sep='\t'))
     dguides=set_index(del_Unnamed(pd.read_csv(cfg['dguidesp'],sep='\t')),'guide: id')
@@ -170,8 +185,11 @@ def dalignbed2dalignbedguides(cfg):
     return cfg
 
 def alignmentbed2dalignedfasta(cfg):
-    #step5
-    
+    """
+    Get sequences in FASTA format from BED file
+    step#5
+    :param cfg: configuration dict
+    """    
     datatmpd=cfg['datatmpd']
     alignmentbedp=cfg['alignmentbedp']    
     dalignedfastap=cfg['dalignedfastap']
@@ -191,8 +209,11 @@ def alignmentbed2dalignedfasta(cfg):
     return cfg
 
 def dalignbed2dalignbedguidesseq(cfg):
-    #step6
-
+    """
+    Get sequences from BED file
+    step#6
+    :param cfg: configuration dict
+    """
     datatmpd=cfg['datatmpd']
     dalignbedguides=del_Unnamed(pd.read_csv(cfg['dalignbedguidesp'],sep='\t'))
     dalignedfasta=del_Unnamed(pd.read_csv(cfg['dalignedfastap'],sep='\t'))
@@ -208,10 +229,14 @@ def dalignbed2dalignbedguidesseq(cfg):
     return cfg
 
 def dalignbedguidesseq2dalignbedstats(cfg):
+    """
+    Gets scores for guides
+    step#7
+    :param cfg: configuration dict
+    """
     datatmpd=cfg['datatmpd']
     dalignbedguidesseq=del_Unnamed(pd.read_csv(cfg['dalignbedguidesseqp'],sep='\t'))
     
-    # step#7
     dalignbedstatsp=cfg['dalignbedstatsp']  
     logging.info(basename(dalignbedstatsp))
     if not exists(dalignbedstatsp) or cfg['force']:
@@ -223,9 +248,13 @@ def dalignbedguidesseq2dalignbedstats(cfg):
         dalignbedstats.to_csv(dalignbedstatsp,sep='\t')
     return cfg
 def dannots2dalignbed2dannotsagg(cfg):
+    """
+    Aggregate annotations per guide
+    step#8
+    :param cfg: configuration dict
+    """
     datatmpd=cfg['datatmpd']
     
-    # step#8
     daannotp=f'{datatmpd}/08_dannot.tsv'
     cfg['daannotp']=daannotp
     dannotsaggp=cfg['dannotsaggp']
@@ -278,7 +307,11 @@ def dannots2dalignbed2dannotsagg(cfg):
     return cfg
 
 def dannotsagg2dannots2dalignbedannot(cfg):
-    # step#9
+    """
+    Map aggregated annotations to guides
+    step#9
+    :param cfg: configuration dict
+    """
     datatmpd=cfg['datatmpd']
     
     dannotsagg=del_Unnamed(pd.read_csv(cfg['dannotsaggp'],sep='\t'))
@@ -304,7 +337,11 @@ def dannotsagg2dannots2dalignbedannot(cfg):
     return cfg
 
 def dalignbedannot2daggbyguide(cfg):
-    # step#10
+    """
+    Aggregate annotations per alignment to annotations per guide.
+    step#10
+    :param cfg: configuration dict
+    """
     datatmpd=cfg['datatmpd']
 
     dalignbedannot=del_Unnamed(pd.read_csv(cfg['dalignbedannotp'],sep='\t',low_memory=False))
@@ -313,30 +350,16 @@ def dalignbedannot2daggbyguide(cfg):
     logging.info(basename(daggbyguidep))
     if not exists(daggbyguidep) or cfg['force']:
         daggbyguide=dalignbedannot.loc[(dalignbedannot['NM']==0),['guide: id','guide+PAM sequence','gene names', 'gene ids','transcript ids']].drop_duplicates(subset=['guide: id'])
-#             if cfg['test']:
-#                 df2info(daggbyguide)
         if len(daggbyguide)!=0:
             daggbyguide=set_index(daggbyguide,'guide: id')            
-    #---
             guideids=daggbyguide.index.tolist()
-    #         if cfg['test']:
-    #             print(guideids)
-    #             print(dalignbedannot['guide: id'].unique())
             for gi in range(len(guideids)):
                 gid=guideids[gi]
-
                 dalignbedannoti=dalignbedannot.loc[dalignbedannot['guide: id']==gid,:]
                 if len(dalignbedannoti.shape)==1:
                     dalignbedannoti=pd.DataFrame(dalignbedannoti).T
-    #             if cfg['test']:
-    #                 df2info(dalignbedannoti)
-    #                 print(cdhb)
                 for col in ['types','gene names','gene ids','transcript ids','protein ids','exon ids']:    
-            #         print(";".join(dannoti[col].fillna('nan').tolist()))
                     daggbyguide.loc[gid,col]=";".join(np.unique(dalignbedannoti[col].fillna('nan').tolist()))
-    #---
-#                 if cfg['test']:
-#                     df2info(daggbyguide)
             from beditor.lib.get_scores import get_beditorscore_per_guide
             for guideid in daggbyguide.index:
                 dalignbedannotguide=dalignbedannot.loc[(dalignbedannot['guide: id']==guideid),:]
@@ -440,5 +463,3 @@ def dguides2offtargets(cfg):
             return saveemptytable(cfg,cfg['dofftargetsp'])
         import gc
         gc.collect()
-
-        
