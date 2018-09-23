@@ -22,6 +22,12 @@ from beditor.lib.io_strs import get_datetime
 import yaml 
 
 def pipeline_chunks(cfgp=None,cfg=None):
+    """
+    Runs indivudual chunk.
+    :param cfgp: path to configuration file. 
+    :param cfg: configuration dict
+    :returns:
+    """
     if cfg is None: 
         cfg=yaml.load(open(cfgp, 'r'))
     #datads
@@ -104,7 +110,9 @@ from beditor.lib.io_nums import str2num
 from os.path import basename
 def collect_chunks(cfg,chunkcfgps):
     """
-    #collects chunks
+    Collects analysed chunks
+    :param cfg: main configuration dict.
+    :param chunkcfgps: paths to all configuration files of chunks
     """    
     print(f"{get_datetime()}: collecting chunks")    
     for step in stepi2name.keys():
@@ -131,6 +139,12 @@ def collect_chunks(cfg,chunkcfgps):
                 logging.warning(f"no chunks found for step {step}: {stepi2name[step]}")
 
 def collectchuckfiles(cfg,fpinchunk,force=False):
+    """
+    Collects minor chunk files
+    :param cfg: configuration dict
+    :param fpinchunk: path inside chuck's project directory
+    :param force: if True overwrites the outputs 
+    """
     from beditor.lib.io_dfs import fhs2data_combo_appended
     from beditor.lib.global_vars import stepi2name
     from beditor.lib.io_nums import str2num
@@ -151,6 +165,11 @@ def collectchuckfiles(cfg,fpinchunk,force=False):
 from glob import glob
 from beditor.lib.plot_res import plot_vizbysteps
 def make_outputs(cfg,plot=True):
+    """
+    Cobines stepwise analysis files into a pretty table.
+    :param cfg: main configuration dict
+    :param plot: if True creates visualizations
+    """
     print(f"{get_datetime()}: generating outputs")        
     from beditor.lib.global_vars import stepi2colsoutput
     prjd=cfg['prjd']
@@ -201,6 +220,10 @@ def make_outputs(cfg,plot=True):
     return doutput 
 
 def validcfg(cfg): 
+    """
+    Checks if configuration dict is valid i.e. contains all the required fields
+    :param cfg: configuration dict
+    """
     from beditor.lib.global_vars import cfgoption2allowed,cfgoption2reguired
     opt_validity=[]
     for opt in ['mutations','mutation_format']:
@@ -232,6 +255,11 @@ def validcfg(cfg):
     return all(opt_validity)
 
 def validinput(cfg,din): 
+    """
+    Checks if input file is valid i.e. contains all the required columns.
+    :param cfg: configuration dict
+    :param din: dataframe containing input data 
+    """
     from beditor.lib.global_vars import mutation_format2cols
     opt_validity=[]
     for col in mutation_format2cols[cfg['mutation_format']]:
@@ -243,6 +271,13 @@ def validinput(cfg,din):
     return all(opt_validity)
 
 def pipeline(cfgp,step=None,test=False,force=False):
+    """
+    Runs steps of the analysis workflow in tandem.
+    :param cfgp: path to configuration file
+    :param step: step number
+    :param test: if True uses only one core, linear processing with verbose allowed
+    :param force: if True overwrites outputs
+    """
     import yaml
     from glob import glob
     cfgp=abspath(cfgp)
@@ -395,32 +430,28 @@ def pipeline(cfgp,step=None,test=False,force=False):
 
 def main():
     """
-    This runs all analysis steps in tandem.
+    Provides command-line inputs to the pipeline.
 
-    From bash command line,
+    For checking the command-lineinputs,
 
     .. code-block:: text
 
-        python path/to/beditor/pipeline.py cfg.json
-        
-    :param cfg.json: path to configurations.
+        beditor --help
 
     """
     version_info='%(prog)s v{version}'.format(version=pkg_resources.require("beditor")[0].version)
     parser = argparse.ArgumentParser(description=version_info)
-    parser.add_argument("--cfg", help="path to project directory", 
+    parser.add_argument("--cfg", help="path to configuration file in YAML format.", 
                         action="store", default=False)    
-    parser.add_argument("--step", help="1: get seqeucnces,\n2: get possible strategies,\n3: make guides,\n 4: identify offtargets \n else all the steps in tandem.", dest="step", 
+    parser.add_argument("--step", help="1: Get genomic loci flanking the target site,\n2: Get possible mutagenesis strategies,\n3: Design guides,\n 4: Check offtarget-effects \n else all the steps are run in tandem.", dest="step", 
                         type=float,action="store", choices=[1,2,3,4],default=None)  
-    parser.add_argument("--list", help="list something", dest="lister", 
+    parser.add_argument("--list", help="[pams, editors] lists PAMs and base editors installed in beditor. ", dest="lister", 
                         action="store", default=None)
     parser.add_argument("--test", help="Debug mode on", dest="test", 
                         action='store_true', default=False)    
     parser.add_argument("--force", help="Overwrite existing outputs.", dest="force", 
                         action='store_true', default=False)    
     parser.add_argument('-v','--version', action='version',version=version_info)
-#    parser.add_argument('-h', '--help', action='help', #default=argparse.SUPPRESS,
-#                    help='Show this help message and exit. \n Version info: %s' % version_info)
     args = parser.parse_args()
 
     lists=['pams','editors']

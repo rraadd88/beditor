@@ -129,7 +129,10 @@ def fhs2data_combo_appended(fhs, cols=None,labels=None,labels_coln='labels',sep=
         data_all=pd.DataFrame(columns=cols)
         for fhi,fh in enumerate(fhs):
             label=labels[fhi]
-            data=pd.read_csv(fh,sep=sep)
+            try:
+                data=pd.read_csv(fh,sep=sep)
+            except:
+                raise ValueError(f"something wrong with file pd.read_csv({fh},sep={sep})")
             if len(data)!=0:
                 data.loc[:,labels_coln]=label
                 if not cols is None:
