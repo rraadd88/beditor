@@ -33,3 +33,7 @@ beditor/_bin/
 beditor/lib/_pub/
 beditor/deps/
 docs/_build/*
+.Rhistory
+docs/README.pdf
+docs/api.rst
+docs/make.bat
