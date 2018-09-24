@@ -23,7 +23,7 @@ Table of Contents
 
 Installation
 ------------
-Requirements: [`Anaconda package manager`](https://www.anaconda.com/download/#linux) and `git`. 
+Requirements: [`Anaconda package manager`](https://www.anaconda.com/download/#linux), `gcc`, `make`, `make-guile` and `git`. 
 1.  Create a virtual environment.
 
 ``` {.sourceCode .text}
@@ -37,7 +37,16 @@ conda create -f environment.yml
 source activate beditor
 ```
 
-3.  Run the analysis.
+3. Install `beditor` python package.
+
+``` {.sourceCode .text}
+pip install beditor
+```
+
+Usage
+-----
+
+1.  Run the analysis.
 
 ``` {.sourceCode .text}
 beditor --cfg configuration.yml
