@@ -80,10 +80,10 @@ beditor --list editors
 beditor --help
 ```
 
-Configuration file (configuration.yml)
---------------------------------------
+Configuration file
+------------------
 
-It contains the all the analysis specific parameters.
+This YAML formatted file contains the all the analysis specific parameters.
 
 Template:
 <https://github.com/rraadd88/test_beditor/blob/master/common/configuration.yml>
