@@ -55,22 +55,22 @@ Input format
 ------------
 
 ``` {.sourceCode .text}
-`mutation_format` opted in configuration.yml file and corresponding columns needed in input: 
-`nucleotide` : `['genome coordinate','nucleotide mutation']`.
-`aminoacid`  : `['transcript: id','aminoacid: position','amino acid mutation']`.
+mutation_format opted in configuration.yml file and corresponding columns needed in input: 
+nucleotide : ['genome coordinate','nucleotide mutation'].
+aminoacid  : ['transcript: id','aminoacid: position','amino acid mutation'].
 ```
 
 Output format
 -------------
 
 ``` {.sourceCode .text}
-`mutation_format` opted in configuration.yml file and corresponding columns needed in input: 
+mutation_format opted in configuration.yml file and corresponding columns needed in input: 
 
-`nucleotide` :  ['genome coordinate','nucleotide wild-type','nucleotide mutation',]
-`nucleotide` : ['transcript: id','aminoacid: wild-type','aminoacid: position','amino acid mutation','codon: wild-type','guide: id','guide+PAM sequence','beditor score','alternate alignments count','CFD score']
+nucleotide :  ['genome coordinate','nucleotide wild-type','nucleotide mutation',]
+nucleotide : ['transcript: id','aminoacid: wild-type','aminoacid: position','amino acid mutation','codon: wild-type','guide: id','guide+PAM sequence','beditor score','alternate alignments count','CFD score']
 ```
 
-Format of \`guide: id\`:
+Format of `guide: id`:
 
 ``` {.sourceCode .text}
 {genomic locus}|{position of mutation}|({strategy})
@@ -87,21 +87,21 @@ Inside a project directory there would be following folders named by
 corresponding steps of analysis.
 
 ``` {.sourceCode .text}
-1. `01_sequences/`
+1. 01_sequences/
 Stores the output of step #1. Extracting sequences flanking mutation site.
-2. `02_mutagenesis/`
+2. 02_mutagenesis/
 Stores the output of step #2. Estimating the editable mutations based on base editors chosen.
-3. `03_guides/`
+3. 03_guides/
 Stores the output of step #3. Designed guides.
-4. `04_offtargets/`
+4. 04_offtargets/
 Stores the output of step #4. Offtarget effects.
-5. `05_outputs/`
+5. 05_outputs/
 Stores combined output and visualizations.
 
 Also,
-- `00_input/`
+- 00_input/
 Stores input files.
-- `chunks/`
+- chunks/
 If parallel processing is used, this folder would store individual parts (chunks) of the analysis. 
 ```
 
