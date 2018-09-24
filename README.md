@@ -104,7 +104,7 @@ Output format
 mutation_format opted in configuration.yml file and corresponding columns needed in input: 
 
 nucleotide :  ['genome coordinate','nucleotide wild-type','nucleotide mutation',]
-nucleotide : ['transcript: id','aminoacid: wild-type','aminoacid: position','amino acid mutation','codon: wild-type','guide: id','guide+PAM sequence','beditor score','alternate alignments count','CFD score']
+aminoacid : ['transcript: id','aminoacid: wild-type','aminoacid: position','amino acid mutation','codon: wild-type','guide: id','guide+PAM sequence','beditor score','alternate alignments count','CFD score']
 ```
 
 Format of `guide: id`:
