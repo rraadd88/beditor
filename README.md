@@ -23,7 +23,8 @@ Table of Contents
 
 Installation
 ------------
-Requirements: [`Anaconda package manager`](https://www.anaconda.com/download/#linux), `gcc`, `make`, `make-guile` and `git`. 
+Requirements: [`Anaconda package manager`](https://www.anaconda.com/download/#linux) and bunch of linux-specific libraries (gcc make make-guile git zlib1g-dev libncurses5-dev libbz2-dev). See [requirements.md](https://github.com/rraadd88/test_beditor/blob/master/requirements.md) for set of bash commands that would install all the requirements of `beditor`.
+
 1.  Create a virtual environment.
 
 ``` {.sourceCode .text}
