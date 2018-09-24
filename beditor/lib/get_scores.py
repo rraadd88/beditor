@@ -3,6 +3,15 @@ import pandas as pd
 
 from beditor.lib.io_nums import rescale
 def get_ppamdist(guidelength,pamlength,pam_position,ppamdist_min,pmutatpam):
+    """
+    Get penalties set based on distances of the mismatch/es from PAM 
+
+    :param guidelength: length of guide sequence
+    :param pamlength: length of PAM sequence
+    :param pam_position: PAM location 3' or 5'
+    :param ppamdist_min: minimum penalty
+    :param pmutatpam: penalty for mismatch at PAM
+    """
     x=np.arange(pamlength)
 #     ppamdist_pam=np.zeros(pamlength)
     ppamdist_pam=np.full([1, pamlength], pmutatpam)[0]
@@ -29,6 +38,7 @@ def get_beditorscore_per_alignment(NM,genic,alignment,pam_length,pam_position,
                     test=False,debug=False):
     """
     Calculates beditor score per alignment between guide and genomic DNA.
+
     :param NM: Hamming distance
     :param mismatches_max: Maximum mismatches allowed in alignment
     :param genic: True if guide aligns to genic regions, else (intergenic) False.
@@ -85,6 +95,7 @@ def get_beditorscore_per_guide(guide_seq, strategy,
                               ):
     """
     Calculates beditor score per guide.
+    
     :param guide_seq: guide seqeunce 23nts
     :param strategy: strategy string eg. ABE;+;@-14;ACT:GCT;T:A;
     :param align_seqs_scores: list of beditor scores per alignments for all the alignments between guide and genomic DNA

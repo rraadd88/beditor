@@ -21,6 +21,7 @@ from .global_vars import mutation_format2cols,stepi2cols
 def tboundaries2positions(t):
     """
     Fetches positions from transcript boundaries.
+
     :param t: pyensembl transcript object 
     :returns coding_sequence_positions: reading frames
     """
@@ -36,6 +37,7 @@ def tboundaries2positions(t):
 def t2pmapper(t,coding_sequence_positions):
     """
     Maps transcript id with protein id. 
+
     :param t: pyensembl transcript object 
     :param t: reading frames
     :returns coding_sequence_positions: dataframe with mapped positions    
@@ -53,6 +55,7 @@ def t2pmapper(t,coding_sequence_positions):
 def get_seq_aminoacid(cfg,din):
     """
     Fetches sequences if mutation format is amino acid 
+
     :param cfg: configuration dict
     :param din: input data
     :returns dsequences: dataframe with sequences
@@ -189,6 +192,7 @@ from .global_vars import flankntc
 def get_seq_nucleotide(cfg,din):
     """
     Fetches sequences if mutation format is nucleotide
+
     :param cfg: configuration dict
     :param din: input data
     :returns dsequences: dataframe with sequences
@@ -243,6 +247,7 @@ def get_seq_nucleotide(cfg,din):
 def din2dseq(cfg):
     """
     Wrapper for converting input data (transcript ids and positions of mutation) to seqeunces flanking the codon. 
+    
     :param cfg: configuration dict    
     """
     from beditor.lib.global_vars import stepi2cols_nucleotide

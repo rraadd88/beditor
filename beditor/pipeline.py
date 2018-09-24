@@ -24,6 +24,7 @@ import yaml
 def pipeline_chunks(cfgp=None,cfg=None):
     """
     Runs indivudual chunk.
+
     :param cfgp: path to configuration file. 
     :param cfg: configuration dict
     :returns:
@@ -111,6 +112,7 @@ from os.path import basename
 def collect_chunks(cfg,chunkcfgps):
     """
     Collects analysed chunks
+
     :param cfg: main configuration dict.
     :param chunkcfgps: paths to all configuration files of chunks
     """    
@@ -141,6 +143,7 @@ def collect_chunks(cfg,chunkcfgps):
 def collectchuckfiles(cfg,fpinchunk,force=False):
     """
     Collects minor chunk files
+
     :param cfg: configuration dict
     :param fpinchunk: path inside chuck's project directory
     :param force: if True overwrites the outputs 
@@ -167,6 +170,7 @@ from beditor.lib.plot_res import plot_vizbysteps
 def make_outputs(cfg,plot=True):
     """
     Cobines stepwise analysis files into a pretty table.
+
     :param cfg: main configuration dict
     :param plot: if True creates visualizations
     """
@@ -222,6 +226,7 @@ def make_outputs(cfg,plot=True):
 def validcfg(cfg): 
     """
     Checks if configuration dict is valid i.e. contains all the required fields
+
     :param cfg: configuration dict
     """
     from beditor.lib.global_vars import cfgoption2allowed,cfgoption2reguired
@@ -257,6 +262,7 @@ def validcfg(cfg):
 def validinput(cfg,din): 
     """
     Checks if input file is valid i.e. contains all the required columns.
+
     :param cfg: configuration dict
     :param din: dataframe containing input data 
     """
@@ -273,6 +279,7 @@ def validinput(cfg,din):
 def pipeline(cfgp,step=None,test=False,force=False):
     """
     Runs steps of the analysis workflow in tandem.
+    
     :param cfgp: path to configuration file
     :param step: step number
     :param test: if True uses only one core, linear processing with verbose allowed

@@ -26,6 +26,7 @@ def get_pam_searches(dpam,seq,pos_codon,
                     test=False):
     """
     Search PAM occurance
+
     :param dpam: dataframe with PAM sequences
     :param seq: target sequence
     :param pos_codon: reading frame
@@ -82,6 +83,7 @@ def guide2dpositions(x,dbug=False):
     Note:
     Index and flank sequence based indexing are 0-based
     Distances and positions from pam are 1-based
+
     :param x: lambda section of dguides dataframe  
     """
     dpositions=pd.DataFrame(index=range(45),
@@ -148,6 +150,7 @@ def make_guides(cfg,dseq,dmutagenesis,dpam,
     1. searching all PAM sequences on 'both' the strands,
     2. filtering guides by all possible strategies (given in dmutagenesis) e.g. activity window,
     Finally generates a table.
+
     :param cfg: configuration dict
     :param dseq: dsequences dataframe
     :param dmutagenesis: dmutagenesis dataframe
@@ -283,6 +286,7 @@ def make_guides(cfg,dseq,dmutagenesis,dpam,
 def dpam2dpam_strands(dpam,pams):
     """
     Duplicates dpam dataframe to be compatible for searching PAMs on - strand
+
     :param dpam: dataframe with pam information
     :param pams: pams to be used for actual designing of guides.
     """
@@ -315,6 +319,7 @@ def dpam2dpam_strands(dpam,pams):
 def dinnucleotide2dsequencesproper(dsequences,dmutagenesis,dbug=False):
     """
     Makes dseqeunces dataframe of nucleotide mutation format compatible to guide design modules
+
     :param dsequences: dsequences dataframe
     :param dmutagenesis: dmutagenesis dataframe
     """
@@ -342,6 +347,7 @@ def dinnucleotide2dsequencesproper(dsequences,dmutagenesis,dbug=False):
 def dseq2dguides(cfg):
     """
     Wrapper around make guides function.
+    
     :param cfg: configuration dict.    
     """
     cfg['datad']=cfg[cfg['step']]

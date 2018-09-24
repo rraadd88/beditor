@@ -18,7 +18,7 @@ import logging
 def get_codon_table(aa, tax_id=None):
     """
     Gets host specific codon table.
-    Eq: a*np.exp(-(x-x0)**2/(2*sigma**2))
+
     :param aa: list of amino acids
     :param host: name of host
     :returns: codon table (pandas dataframe)
@@ -55,6 +55,7 @@ def get_codon_table(aa, tax_id=None):
 def get_codon_usage(cuspp):
     """
     Creates codon usage table.
+
     :param cuspp: path to cusp generated file
     :returns: codon usage table (pandas dataframe)
     """
@@ -75,6 +76,7 @@ def get_possible_mutagenesis(dcodontable,dcodonusage,
                             ): 
     """
     Assesses possible mutagenesis strategies, given the set of Base editors and positions of mutations.
+
     :param dcodontable: Codon table
     :param dcodonusage: Codon usage table
     :param BEs: Base editors (dict), see global_vars.py
@@ -326,7 +328,7 @@ from os.path import abspath,dirname
 def get_submap(cfg):
     """
     Fetches mimetic substitution map that would be used to filter mutagenesis strategies.
-    Also, 
+
     :param cfg: configurations from yml file.
     """
     mimetism_levels={'high': 1,
@@ -366,6 +368,7 @@ def get_submap(cfg):
 def filterdmutagenesis(dmutagenesis,cfg):
     """
     Filters the mutagenesis strategies by multiple options provided in configuration file (.yml).
+
     :param dmutagenesis: mutagenesis strategies (pd.DataFrame)
     :param cfg: configurations from yml file
     """
@@ -430,6 +433,7 @@ def dseq2dmutagenesis(cfg):
     # from beditor.lib.global_vars import BEs2mutations,pos_muts
     """
     Generates mutagenesis strategies from identities of reference and mutated codons (from dseq).
+    
     :param cfg: configurations from yml file  
     """
     from .global_vars import stepi2cols

@@ -117,6 +117,15 @@ How to analyze test dtasets
 API
 ---
 
+.. automodule:: beditor.pipeline
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: beditor.configure
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 .. automodule:: beditor.lib.get_seq
    :members:

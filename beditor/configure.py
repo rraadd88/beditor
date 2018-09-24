@@ -16,6 +16,7 @@ from beditor.lib.io_sys import runbashcmd
 def get_deps(cfg):
     """
     Installs dependencies of `beditor`
+
     :param cfg: configuration dict
     """
     depsd="%s/deps" % abspath(dirname(__file__)) 
@@ -73,6 +74,7 @@ def get_deps(cfg):
 def get_genomes(cfg):
     """
     Installs genomes
+    
     :param cfg: configuration dict
     """
     

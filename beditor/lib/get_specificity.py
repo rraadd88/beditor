@@ -30,6 +30,7 @@ def dguides2guidessam(cfg,dguides):
     """
     Aligns guides to genome and gets SAM file
     step#1
+
     :param cfg: configuration dict
     :param dguides: dataframe of guides
     """
@@ -78,6 +79,7 @@ def guidessam2dalignbed(cfg):
     """
     Processes SAM file to get the genomic coordinates in BED format
     step#2
+
     :param cfg: configuration dict
     """
     datatmpd=cfg['datatmpd']
@@ -142,6 +144,7 @@ def dalignbed2annotationsbed(cfg):
     """
     Get annotations from the aligned BED file
     step#3
+
     :param cfg: configuration dict
     """
     datatmpd=cfg['datatmpd']
@@ -170,6 +173,7 @@ def dalignbed2dalignbedguides(cfg):
     """
     Get guide seqeunces from the BED file
     step#4
+
     :param cfg: configuration dict
     """
     datatmpd=cfg['datatmpd']
@@ -188,6 +192,7 @@ def alignmentbed2dalignedfasta(cfg):
     """
     Get sequences in FASTA format from BED file
     step#5
+
     :param cfg: configuration dict
     """    
     datatmpd=cfg['datatmpd']
@@ -212,6 +217,7 @@ def dalignbed2dalignbedguidesseq(cfg):
     """
     Get sequences from BED file
     step#6
+
     :param cfg: configuration dict
     """
     datatmpd=cfg['datatmpd']
@@ -232,6 +238,7 @@ def dalignbedguidesseq2dalignbedstats(cfg):
     """
     Gets scores for guides
     step#7
+
     :param cfg: configuration dict
     """
     datatmpd=cfg['datatmpd']
@@ -251,6 +258,7 @@ def dannots2dalignbed2dannotsagg(cfg):
     """
     Aggregate annotations per guide
     step#8
+
     :param cfg: configuration dict
     """
     datatmpd=cfg['datatmpd']
@@ -310,6 +318,7 @@ def dannotsagg2dannots2dalignbedannot(cfg):
     """
     Map aggregated annotations to guides
     step#9
+
     :param cfg: configuration dict
     """
     datatmpd=cfg['datatmpd']
@@ -340,6 +349,7 @@ def dalignbedannot2daggbyguide(cfg):
     """
     Aggregate annotations per alignment to annotations per guide.
     step#10
+
     :param cfg: configuration dict
     """
     datatmpd=cfg['datatmpd']
@@ -380,6 +390,7 @@ def dalignbedannot2daggbyguide(cfg):
 def dguides2offtargets(cfg):
     """
     All the processes in offtarget detection are here.
+    
     :param cfg: Configuration settings provided in .yml file
     """
     from beditor.lib.global_vars import saveemptytable
