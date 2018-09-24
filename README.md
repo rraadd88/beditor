@@ -53,6 +53,33 @@ Usage
 beditor --cfg configuration.yml
 ```
 
+2.  Run a single step in the analysis.
+
+``` {.sourceCode .text}
+beditor --cfg --step {step number} configuration.yml
+```
+`step number` and corresponding analysis:
+
+``` {.sourceCode .text}
+1: Get genomic loci flanking the target site
+2: Get possible mutagenesis strategies
+3: Design guides
+4: Check offtarget-effects
+``` 
+
+3. To list existing pams and editors
+
+``` {.sourceCode .text}
+beditor --list pams
+beditor --list editors
+```
+
+4. Help
+
+``` {.sourceCode .text}
+beditor --help
+```
+
 Configuration file (configuration.yml)
 --------------------------------------
 
@@ -117,13 +144,6 @@ If parallel processing is used, this folder would store individual parts (chunks
 
 How to install new base editor or PAM
 -------------------------------------
-
-To list existing pams and editors
-
-``` {.sourceCode .text}
-beditor --list pams
-beditor --list editors
-```
 
 This information is located in beditor/data (use `which beditor` to locate directory of beditor) directory in tab-separated table format (`dBEs.tsv` and `dpams.tsv`).
 In order to install new base editor or PAM, user would have to simply append the relevant information in the tables.
