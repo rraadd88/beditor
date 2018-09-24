@@ -23,7 +23,7 @@ Table of Contents
 
 Installation
 ------------
-
+Requirements: [`Anaconda package manager`](https://www.anaconda.com/download/#linux) and `git`. 
 1.  Create a virtual environment.
 
 ``` {.sourceCode .text}
