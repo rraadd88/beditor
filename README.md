@@ -28,7 +28,7 @@ Requirements: [`Anaconda package manager`](https://www.anaconda.com/download/#li
 
 ``` {.sourceCode .text}
 wget https://raw.githubusercontent.com/rraadd88/beditor/master/environment.yml
-conda create -f environment.yml
+conda env create -f environment.yml
 ```
 
 2.  Activate the virtual environment.
