@@ -27,7 +27,7 @@ Installation
 1.  Create a virtual environment.
 
 ``` {.sourceCode .text}
-cd beditor
+wget https://raw.githubusercontent.com/rraadd88/beditor/master/environment.yml
 conda create -f environment.yml
 ```
 
