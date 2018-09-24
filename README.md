@@ -139,9 +139,7 @@ How to analyze test datasets
 ``` {.sourceCode .text}
 # make the input files with mock data
 git clone https://github.com/rraadd88/test_beditor.git
-source activate beditor;cd test_beditor;python make_datasets.py
-# command to analyze mock input data of a species
-source activate beditor;cd dataset_{species name};beditor --cfg {name of the .yml file}
+source activate beditor;cd test_beditor;python test_datasets.py
 ```
 
 API
