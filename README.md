@@ -9,8 +9,8 @@ pandoc --from=markdown --to=rst --output=README.rst R
 EADME.md
 -->
 
-A computational workflow for designing libraries of guide RNAs for
-CRISPR base editing
+A computational workflow for designing libraries of guide RNAs for CRISPR base editing  
+Pre-print: https://doi.org/10.1101/426973
 
 Table of Contents
 -----------------
