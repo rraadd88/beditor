@@ -25,7 +25,7 @@ Installation
 ------------
 Requirements: [`Anaconda package manager`](https://www.anaconda.com/download/#linux) and bunch of linux-specific libraries (gcc make make-guile git zlib1g-dev libncurses5-dev and libbz2-dev). See [requirements.md](https://github.com/rraadd88/test_beditor/blob/master/requirements.md) for set of bash commands that would install all the requirements of `beditor`.
 
-1.  Once all the requirements are satified, create a python 3.6 virtual environment.
+1.  Once all the requirements are satisfied, create a python 3.6 virtual environment.
 
 ``` {.sourceCode .text}
 wget https://raw.githubusercontent.com/rraadd88/beditor/master/environment.yml
@@ -38,7 +38,7 @@ conda env create -f environment.yml
 source activate beditor
 ```
 
-3. Install `beditor` python package.
+3. Install `beditor` python package from pypi.
 
 ``` {.sourceCode .text}
 pip install beditor
