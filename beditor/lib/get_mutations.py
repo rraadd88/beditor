@@ -70,7 +70,7 @@ def get_codon_usage(cuspp):
     return dcodonusage
 
 
-def get_possible_mutagenesis(dcodontable,dcodonusage,
+def get_possible_mutagenesis(cfg,dcodontable,dcodonusage,
                              BEs,pos_muts,
                              host,
                             ): 
@@ -309,18 +309,22 @@ def get_possible_mutagenesis(dcodontable,dcodonusage,
         # dmutagenesis,muti=get_dm_combo(dmutagenesis,BEs,positions_dm,codon,muti,cdni,method='undefined')
         # #triple nucleotide mutations combinations
         # dmutagenesis,muti=get_tm_combo(dmutagenesis,BEs,positions_tm,codon,muti,cdni,method='undefined')
+    if len(dmutagenesis)==0:
+        from beditor.lib.global_vars import saveemptytable
+        logging.warning('no guides designed; saving an empty table.')
+        dmutagenesis=saveemptytable(cfg)        
+    else:
+        dmutagenesis['nucleotide mutation: count']=[len(s) for s in dmutagenesis['nucleotide mutation']]
+        dmutagenesis=dmutagenesis.sort_values('codon')  
+        # Adding information of Allowed activity window
+        dmutagenesis=dmutagenesis.set_index('method').join(pos_muts)
+        dmutagenesis=dmutagenesis.reset_index()
 
-    dmutagenesis['nucleotide mutation: count']=[len(s) for s in dmutagenesis['nucleotide mutation']]
-    dmutagenesis=dmutagenesis.sort_values('codon')  
-    # Adding information of Allowed activity window
-    dmutagenesis=dmutagenesis.set_index('method').join(pos_muts)
-    dmutagenesis=dmutagenesis.reset_index()
-    
-    from beditor.lib.io_seqs import reverse_complement_multintseq
-    from beditor.lib.global_vars import nt2complement
-    dmutagenesis['nucleotide: wild-type']=dmutagenesis.apply(lambda x : x['nucleotide'] if x['strand: mutation']=='+' else reverse_complement_multintseq(x['nucleotide'],nt2complement),axis=1) 
-    dmutagenesis['nucleotide: mutation']=dmutagenesis.apply(lambda x : x['nucleotide mutation'] if x['strand: mutation']=='+' else reverse_complement_multintseq(x['nucleotide mutation'],nt2complement),axis=1)    
-    
+        from beditor.lib.io_seqs import reverse_complement_multintseq
+        from beditor.lib.global_vars import nt2complement
+        dmutagenesis['nucleotide: wild-type']=dmutagenesis.apply(lambda x : x['nucleotide'] if x['strand: mutation']=='+' else reverse_complement_multintseq(x['nucleotide'],nt2complement),axis=1) 
+        dmutagenesis['nucleotide: mutation']=dmutagenesis.apply(lambda x : x['nucleotide mutation'] if x['strand: mutation']=='+' else reverse_complement_multintseq(x['nucleotide mutation'],nt2complement),axis=1)    
+
     return dmutagenesis
 
 from beditor.lib.io_dfs import df2unstack
@@ -475,7 +479,7 @@ def dseq2dmutagenesis(cfg):
          'distance of codon start from PAM: minimum',
          'distance of codon start from PAM: maximum']].drop_duplicates().set_index('method')
 
-        dmutagenesis=get_possible_mutagenesis(dcodontable=dcodontable,dcodonusage=dcodonusage,
+        dmutagenesis=get_possible_mutagenesis(cfg,dcodontable=dcodontable,dcodonusage=dcodonusage,
                                     BEs=BEs2mutations,pos_muts=pos_muts,
                                     host=cfg['host'])
         dmutagenesis.to_csv(dmutagenesisallp,sep='\t')

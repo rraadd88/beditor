@@ -79,12 +79,14 @@ stepi2cols={
  'CFD score'],
 }
 
-def saveemptytable(cfg,doutp):
+def saveemptytable(cfg,doutp=None):
     from beditor.lib.global_vars import stepi2cols
     dout=pd.DataFrame(columns=stepi2cols[cfg['step']])
     logging.warning(f"saved enmpty table {doutp}")
-    dout.to_csv(doutp,sep='\t')
-
+    if not doutp is None:
+        dout.to_csv(doutp,sep='\t')
+    else:
+        return dout 
 
 # # regex
 multint2reg={'R':'[AG]',

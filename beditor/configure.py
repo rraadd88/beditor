@@ -108,7 +108,11 @@ def get_genomes(cfg):
         if ifdlref=='Y':
         # #FIXME download contigs and cat and get index, sizes
             for contig in contigs:
-                fn='{}.{}.dna_sm.chromosome.{}.fa.gz'.format(cfg['host'].capitalize(),cfg['genomeassembly'],contig)
+                if 'GRCh37' in cfg['genomeassembly']:
+                    #Homo_sapiens.GRCh37.75.dna_sm.chromosome.1.fa.gz
+                    fn=f"{cfg['host'].capitalize()}.{cfg['genomeassembly']}.{cfg['genomerelease']}.dna_sm.chromosome.{contig}.fa.gz"
+                else:
+                    fn=f"{cfg['host'].capitalize()}.{cfg['genomeassembly']}.dna_sm.chromosome.{contig}.fa.gz"
                 fp='{}/{}'.format(ensembl_fastad,fn)
                 if not exists(fp):
                     cmd='wget -q -x -nH ftp://ftp.ensembl.org/{} -P {}'.format(fp,dirname(realpath(__file__)))

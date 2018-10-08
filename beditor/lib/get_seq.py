@@ -123,11 +123,17 @@ def get_seq_aminoacid(cfg,din):
             terrnotfound.append(din.loc[i,'transcript: id'])
             if cfg['test']:
                 logging.error('not found: {}'.format(din.loc[i,'transcript: id']))
+    if len(dbed)==0:
+        from beditor.lib.global_vars import saveemptytable
+        logging.warning('no valid seqeunces found; saving an empty table.')
+        saveemptytable(cfg,f"{cfg['dsequencesp']}")
+        return None
     dbed=dbed.loc[(dbed.apply(lambda x : x['end']-x['start']==45, axis=1)),:] #FIXME put flank in the yml
 
     dbed.loc[:,'start']=dbed.loc[:,'start'].astype(int)
     dbed.loc[:,'end']=dbed.loc[:,'end'].astype(int)
     
+    dbed=dbed.drop_duplicates(subset=bed_colns)                    
     dbed.loc[:,bed_colns].to_csv(dbedp,sep='\t',
                     header=False,index=False)
     err2tids={'terrpositions':terrpositions,

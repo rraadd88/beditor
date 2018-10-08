@@ -385,26 +385,32 @@ def dseq2dguides(cfg):
         dpam_strands=dpam2dpam_strands(dpam,pams=cfg['pams'])
         dpam_strands.to_csv(dpam_strandsp,sep='\t')
 
-        dmutagenesis['strand']=dmutagenesis.apply(lambda x : x['mutation on strand'].replace(' strand',''),axis=1)        
-        dmutagenesis.to_csv(dmutagenesisp,sep='\t')
-        
-        dguideslin,dguides_noflt,err2idxs=make_guides(cfg,dsequences,
-                    dmutagenesis,
-                    dpam=dpam_strands,
-                       test=cfg['test'],
-                       # dbug=True,
-                     )
-        if not dguides_noflt is None:
-            dguides_noflt.to_csv(dguides_nofltp,sep='\t')
-        if not ((dguideslin is None) and (err2idxs is None)):
-            dguideslin.to_csv(dguideslinp,sep='\t')
-            if cfg['test']:
-                logging.info(err2idxs)
-            with open(dguideslinp+'.err.json', 'w') as f:
-                json.dump(err2idxs, f)
+        if not (len(dsequences)==0 or len(dmutagenesis)==0):        
+            dmutagenesis['strand']=dmutagenesis.apply(lambda x : x['mutation on strand'].replace(' strand',''),axis=1)        
+            dmutagenesis.to_csv(dmutagenesisp,sep='\t')
+
+            dguideslin,dguides_noflt,err2idxs=make_guides(cfg,dsequences,
+                        dmutagenesis,
+                        dpam=dpam_strands,
+                           test=cfg['test'],
+                           # dbug=True,
+                         )
+            if not dguides_noflt is None:
+                dguides_noflt.to_csv(dguides_nofltp,sep='\t')
+            if not ((dguideslin is None) and (err2idxs is None)):
+                dguideslin.to_csv(dguideslinp,sep='\t')
+                if cfg['test']:
+                    logging.info(err2idxs)
+                with open(dguideslinp+'.err.json', 'w') as f:
+                    json.dump(err2idxs, f)
+            else:
+                from beditor.lib.global_vars import saveemptytable
+                logging.warning('no guides designed; saving an empty table.')
+                saveemptytable(cfg,dguideslinp)
         else:
             from beditor.lib.global_vars import saveemptytable
             logging.warning('no guides designed; saving an empty table.')
             saveemptytable(cfg,dguideslinp)
+            
         import gc
         gc.collect()
