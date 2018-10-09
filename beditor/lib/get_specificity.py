@@ -304,9 +304,11 @@ def dannots2dalignbed2dannotsagg(cfg):
             dannoti=dannots.loc[dannots['id']==alignid,:]
             if len(dannoti.shape)==1:
                 dannoti=pd.DataFrame(dannoti).T
-            dannoti=dannoti.loc[dannoti['type']!='chromosome',:].drop_duplicates(subset=['start annotation','end annotation'])
-            for col in ['type','gene name','gene id','transcript id','protein id','exon id']:    
-                dannotsagg.loc[alignid,col+'s']=";".join(np.unique(dannoti[col].fillna('nan').tolist()))
+            dannoti=dannoti.dropna(subset=['type'])
+            if len(dannoti)!=0:
+                dannoti=dannoti.loc[dannoti['type']!='chromosome',:].drop_duplicates(subset=['start annotation','end annotation'])
+                for col in ['type','gene name','gene id','transcript id','protein id','exon id']:    
+                    dannotsagg.loc[alignid,col+'s']=";".join(np.unique(dannoti[col].fillna('nan').tolist()))
         logging.debug('end of the slowest step')
             
         del dannots    
@@ -368,8 +370,9 @@ def dalignbedannot2daggbyguide(cfg):
                 dalignbedannoti=dalignbedannot.loc[dalignbedannot['guide: id']==gid,:]
                 if len(dalignbedannoti.shape)==1:
                     dalignbedannoti=pd.DataFrame(dalignbedannoti).T
-                for col in ['types','gene names','gene ids','transcript ids','protein ids','exon ids']:    
-                    daggbyguide.loc[gid,col]=";".join(np.unique(dalignbedannoti[col].fillna('nan').tolist()))
+                for col in ['types','gene names','gene ids','transcript ids','protein ids','exon ids']:
+                    if (col in daggbyguide) and (col in dalignbedannoti):
+                        daggbyguide.loc[gid,col]=";".join(np.unique(dalignbedannoti[col].fillna('nan').tolist()))
             from beditor.lib.get_scores import get_beditorscore_per_guide
             for guideid in daggbyguide.index:
                 dalignbedannotguide=dalignbedannot.loc[(dalignbedannot['guide: id']==guideid),:]

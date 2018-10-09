@@ -102,21 +102,22 @@ def gffatributes2ids(s):
     :returns: tuple of ids
     """
     Name,gene_id,transcript_id,protein_id,exon_id=np.nan,np.nan,np.nan,np.nan,np.nan
-    if '=' in s:
-        d=dict([i.split('=') for i in s.split(';')])
-        if 'Parent' in d:
-            d[d['Parent'].split(':')[0]+'_id']=d['Parent'].split(':')[1]
-        Name,gene_id,transcript_id,protein_id,exon_id=np.nan,np.nan,np.nan,np.nan,np.nan
-        if 'Name' in d:    
-            Name=d['Name']
-        if 'gene_id' in d:    
-            gene_id=d['gene_id']
-        if 'transcript_id' in d:    
-            transcript_id=d['transcript_id']
-        if 'protein_id' in d:    
-            protein_id=d['protein_id']
-        if 'exon_id' in d:    
-            exon_id=d['exon_id']
+    if not pd.isnull(s):
+        if '=' in s:
+            d=dict([i.split('=') for i in s.split(';')])
+            if 'Parent' in d:
+                d[d['Parent'].split(':')[0]+'_id']=d['Parent'].split(':')[1]
+            Name,gene_id,transcript_id,protein_id,exon_id=np.nan,np.nan,np.nan,np.nan,np.nan
+            if 'Name' in d:    
+                Name=d['Name']
+            if 'gene_id' in d:    
+                gene_id=d['gene_id']
+            if 'transcript_id' in d:    
+                transcript_id=d['transcript_id']
+            if 'protein_id' in d:    
+                protein_id=d['protein_id']
+            if 'exon_id' in d:    
+                exon_id=d['exon_id']
     return Name,gene_id,transcript_id,protein_id,exon_id
 
 def hamming_distance(s1, s2):
