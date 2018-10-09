@@ -88,8 +88,12 @@ def get_genomes(cfg):
                                             cfg['genomeassembly']: (cfg['genomerelease'], cfg['genomerelease']),
                                         }),release=cfg['genomerelease'])
     contig_mito=['MTDNA','MITO','MT']
-    contigs=[c for c in ensembl.contigs() if ((not '.' in c) and (c not in contig_mito))]    
-
+    contigs=[c for c in ensembl.contigs() if ((not '.' in c) and (len(c)<5) and (c not in contig_mito))]    
+    if len(contigs)==0:
+        logging.error('no contigs identified by pyensembl; aborting')
+        sys.exit(0)
+    logging.info(f"{len(contigs)} contigs/chromosomes in the genome")
+    logging.info(contigs)
     # raw genome next
     if 'human' in cfg['host'].lower():
         cfg['host']='homo_sapiens'
