@@ -85,7 +85,10 @@ def get_seq_aminoacid(cfg,din):
                 coding_sequence_positions=tboundaries2positions(t)
                 if len(coding_sequence_positions)==len(t.coding_sequence):
                 #TODO     need to check if the seq made from coding_sequence_positions is same as t.coding_seqeunce
-                    dcoding=t2pmapper(t,coding_sequence_positions)
+                    try:
+                        dcoding=t2pmapper(t,coding_sequence_positions)
+                    except:
+                        continue
                     dcodingmutpos=dcoding.loc[(dcoding['protein index']==din.loc[i,'aminoacid: position']),:]
                     codon_positions=dcodingmutpos['coding sequence positions'].tolist()
                     if len(codon_positions)!=0:
