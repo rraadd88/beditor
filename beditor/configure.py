@@ -90,8 +90,10 @@ def get_genomes(cfg):
     contig_mito=['MTDNA','MITO','MT']
     contigs=[c for c in ensembl.contigs() if ((not '.' in c) and (len(c)<5) and (c not in contig_mito))]    
     if len(contigs)==0:
-        logging.error('no contigs identified by pyensembl; aborting')
-        sys.exit(0)
+        contigs=[c for c in ensembl.contigs()]
+        # logging.error([c for c in ensembl.contigs()])
+        # logging.error('no contigs identified by pyensembl; aborting')
+        # sys.exit(0)
     logging.info(f"{len(contigs)} contigs/chromosomes in the genome")
     logging.info(contigs)
     # raw genome next
@@ -119,9 +121,18 @@ def get_genomes(cfg):
                     fn=f"{cfg['host'].capitalize()}.{cfg['genomeassembly']}.dna_sm.chromosome.{contig}.fa.gz"
                 fp='{}/{}'.format(ensembl_fastad,fn)
                 if not exists(fp):
-                    cmd='wget -q -x -nH ftp://ftp.ensembl.org/{} -P {}'.format(fp,dirname(realpath(__file__)))
-                    runbashcmd(cmd,test=cfg['test'])
-#                 break
+                    cmd=f"wget -q -x -nH ftp://ftp.ensembl.org/{fp} -P {dirname(realpath(__file__))}"
+                    try:
+                        runbashcmd(cmd,test=cfg['test'])
+                    except:
+                        fn=f"{cfg['host'].capitalize()}.{cfg['genomeassembly']}.dna_sm.toplevel.fa.gz"
+                        fp='{}/{}'.format(ensembl_fastad,fn)                        
+                        if not exists(fp):
+                            cmd=f"wget -q -x -nH ftp://ftp.ensembl.org/{fp} -P {dirname(realpath(__file__))}"
+                            # print(cmd)
+                            runbashcmd(cmd,test=cfg['test'])
+                            break
+            #                 break
             # make the fa ready
             if not exists(cfg['genomep']):
                 cmd='gunzip {}*.fa.gz;cat {}/*.fa > {}/genome.fa;'.format(genome_fastad,genome_fastad,genome_fastad)
