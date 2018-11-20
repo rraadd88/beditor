@@ -16,7 +16,7 @@ pd.options.mode.chained_assignment = None
 from multiprocessing import Pool
 
 import logging
-from beditor.configure import get_deps,get_genomes
+from beditor.configure import get_genomes
 from beditor.lib.io_sys import runbashcmd
 from beditor.lib.io_strs import get_datetime
 import yaml 
@@ -55,7 +55,6 @@ def pipeline_chunks(cfgp=None,cfg=None):
         if not cfg['step'] in cfg['step2ignoredl']:
             if cfg['test']:
                 logging.info('installing dependencies')
-            cfg=get_deps(cfg)
             if cfg['test']:
                 logging.info('installing genomes')
             cfg=get_genomes(cfg)
@@ -337,7 +336,6 @@ def pipeline(cfgp,step=None,test=False,force=False):
     # deps and genome are only needed if running step =1 or 4
     cfg['step2ignoredl']=[2,3]
     if not cfg['step'] in cfg['step2ignoredl']:
-        cfg=get_deps(cfg)
         cfg=get_genomes(cfg)
 
     #datads
