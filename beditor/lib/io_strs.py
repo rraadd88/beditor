@@ -18,10 +18,13 @@ def s2re(s,ss2re):
 import logging
 import os.path
 
-def get_datetime():
+def get_datetime(ret_obj=False):
     import datetime
-    return make_pathable_string(str(datetime.datetime.now())).replace('-','_')
-
+    if not ret_obj:    
+        return make_pathable_string(str(datetime.datetime.now())).replace('-','_')    
+    else:
+        return datetime.datetime.now()
+    
 def get_logger(program='program',argv=None,level=None,dp=None):
 # def initialize_logger(output_dir):
     cmd='_'.join([str(s) for s in argv]).replace('/','_')
@@ -137,12 +140,3 @@ def splitlabel(label,splitby=' ',ctrl='__'):
     elif len(splits)==1:
 
         return splits+[ctrl]
-
-def get_time():
-    """
-    Gets current time in a form of a formated string. Used in logger function.
-
-    """
-    import datetime
-    time=make_pathable_string('%s' % datetime.datetime.now())
-    return time.replace('-','_').replace(':','_').replace('.','_')

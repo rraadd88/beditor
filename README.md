@@ -23,7 +23,7 @@ Table of Contents
 
 Installation
 ------------
-Requirements: [`Anaconda package manager`](https://www.anaconda.com/download/#linux) and bunch of linux-specific libraries (gcc make make-guile git zlib1g-dev libncurses5-dev and libbz2-dev). See [requirements.md](https://github.com/rraadd88/test_beditor/blob/master/requirements.md) for set of bash commands that would install all the requirements of `beditor`.
+Requirements: [`Anaconda package manager`](https://www.anaconda.com/download/#linux). See [requirements.md](https://github.com/rraadd88/test_beditor/blob/master/requirements.md) for set of bash commands that would install it.
 
 1.  Once all the requirements are satisfied, create a python 3.6 virtual environment.
 
@@ -80,22 +80,106 @@ beditor --list editors
 beditor --help
 ```
 
-Configuration file
+Input format
 ------------------
 
+Input [1/2]: Configuration file. It contains all the options and paths to files needed by the analysis. 
 This YAML formatted file contains the all the analysis specific parameters.
 
 Template:
 <https://github.com/rraadd88/test_beditor/blob/master/common/configuration.yml>
 
-Input format
-------------
-
-``` {.sourceCode .text}
-mutation_format opted in configuration.yml file and corresponding columns needed in input: 
-nucleotide : ['genome coordinate','nucleotide mutation'].
-aminoacid  : ['transcript: id','aminoacid: position','amino acid mutation'].
 ```
+# Input: Mutation information
+## Path to this tsv (tab-separated values) file
+dinp: input.tsv
+reverse_mutations: False
+
+# Step 1: Extracting sequences flanking mutation site (`01_sequences/`).
+## host information
+host: scientific name
+genomerelease: 93
+# check assembly from http://useast.ensembl.org/index.html
+genomeassembly: fromensembl
+
+
+# Step 2: Estimating the editable mutations based on base editors chosen. (`02_mutagenesis/`).
+# whether aminoacid or nucleotide mutations
+mutation_format: aminoacid or nucleotide
+##[N nonsyn] S syn else both
+mutation_type: N
+## keep nonsense mutations
+keep_mutation_nonsense: False
+## Mutations information can be provided in 3 options: 
+## 1. Required Mutations mentioned in input file. 
+## 2. Required Substitutions provided as a file (template: https://github.com/rraadd88/test_beditor/blob/master/common/dsubmap.tsv).
+## 3. Carry out Mimetic substitutions (base on genome wide substitution maps). Only for human and yeast.
+## input: options 
+## mutations: 1, substitutions: 2, mimetic: 3, [no input: keeps all possible mutations (slow)]
+mutations: 1
+## Parameters specific to above options
+## 2. Substitutions provided as a file
+dsubmap_preferred_path: 
+## 3. Mimetic substitutions
+## mimetism level (high: only the best one, [medium: best 5], low: best 10)
+mimetism_level: medium
+## can not mutate between these 
+## if ['S','T','K'] is provided all mutations between thsese amino acids are disallowed
+non_intermutables: []
+
+
+# Step 3: Designed guides (`03_guides/`).
+## allowed nucleuotide substitutions per codon
+max_subs_per_codon: 1
+## base editors to use (restriction max_subs_per_codon would override the choice of base editors)
+BEs: ['Target-AID','ABE']
+# Cas9 related options
+## PAM sequence
+pams: ['NGG','NG']
+
+#------------------------------------------------
+# System related options 
+## Number of cpus/threads
+cores: 6
+## Number of lines to process per cpu
+chunksize: 200
+## Dependencies 
+## by default the dependencies are installed from the conda environment.
+## "optionally" paths to the dependencies could be included below.
+bedtools: bedtools
+bwa: bwa
+samtools: samtools
+```
+
+Input [2/2]: Table with mutation information.  
+
+Note: Path to this tsv (tab-separated values) file is provided in configuration file as a value for variable called `dinp`. E.g. `dinp: input.tsv`. 
+
+According to the mutation_format opted in configuration.yml file and corresponding columns needed in input.
+
+### nucleotide : ['genome coordinate','nucleotide mutation'].
+
+Example:
+
+| genome coordinate | nucleotide mutation |
+|-------------------|---------------------|
+| II:711491-711491+ | T                   |
+| II:712904-712904- | T                   |
+| II:714707-714707- | G                   |
+| II:716782-716782- | G                   |
+
+### aminoacid  : ['transcript: id','aminoacid: position','amino acid mutation'].
+
+Example:
+
+| transcript: id | aminoacid: position | amino acid mutation |
+|----------------|---------------------|---------------------|
+| YAL040C        | 6                   | A                   |
+| YAL041W        | 18                  | A                   |
+| YAL042C-A      | 65                  | A                   |
+| YAL042W        | 3                   | C                   |
+| YAL043C        | 14                  | C                   |
+
 
 Output format
 -------------
@@ -148,10 +232,87 @@ How to install new base editor or PAM
 This information is located in beditor/data (use `which beditor` to locate directory of beditor) directory in tab-separated table format (`dBEs.tsv` and `dpams.tsv`).
 In order to install new base editor or PAM, user would have to simply append the relevant information in the tables.
 
-Working with non-ensembl genomes
---------------------------------
+How to run `beditor`
+-----------------------------
 
-<https://github.com/openvax/pyensembl#non-ensembl-data>
+Example: designing gRNAs to carry out nucleotide mutations in yeast.  
+Input [1/2]: Configuration file. It contains all the options and paths to files needed by the analysis. 
+
+```
+# Input: Mutation information
+## Path to this tsv (tab-separated values) file
+dinp: input.tsv
+reverse_mutations: false
+
+# Step 1: Extracting sequences flanking mutation site (`01_sequences/`).
+## host information
+host: saccharomyces_cerevisiae
+genomerelease: 92
+# check assembly from http://useast.ensembl.org/index.html
+genomeassembly: R64-1-1
+
+
+# Step 2: Estimating the editable mutations based on base editors chosen. (`02_mutagenesis/`).
+# whether aminoacid or nucleotide mutations
+mutation_format: aminoacid
+##[N nonsyn] S syn else both
+mutation_type: N
+## keep nonsense mutations
+keep_mutation_nonsense: False
+## Mutations information can be provided in 3 options: 
+## 1. Required Mutations mentioned in input file. 
+## 2. Required Substitutions provided as a file (template: https://github.com/rraadd88/test_beditor/blob/master/common/dsubmap.tsv).
+## 3. Carry out Mimetic substitutions (base on genome wide substitution maps). Only for human and yeast.
+## input: options 
+## mutations: 1, substitutions: 2, mimetic: 3, [no input: keeps all possible mutations (slow)]
+mutations: 1
+## Parameters specific to above options
+## 2. Substitutions provided as a file
+dsubmap_preferred_path: 
+## 3. Mimetic substitutions
+## mimetism level (high: only the best one, [medium: best 5], low: best 10)
+mimetism_level: medium
+## can not mutate between these 
+## if ['S','T','K'] is provided all mutations between thsese amino acids are disallowed
+non_intermutables: []
+
+
+# Step 3: Designed guides (`03_guides/`).
+## allowed nucleuotide substitutions per codon
+max_subs_per_codon: 1
+## base editors to use (restriction max_subs_per_codon would override the choice of base editors)
+BEs: ['Target-AID','ABE']
+# Cas9 related options
+## PAM sequence
+pams: ['NGG','NG']
+
+#------------------------------------------------
+# System related options 
+## Number of cpus/threads
+cores: 6
+## Number of lines to process per cpu
+chunksize: 200
+## Dependencies 
+## by default the dependencies are installed from the conda environment.
+## "optionally" paths to the dependencies could be included below.
+bedtools: bedtools
+bwa: bwa
+samtools: samtools
+```
+
+Input [2/2]: Table with mutation information.  
+
+Note: Path to this tsv (tab-separated values) file is provided in configuration file as a value for variable called `dinp`. E.g. `dinp: input.tsv`. For nucleotide level mutagenesis the column names should be `genome coordinate` and `nucleotide mutation`.
+
+Example:
+
+| genome coordinate | nucleotide mutation |
+|-------------------|---------------------|
+| II:711491-711491+ | T                   |
+| II:712904-712904- | T                   |
+| II:714707-714707- | G                   |
+| II:716782-716782- | G                   |
+
 
 How to analyze test datasets
 ---------------------------
@@ -162,8 +323,14 @@ git clone https://github.com/rraadd88/test_beditor.git
 source activate beditor;cd test_beditor;python test_datasets.py
 ```
 
+Working with non-ensembl genomes or arbitrary sequences
+--------------------------------------------
+
+<https://github.com/openvax/pyensembl#non-ensembl-data>
+
+
 API
----
+-----
 
 ### `beditor.pipeline.collect_chunks`(_cfg_, _chunkcfgps_)[¶](#beditor.pipeline.collect_chunks "Permalink to this definition")
 

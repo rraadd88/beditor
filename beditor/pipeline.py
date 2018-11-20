@@ -87,22 +87,32 @@ def pipeline_chunks(cfgp=None,cfg=None):
             stepall=True
         else:
             stepall=False
+        stepi2time={}
+        stepi2time[0]=get_datetime(ret_obj=True)
         if (cfg['step']==1 or stepall)  and cfg['step2ignore']!=1:
             from beditor.lib.get_seq import din2dseq
             cfg['step']=1
             din2dseq(cfg)
+            stepi2time[1]=get_datetime(ret_obj=True)            
         if (cfg['step']==2 or stepall)  and cfg['step2ignore']!=2:
             from beditor.lib.get_mutations import dseq2dmutagenesis 
             cfg['step']=2
             dseq2dmutagenesis(cfg)
+            stepi2time[2]=get_datetime(ret_obj=True)            
         if (cfg['step']==3 or stepall)  and cfg['step2ignore']!=3:
             from beditor.lib.make_guides import dseq2dguides
             cfg['step']=3
             dseq2dguides(cfg)
+            stepi2time[3]=get_datetime(ret_obj=True)            
         if (cfg['step']==4 or stepall)  and cfg['step2ignore']!=4:
             from beditor.lib.get_specificity import dguides2offtargets
             cfg['step']=4
             dguides2offtargets(cfg)
+            stepi2time[4]=get_datetime(ret_obj=True)        
+        
+        for stepi in range(1,5,1):
+            if stepi in stepi2time:
+                print(f"time taken by step#{stepi:02d} = {str(stepi2time[stepi]-stepi2time[stepi-1])}")                
 
 from beditor.lib.io_dfs import fhs2data_combo_appended
 from beditor.lib.global_vars import stepi2name
