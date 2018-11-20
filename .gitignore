@@ -37,3 +37,4 @@ docs/_build/*
 docs/README.pdf
 docs/api.rst
 docs/make.bat
+beditor/deps.zip
