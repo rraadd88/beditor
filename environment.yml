@@ -4,6 +4,9 @@ channels:
   - biocore
   - bioconda 
 dependencies:
+  - bedtools=2.27.1
+  - samtools=1.7
+  - bwa=0.7.17
   - biopython=1.71
   - numpy=1.13.1
   - python=3.6.5
