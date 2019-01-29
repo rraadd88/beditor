@@ -343,7 +343,8 @@ def dannotsagg2dannots2dalignbedannot(cfg):
                                pam_position=x['original position'],
                                # test=cfg['test'],
                                 ),axis=1) 
-        dalignbedannot['CFD score']=dalignbedannot.apply(lambda x : get_cfdscore(x['guide+PAM sequence'].upper(), x['aligned sequence'].upper()), axis=1)            
+        dalignbedannot['CFD score']=dalignbedannot.apply(lambda x : get_cfdscore(x['guide+PAM sequence'].upper(), 
+                                                                                 x['aligned sequence'].upper()), axis=1)
         dalignbedannot.to_csv(dalignbedannotp,sep='\t')
     return cfg
 

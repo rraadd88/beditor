@@ -111,7 +111,7 @@ def pipeline_chunks(cfgp=None,cfg=None):
             stepi2time[4]=get_datetime(ret_obj=True)        
         
         for stepi in range(1,5,1):
-            if stepi in stepi2time:
+            if (stepi in stepi2time) and (stepi-1 in stepi2time):
                 print(f"time taken by step#{stepi:02d} = {str(stepi2time[stepi]-stepi2time[stepi-1])}")                
 
 from beditor.lib.io_dfs import fhs2data_combo_appended
@@ -322,6 +322,14 @@ def pipeline(cfgp,step=None,test=False,force=False):
     cfg['prj']=splitext(basename(cfgp))[0]
     cfg['prjd']=dirname(cfgp)+'/'+cfg['prj']
     cfg['beditor']=abspath(__file__)
+    
+    #back compatible
+    deps=['samtools','bedtools','bwa']
+    if not 'deps' in cfg:
+        cfg['deps']=deps
+    for dep in deps:
+        if not dep in cfg:
+            cfg[dep]=dep
 
     #step
     cfg['step']=step
