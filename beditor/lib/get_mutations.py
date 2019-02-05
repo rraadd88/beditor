@@ -13,7 +13,19 @@ from Bio import motifs,Seq,AlignIO
 
 import logging
 
-# local scripts
+def dbe_append_reverse_strand(dBEs):
+    """
+    add reverse strand editing methods in the dBEs dataframe
+    
+    :param dBEs: pandas dataframe with BE methods
+    """
+    from beditor.lib.global_vars import nt2complement
+    dBEs_=dBEs.copy()
+    dBEs_['strand']='-'
+    for col_nt in ['nucleotide','nucleotide mutation']:
+        dBEs_[col_nt]=dBEs_[col_nt].apply(lambda x : nt2complement[x])
+    dBEs=dBEs.append(dBEs_,sort=True)
+    return dBEs
 
 def get_codon_table(aa, tax_id=None):
     """
@@ -466,6 +478,7 @@ def dseq2dmutagenesis(cfg):
 
         #create BEs and pos_muts for back-compatibility
         dBEs=pd.read_table(f"{dirname(realpath(__file__))}/../data/dBEs.tsv")
+        dBEs=dbe_append_reverse_strand(dBEs)
         dBEs=dBEs.loc[dBEs['method'].isin(cfg['BEs']),:]
         
         BEs2mutations={}
