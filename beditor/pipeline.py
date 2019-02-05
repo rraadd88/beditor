@@ -331,6 +331,12 @@ def pipeline(cfgp,step=None,test=False,force=False):
         if not dep in cfg:
             cfg[dep]=dep
 
+    # defaults
+    if not 'chunksize' in cfg:
+        cfg['chunksize']=200        
+    if not 'max_subs_per_codon' in cfg:
+        cfg['max_subs_per_codon']=200      
+        
     #step
     cfg['step']=step
     # basics
