@@ -315,7 +315,7 @@ def get_dntcompos(dguideslin_sub123,dpam,pos,pam):
     dp=get_nt_composition(dguideslin_sub123['guide+PAM sequence'])
     paml=len(dguideslin_sub123['PAM'].unique()[0])
 
-    if dpam.loc[pam,'position']=='down':
+    if dpam.loc[pam,'PAM position']=='down':
         dp.index=(dp.index[::-1]-paml)*-1
         pamposs=dp.index.tolist()[-1*paml:]
         windowmin=dguideslin_sub123['distance of mutation from PAM: minimum'].unique()[0]*-1

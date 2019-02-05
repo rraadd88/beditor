@@ -63,7 +63,7 @@ def get_pam_searches(dpam,seq,pos_codon,
             dpamposs.loc[pamposi,'position of PAM ini'],dpamposs.loc[pamposi,'position of PAM end']=match.span() 
             dpamposs.loc[pamposi,'position of PAM end']=dpamposs.loc[pamposi,'position of PAM end']-1                
             dpamposs.loc[pamposi,'guide+PAM sequence'],dpamposs.loc[pamposi,'guide sequence'],dpamposs.loc[pamposi,'PAM sequence'],dpamposs.loc[pamposi,'distance of codon from PAM']\
-            =get_guide_pam(match,dpam.loc[pam,'position'],dpam.loc[pam,'guide length'],pos_codon)
+            =get_guide_pam(match,dpam.loc[pam,'PAM position'],dpam.loc[pam,'guide length'],pos_codon)
             dpamposs.loc[pamposi,'PAM']=pam
             pamposi+=1
     dpamposs['codon: from pam search']=seq[pos_codon:pos_codon+3]
@@ -88,13 +88,13 @@ def guide2dpositions(x,dbug=False):
     """
     dpositions=pd.DataFrame(index=range(45),
                            columns=['guide+PAM sequence'])
-    dpositions.index.name='position'
+    dpositions.index.name='PAM position'
 
     dpositions.loc[x['position of PAM ini']:x['position of PAM end'],'location PAM']=True
-    if x['position']=='up':
+    if x['PAM position']=='up':
         dpositions.loc[x['position of PAM end']+1:x['position of PAM end']+x['guide sequence length'],'location guide']=True
         dpositions.loc[x['position of PAM end']+x['distance of mutation from PAM: minimum']:x['position of PAM end']+x['distance of mutation from PAM: maximum'],'location window']=True        
-    elif x['position']=='down':
+    elif x['PAM position']=='down':
         dpositions.loc[x['position of PAM ini']-x['guide sequence length']:x['position of PAM ini']-1,'location guide']=True
         dpositions.loc[x['position of PAM ini']-x['distance of mutation from PAM: maximum']:x['position of PAM ini']-x['distance of mutation from PAM: minimum'],'location window']=True        
 
@@ -303,11 +303,11 @@ def dpam2dpam_strands(dpam,pams):
         dpam.loc[pam,'reverse complement']=pamr
         dpam.loc[pam,'original']=pam
         dpamr.loc[pamr,'original']=pam
-        dpam.loc[pam,'original position']=dpam.loc[pam,'position']
-        dpamr.loc[pamr,'original position']=dpam.loc[pam,'position']
-        dpamr.loc[pamr,['position','guide length','Description']]=dpam.loc[pam,['position','guide length','Description']]
+        dpam.loc[pam,'original position']=dpam.loc[pam,'PAM position']
+        dpamr.loc[pamr,'original position']=dpam.loc[pam,'PAM position']
+        dpamr.loc[pamr,['PAM position','guide length','Description']]=dpam.loc[pam,['PAM position','guide length','Description']]
         dpamr.loc[pamr,['rPAM']]=reverse_complement_multintseqreg(pam,multint2regcomplement,nt2complement)    
-    dpamr['position']= dpamr.apply(lambda x: 'up' if x['position']=='down' else 'down',axis=1)
+    dpamr['PAM position']= dpamr.apply(lambda x: 'up' if x['PAM position']=='down' else 'down',axis=1)
     dpamr['strand']='-'
     dpam_strands=dpam.append(dpamr,sort=True)
     dpam_strands.index.name='PAM'

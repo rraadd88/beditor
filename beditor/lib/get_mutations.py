@@ -13,7 +13,7 @@ from Bio import motifs,Seq,AlignIO
 
 import logging
 
-def dbe_append_reverse_strand(dBEs):
+def dbes2dbes_strands(dBEs):
     """
     add reverse strand editing methods in the dBEs dataframe
     
@@ -478,7 +478,7 @@ def dseq2dmutagenesis(cfg):
 
         #create BEs and pos_muts for back-compatibility
         dBEs=pd.read_table(f"{dirname(realpath(__file__))}/../data/dBEs.tsv")
-        dBEs=dbe_append_reverse_strand(dBEs)
+        dBEs=dbes2dbes_strands(dBEs)
         dBEs=dBEs.loc[dBEs['method'].isin(cfg['BEs']),:]
         
         BEs2mutations={}
