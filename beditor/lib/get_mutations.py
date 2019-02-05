@@ -477,7 +477,9 @@ def dseq2dmutagenesis(cfg):
         dcodonusage=get_codon_usage(cuspp='{}/../data/64_1_1_all_nuclear.cusp.txt'.format(abspath(dirname(__file__)))) #FIXME if prokaryote is used ?
 
         #create BEs and pos_muts for back-compatibility
-        dBEs=pd.read_table(f"{dirname(realpath(__file__))}/../data/dBEs.tsv")
+        from beditor.lib.global_vars import cols_dbes
+        dbepams=pd.read_table(f"{dirname(realpath(__file__))}/../data/dbepams.tsv")
+        dBEs=dbepams.loc[:,cols_dbes]
         dBEs=dbes2dbes_strands(dBEs)
         dBEs=dBEs.loc[dBEs['method'].isin(cfg['BEs']),:]
         

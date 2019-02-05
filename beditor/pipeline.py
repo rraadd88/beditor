@@ -474,8 +474,8 @@ def main():
                         action="store", default=False)    
     parser.add_argument("--step", help="1: Get genomic loci flanking the target site,\n2: Get possible mutagenesis strategies,\n3: Design guides,\n 4: Check offtarget-effects \n else all the steps are run in tandem.", dest="step", 
                         type=float,action="store", choices=[1,2,3,4],default=None)  
-    parser.add_argument("--list", help="[pams, editors] lists PAMs and base editors installed in beditor. ", dest="lister", 
-                        action="store", default=None)
+    parser.add_argument("--list", help="lists base editors PAMs installed in beditor. ", dest="lister", 
+                        action='store_true', default=False)
     parser.add_argument("--test", help="Debug mode on", dest="test", 
                         action='store_true', default=False)    
     parser.add_argument("--force", help="Overwrite existing outputs.", dest="force", 
@@ -483,18 +483,11 @@ def main():
     parser.add_argument('-v','--version', action='version',version=version_info)
     args = parser.parse_args()
 
-    lists=['pams','editors']
     if args.lister is not None:
-        if args.lister in lists:
+        if args.lister:
             from .lib.io_dfs import del_Unnamed
-            if args.lister.lower()=='pams':
-                d=pd.read_table(f"{dirname(realpath(__file__))}/data/dpam.tsv")
-                print(del_Unnamed(d.loc[:,['PAM','Description']]).set_index('PAM'))                
-            elif args.lister.lower()=='editors':
-                d=pd.read_table(f"{dirname(realpath(__file__))}/data/dBEs.tsv")
-                print(del_Unnamed(d.loc[(d['strand']=='+'),['method', 'nucleotide', 'nucleotide mutation']]).set_index('method'))
-        else:
-            logging.error("args.lister should be one these {','.join(lists)}")  
+            d=del_Unnamed(pd.read_table(f"{dirname(realpath(__file__))}/data/dbepams.tsv")).loc[:,['method','PAM']]
+            print(d)                
     else:
 
         from beditor.lib.io_strs import get_logger

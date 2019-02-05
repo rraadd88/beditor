@@ -25,6 +25,16 @@ cfgoption2reguired={
 'mutations':{'substitutions':'dsubmap_preferred_path'},
 }
 
+# dbepams
+cols_dbes=['distance of codon start from PAM: maximum',
+ 'distance of codon start from PAM: minimum',
+ 'distance of mutation from PAM: maximum',
+ 'distance of mutation from PAM: minimum',
+ 'method',
+ 'nucleotide',
+ 'nucleotide mutation',
+ 'strand']
+
 #output 
 # cols
 stepi2colsoutput={
