@@ -376,7 +376,8 @@ def dseq2dguides(cfg):
                     dsequences['codon: wild-type']=dsequences['codon']
                     dsequences=dsequences.loc[:,cols_dsequences]
                     
-        dsequences.to_csv(f"{cfg[cfg['step']]}/dsequences.tsv",sep='\t') #FIXME if numbering of steps is changed, this is gonna blow
+        dsequences.to_csv(f"{cfg[cfg['step']]}/dsequences.tsv",sep='\t') 
+        #FIXME if numbering of steps is changed, this is gonna blow
         # make pam table
         dpam=pd.read_table(f'{dirname(realpath(__file__))}/../data/dpam.tsv')
         if sum(dpam['PAM'].isin(cfg['pams']))!=len(cfg['pams']):

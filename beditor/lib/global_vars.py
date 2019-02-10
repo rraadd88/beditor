@@ -34,7 +34,8 @@ cols_dbes=['distance of codon start from PAM: maximum',
  'nucleotide',
  'nucleotide mutation',
  'strand']
-cols_dpam=['PAM', 'position', 'guide length', 'Description']
+
+cols_dpam=['PAM', 'PAM position', 'guide length']
 #output 
 # cols
 stepi2colsoutput={

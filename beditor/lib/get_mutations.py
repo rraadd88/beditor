@@ -504,7 +504,10 @@ def dseq2dmutagenesis(cfg):
         dmutagenesis.loc[:,colns_pos]=dmutagenesis.loc[:,colns_pos].astype(int)
         
         dmutagenesis.to_csv(dmutagenesisp,sep='\t')
-
+        # bind pam info
+        from beditor.lib.global_vars import cols_dpam
+        dmutagenesis=dmutagenesis.merge(dbepams,left_on='method',right_on=['method']+cols_dpam)
+        
         logging.info('Possible 1 nucleotide mutations:')
         logging.info(dmutagenesis.set_index('amino acid')[['amino acid mutation','method','codon','codon mutation',
         #               'position of mutation in codon','mutation on strand',
