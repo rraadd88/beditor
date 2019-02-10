@@ -492,7 +492,8 @@ def plot_vizbysteps(cfg):
         dstepp=f"{cfg[stepi]}/d{cfg[stepi].replace('/','').split('_')[-1]}.tsv"
         if exists(dstepp):
             dstep=del_Unnamed(pd.read_table(dstepp)).drop_duplicates()
-            dpam=pd.read_table('{}/../data/dpam.tsv'.format(dirname(realpath(__file__))))
+            dbepams=pd.read_table(f'{dirname(realpath(__file__))}/../data/dbepams.tsv')
+            dpam=dbepams.loc[:,cols_dpam].drop_duplicates()
             dpam=set_index(dpam,'PAM')
             logging.info('plot_dist_dguides')
             plot_dist_dguides(dstep,dpam,plotpf)
