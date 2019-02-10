@@ -16,11 +16,62 @@ from Bio import motifs,Seq,AlignIO
 import logging
 
 from beditor.lib.io_dfs import *
-from beditor.lib.global_vars import multint2reg,multint2regcomplement,nt2complement
+from beditor.lib.global_vars import multint2reg,multint2regcomplement,nt2complement,cols_dpam
 from beditor.lib.io_seqs import reverse_complement_multintseq,reverse_complement_multintseqreg,str2seq
 from beditor.lib.io_strs import s2re
 from beditor.lib.global_vars import stepi2cols    
 
+
+
+def dpam2dpam_strands(dpam,pams):
+    """
+    Duplicates dpam dataframe to be compatible for searching PAMs on - strand
+
+    :param dpam: dataframe with pam information
+    :param pams: pams to be used for actual designing of guides.
+    """
+    
+    dpam=del_Unnamed(dpam)
+    dpam['rPAM']=dpam.apply(lambda x : s2re(x['PAM'],multint2reg) ,axis=1)
+    dpam=set_index(dpam,'PAM')
+    dpam['strand']='+'
+    dpamr=pd.DataFrame(columns=dpam.columns)
+    dpam.loc[:,'reverse complement']=np.nan
+    dpam.loc[:,'original']=np.nan
+    for pam in dpam.index:
+        pamr=reverse_complement_multintseq(pam,nt2complement)
+        dpam.loc[pam,'reverse complement']=pamr
+        dpam.loc[pam,'original']=pam
+        dpamr.loc[pamr,'original']=pam
+        dpam.loc[pam,'original position']=dpam.loc[pam,'PAM position']
+        dpamr.loc[pamr,'original position']=dpam.loc[pam,'PAM position']
+        dpamr.loc[pamr,['PAM position','guide length']]=dpam.loc[pam,['PAM position','guide length']]
+        dpamr.loc[pamr,['rPAM']]=reverse_complement_multintseqreg(pam,multint2regcomplement,nt2complement)    
+    dpamr['PAM position']= dpamr.apply(lambda x: 'up' if x['PAM position']=='down' else 'down',axis=1)
+    dpamr['strand']='-'
+    dpam_strands=dpam.append(dpamr,sort=True)
+    dpam_strands.index.name='PAM'
+    dpam_strands.loc[:,'is a reverse complement']=pd.isnull(dpam_strands.loc[:,'reverse complement'])
+    pams_strands=pams+dpam_strands.loc[pams,'reverse complement'].dropna().tolist()
+    dpam_strands=dpam_strands.loc[pams_strands,:]
+    return dpam_strands
+
+def get_be2dpam(din,test=False):
+    """
+    make BE to dpam mapping i.e. dict
+    
+    :param din: df with BE and PAM info all cols_dpam needed
+    """
+    be2dpam={}
+    be2pam=din.loc[:,['method','PAM']].drop_duplicates().set_index('method').to_dict()['PAM']
+    if test:
+        print(be2pam)
+    for be in be2pam:
+        pam=be2pam[be]
+        dpam=din.loc[((din['PAM']==pam) & (din['method']==be)),cols_dpam]
+        dpam_strands=dpam2dpam_strands(dpam,pams=[pam])
+        be2dpam[be]=set_index(dpam_strands,'PAM')                
+    return be2dpam
 
 def get_pam_searches(dpam,seq,pos_codon,
                     test=False):
@@ -142,7 +193,7 @@ def guide2dpositions(x,dbug=False):
     else:
         return posmut,posmutfrompam,distmutfrompam,posguideini,posguideend,activity_sequence
     
-def make_guides(cfg,dseq,dmutagenesis,dpam,
+def make_guides(cfg,dseq,dmutagenesis,
                test=False,
                dbug=False):
     """
@@ -154,7 +205,6 @@ def make_guides(cfg,dseq,dmutagenesis,dpam,
     :param cfg: configuration dict
     :param dseq: dsequences dataframe
     :param dmutagenesis: dmutagenesis dataframe
-    :param dpam: dpam dataframe
     :param test: debug mode on
     :param dbug: more verbose
     """
@@ -163,8 +213,9 @@ def make_guides(cfg,dseq,dmutagenesis,dpam,
 
     dseq=dseq.reset_index()
     dseq.index=range(len(dseq))
-    dpam=set_index(dpam,'PAM')                
-#     for gi in trange(len(dseq),desc='designing guides'):
+    # make dpam per be
+    be2dpam=get_be2dpam(dbepams,test=cfg['test'])
+    
     gierrfltmutpos=[]
     gierrdenan=[]
     gierrfltguidel=[]
@@ -176,20 +227,21 @@ def make_guides(cfg,dseq,dmutagenesis,dpam,
             dseqi=pd.DataFrame(dseq.loc[gi,dseq_cols+['amino acid mutation']]).T
             dmutagenesis_gi=pd.merge(dseqi,
                 dmutagenesis,
-                how='inner',
+                how='left',
                 left_on=['aminoacid: wild-type','codon: wild-type','amino acid mutation'],
                 right_on=['amino acid','codon','amino acid mutation'])                    
         else:
             dseqi=pd.DataFrame(dseq.loc[gi,dseq_cols]).T
             dmutagenesis_gi=pd.merge(dseqi,
                 dmutagenesis,
-                how='inner',
+                how='left',
                 left_on=['aminoacid: wild-type','codon: wild-type'],
                 right_on=['amino acid','codon'])        
         if len(dmutagenesis_gi)!=0:
             logging.info(f"working on {dseq.loc[gi,'id']}")
 #             codon=dseq.loc[gi,'codon: wild-type']
-            pos_codon=(flankaas)*3
+            pos_codon=(flankaas)*3    
+            dpam=be2dpam[dmutagenesis_gi['method'].unique()[0]]
             dpamsearches=get_pam_searches(dpam=dpam,
                  seq=dseq.loc[gi,'transcript: sequence'],
                  pos_codon=pos_codon,
@@ -283,39 +335,6 @@ def make_guides(cfg,dseq,dmutagenesis,dpam,
     else:
         return None,None,None        
 
-def dpam2dpam_strands(dpam,pams):
-    """
-    Duplicates dpam dataframe to be compatible for searching PAMs on - strand
-
-    :param dpam: dataframe with pam information
-    :param pams: pams to be used for actual designing of guides.
-    """
-    
-    dpam=del_Unnamed(dpam)
-    dpam['rPAM']=dpam.apply(lambda x : s2re(x['PAM'],multint2reg) ,axis=1)
-    dpam=set_index(dpam,'PAM')
-    dpam['strand']='+'
-    dpamr=pd.DataFrame(columns=dpam.columns)
-    dpam.loc[:,'reverse complement']=np.nan
-    dpam.loc[:,'original']=np.nan
-    for pam in dpam.index:
-        pamr=reverse_complement_multintseq(pam,nt2complement)
-        dpam.loc[pam,'reverse complement']=pamr
-        dpam.loc[pam,'original']=pam
-        dpamr.loc[pamr,'original']=pam
-        dpam.loc[pam,'original position']=dpam.loc[pam,'PAM position']
-        dpamr.loc[pamr,'original position']=dpam.loc[pam,'PAM position']
-        dpamr.loc[pamr,['PAM position','guide length','Description']]=dpam.loc[pam,['PAM position','guide length','Description']]
-        dpamr.loc[pamr,['rPAM']]=reverse_complement_multintseqreg(pam,multint2regcomplement,nt2complement)    
-    dpamr['PAM position']= dpamr.apply(lambda x: 'up' if x['PAM position']=='down' else 'down',axis=1)
-    dpamr['strand']='-'
-    dpam_strands=dpam.append(dpamr,sort=True)
-    dpam_strands.index.name='PAM'
-    dpam_strands.loc[:,'is a reverse complement']=pd.isnull(dpam_strands.loc[:,'reverse complement'])
-    pams_strands=pams+dpam_strands.loc[pams,'reverse complement'].dropna().tolist()
-    dpam_strands=dpam_strands.loc[pams_strands,:]
-    return dpam_strands
-
 def dinnucleotide2dsequencesproper(dsequences,dmutagenesis,dbug=False):
     """
     Makes dseqeunces dataframe of nucleotide mutation format compatible to guide design modules
@@ -355,7 +374,6 @@ def dseq2dguides(cfg):
     dguideslinp=f"{cfg['datad']}/dguides.tsv"
     dguides_nofltp=f"{cfg['datad']}/dguides_noflt.tsv"
     dmutagenesisp=f"{cfg['datad']}/dmutagenesis.tsv"
-    dpam_strandsp=f"{cfg['datad']}/dpam_strands.csv"
     if not exists(dguideslinp) or cfg['force']:
         dmutagenesis=pd.read_csv(f"{cfg[cfg['step']-1]}/dmutagenesis.tsv",sep='\t')
         if cfg['mutation_format']=='nucleotide':
@@ -377,14 +395,6 @@ def dseq2dguides(cfg):
                     dsequences=dsequences.loc[:,cols_dsequences]
                     
         dsequences.to_csv(f"{cfg[cfg['step']]}/dsequences.tsv",sep='\t') 
-        #FIXME if numbering of steps is changed, this is gonna blow
-        # make pam table
-        dpam=pd.read_table(f'{dirname(realpath(__file__))}/../data/dpam.tsv')
-        if sum(dpam['PAM'].isin(cfg['pams']))!=len(cfg['pams']):
-            logging.error(f"PAM/s {cfg['pams']} are not supported {dpam['PAM'].tolist()}")
-            sys.exit(1)
-        dpam_strands=dpam2dpam_strands(dpam,pams=cfg['pams'])
-        dpam_strands.to_csv(dpam_strandsp,sep='\t')
 
         if not (len(dsequences)==0 or len(dmutagenesis)==0):        
             dmutagenesis['strand']=dmutagenesis.apply(lambda x : x['mutation on strand'].replace(' strand',''),axis=1)        
@@ -392,7 +402,6 @@ def dseq2dguides(cfg):
 
             dguideslin,dguides_noflt,err2idxs=make_guides(cfg,dsequences,
                         dmutagenesis,
-                        dpam=dpam_strands,
                            test=cfg['test'],
                            # dbug=True,
                          )
