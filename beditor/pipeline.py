@@ -16,7 +16,7 @@ pd.options.mode.chained_assignment = None
 from multiprocessing import Pool
 
 import logging
-from beditor.configure import get_genomes
+from beditor.configure import get_genomes,validcfg,validinput
 from beditor.lib.io_sys import runbashcmd
 from beditor.lib.io_strs import get_datetime
 import yaml 
@@ -232,78 +232,6 @@ def make_outputs(cfg,plot=True):
     logging.info(f"Outputs are located at {datad}")
     return doutput 
 
-def validcfg(cfg): 
-    """
-    Checks if configuration dict is valid i.e. contains all the required fields
-
-    :param cfg: configuration dict
-    """
-    from beditor.lib.global_vars import cfgoption2allowed,cfgoption2reguired
-    opt_validity=[]
-    for opt in ['mutations','mutation_format']:
-        opts=cfgoption2allowed[opt]
-        if cfg[opt] in opts:
-            opt_validity.append(True)
-            if opt in cfgoption2reguired:
-                for opt_opt in cfgoption2reguired[opt]:
-                    opt_opt_opt=cfgoption2reguired[opt][opt_opt]
-                    if cfg[opt]==opt_opt: 
-                        if (opt_opt_opt in cfg):
-                            opt_validity.append(True)
-                            if 'path' in opt_opt_opt:
-                                if not cfg[opt_opt_opt] is None:
-                                    if exists(cfg[opt_opt_opt]):
-                                        opt_validity.append(True)
-                                    else:
-                                        opt_validity.append(False)
-                                        logging.error(f"{opt_opt_opt}:{cfg[opt_opt_opt]} is not found.")
-                                else:
-                                    opt_validity.append(False)
-                                    logging.error(f"path {opt_opt_opt} is {cfg[opt_opt_opt]}.")
-                        else:
-                            opt_validity.append(False)
-                            logging.error(f"{opt_opt} is not an option variable")
-        else:
-            opt_validity.append(False)
-            logging.error(f"invalid option: {cfg[opt]} is not in [{','.join([s if not s is None else 'None' for s in opts])}]")
-    for option in ['BE name and PAM','pams','BEs']:
-        if not (option in cfg): cfg[option]=None
-    if (cfg['pams'] is None) and (cfg['BEs'] is None):
-        if not cfg['BE name and PAM'] is None:
-            if isinstance(cfg['BE name and PAM'],str):
-                cfg['BE name and PAM']=[cfg['BE name and PAM']]
-        else:
-            opt_validity.append(False)       
-            logging.error(f"invalid option: BE PAM not specified")
-    elif (cfg['pams'] is None) or (cfg['BEs'] is None):
-        opt_validity.append(False)       
-        logging.error(f"invalid option: BE PAM not specified")     
-    else:
-        from itertools import product
-        cfg['BE name and PAM']=list(product(cfg['BEs'],cfg['pams']))
-        del cfg['pams']
-        del cfg['BEs']
-#     if cfg['test']:
-#         print(cfg)
-    return all(opt_validity)
-
-def validinput(cfg,din): 
-    """
-    Checks if input file is valid i.e. contains all the required columns.
-
-    :param cfg: configuration dict
-    :param din: dataframe containing input data 
-    """
-    from beditor.lib.global_vars import mutation_format2cols
-    opt_validity=[]
-    for col in mutation_format2cols[cfg['mutation_format']]:
-        if col in din:
-            opt_validity.append(True)
-        else:
-            opt_validity.append(False)
-            logging.error(f"invalid column name: {col} is not in [{','.join(mutation_format2cols[cfg['mutation_format']])}]")
-    return all(opt_validity)
-
 def pipeline(cfgp,step=None,test=False,force=False):
     """
     Runs steps of the analysis workflow in tandem.
@@ -322,7 +250,8 @@ def pipeline(cfgp,step=None,test=False,force=False):
         logging.error(f"input file {cfg['dinp']} is not found.")
         sys.exit(1)
 
-    if not validcfg(cfg):
+    isvalidcfg,cfg=validcfg(cfg)
+    if not isvalidcfg:
         logging.error(f"configuration file {cfgp} is not valid.")
         print(cfg)
         sys.exit(1)

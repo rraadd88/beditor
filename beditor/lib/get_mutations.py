@@ -10,7 +10,7 @@ import itertools
 
 from Bio import SeqIO, Alphabet, Seq, SeqUtils
 from Bio import motifs,Seq,AlignIO
-from beditor.configure import get_be2dpam
+# from beditor.configure import get_be2dpam
 import logging
 
 def dbes2dbes_strands(dBEs):
@@ -481,16 +481,17 @@ def dseq2dmutagenesis(cfg):
         from beditor.lib.global_vars import cols_dbes
         dbepams=pd.read_table(f"{dirname(realpath(__file__))}/../data/dbepams.tsv")
         # make dpam per be
-        be2dpam=get_be2dpam(dbepams,test=cfg['test']) 
-        
+#         be2dpam=get_be2dpam(dbepams,test=cfg['test']) 
         dBEs=dbepams.loc[:,cols_dbes]
+        dBEs['strand']='+'
         dBEs=dbes2dbes_strands(dBEs)
-        dBEs=dBEs.loc[dBEs['method'].isin(be2dpam.keys()),:]
-        
+        dBEs=dBEs.loc[dBEs['method'].isin(cfg['BE names']),:]
+        print(dBEs['strand'].tolist())
         BEs2mutations={}
         for method in dBEs['method'].unique():
             for strand in dBEs['strand'].unique():
                 dBEsi=dBEs.loc[(dBEs['method']==method) & (dBEs['strand']==strand),:]
+                print(method,strand,dBEsi)
                 BEs2mutations[f"{method} on {strand} strand"]=[dBEsi['nucleotide'].unique().tolist()[0],
                                                                dBEsi['nucleotide mutation'].unique().tolist()]
         pos_muts=dBEs.loc[:,['method']+['distance of mutation from PAM: minimum',
