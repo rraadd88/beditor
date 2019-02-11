@@ -123,11 +123,11 @@ def get_possible_mutagenesis(cfg,dcodontable,dcodonusage,
                 if BEs[method][0]==codon[posi]:
                     for ntmut in BEs[method][1]:
                         if posi==0:
-                            codonmut='{}{}{}'.format(ntmut,codon[1],codon[2])
+                            codonmut=f'{ntmut}{codon[1]}{codon[2]}'
                         elif posi==1:
-                            codonmut='{}{}{}'.format(codon[0],ntmut,codon[2])
+                            codonmut=f'{codon[0]}{ntmut}{codon[2]}'
                         elif posi==2:
-                            codonmut='{}{}{}'.format(codon[0],codon[1],ntmut)
+                            codonmut=f'{codon[0]}{codon[1]}{ntmut}'
                         aamut=str(Seq.Seq(codonmut,Alphabet.generic_dna).translate(table=1))
                         # if (aamut!='*') and (aamut!=aa): #  nonsence and synonymous
                         if muti==0:
@@ -158,11 +158,11 @@ def get_possible_mutagenesis(cfg,dcodontable,dcodonusage,
                 if (BEs[method][0]==codon[posi1]) and (BEs[method][0]==codon[posi2]):
                     for ntmut1,ntmut2 in itertools.product(''.join(BEs[method][1]), repeat=2):
                         if (posi1==0) and (posi2==1):
-                            codonmut='{}{}{}'.format(ntmut1,ntmut2,codon[2])
+                            codonmut=f'{ntmut1}{ntmut2}{codon[2]}'
                         elif (posi1==1) and (posi2==2):
-                            codonmut='{}{}{}'.format(codon[0],ntmut1,ntmut2)
+                            codonmut=f'{codon[0]}{ntmut1}{ntmut2}'
                         elif (posi1==0) and (posi2==2):
-                            codonmut='{}{}{}'.format(ntmut1,codon[1],ntmut2)
+                            codonmut=f'{ntmut1}{codon[1]}{ntmut2}'
                         aamut=str(Seq.Seq(codonmut,Alphabet.generic_dna).translate(table=1))
                         # if (aamut!='*') and (aamut!=aa): #  nonsence and synonymous
                         if muti==0:
@@ -170,14 +170,14 @@ def get_possible_mutagenesis(cfg,dcodontable,dcodonusage,
                         else:
                             cdni=len(dmutagenesis)+1
                         muti+=1
-                        ntwt='{}{}'.format(BEs[method][0],BEs[method][0])
-                        ntmut='{}{}'.format(ntmut1,ntmut2)
+                        ntwt=f'{BEs[method][0]}{BEs[method][0]}'
+                        ntmut=f'{ntmut1}{ntmut2}'
                         if '-' in method.split(' on ')[1]:
                             ntwt=str(Seq.Seq(ntwt,Alphabet.generic_dna).reverse_complement())
                             ntmut=str(Seq.Seq(ntmut,Alphabet.generic_dna).reverse_complement())
                         dmutagenesis=write_dmutagenesis(
                         **{'cdni':cdni,
-                        'posi':'{}{}'.format(posi1,posi2),
+                        'posi':f'{posi1}{posi2}',
                         'codon':codon,
                         'codonmut':codonmut,
                         'ntwt':ntwt,
@@ -195,7 +195,7 @@ def get_possible_mutagenesis(cfg,dcodontable,dcodonusage,
             for posi1,posi2,posi3 in positions_tm:
                 if (BEs[method][0]==codon[posi1]) and (BEs[method][0]==codon[posi2]) and (BEs[method][0]==codon[posi3]):
                     for ntmut1,ntmut2,ntmut3 in itertools.product(''.join(BEs[method][1]), repeat=3):
-                        codonmut='{}{}{}'.format(ntmut1,ntmut2,ntmut3)
+                        codonmut=f'{ntmut1}{ntmut2}{ntmut3}'
                         aamut=str(Seq.Seq(codonmut,Alphabet.generic_dna).translate(table=1))
                         # if (aamut!='*') and (aamut!=aa): #  nonsence and synonymous
                         if muti==0:
@@ -203,8 +203,8 @@ def get_possible_mutagenesis(cfg,dcodontable,dcodonusage,
                         else:
                             cdni=len(dmutagenesis)+1
                         muti+=1
-                        ntwt='{}{}{}'.format(BEs[method][0],BEs[method][0],BEs[method][0])
-                        ntmut='{}{}{}'.format(ntmut1,ntmut2,ntmut3)
+                        ntwt=f'{BEs[method][0]}{BEs[method][0]}{BEs[method][0]}'
+                        ntmut=f'{ntmut1}{ntmut2}{ntmut3}'
                         if '-' in method.split(' on ')[1]:
                             ntwt=str(Seq.Seq(ntwt,Alphabet.generic_dna).reverse_complement())
                             ntmut=str(Seq.Seq(ntmut,Alphabet.generic_dna).reverse_complement())
@@ -459,7 +459,7 @@ def dseq2dmutagenesis(cfg):
     dmutagenesisp=f"{cfg['datad']}/dmutagenesis.tsv"
     dmutagenesisallp=f"{cfg['datad']}/dmutagenesis_all.tsv"
     if not exists(dmutagenesisp) or cfg['force']:
-        dseq=pd.read_csv('{}/dsequences.tsv'.format(cfg[cfg['step']-1]),sep='\t')
+        dseq=pd.read_csv(f"{cfg[cfg['step']-1]}/dsequences.tsv",sep='\t')
         if cfg['mutation_format']=='nucleotide':
             from .global_vars import aminoacids as aas
         elif cfg['mutation_format']=='aminoacid':
@@ -474,7 +474,7 @@ def dseq2dmutagenesis(cfg):
             aas=list(dseq['aminoacid: wild-type'].unique())#['S','T','Y']
 
         dcodontable=get_codon_table(aa=aas)
-        dcodonusage=get_codon_usage(cuspp='{}/../data/64_1_1_all_nuclear.cusp.txt'.format(abspath(dirname(__file__)))) #FIXME if prokaryote is used ?
+        dcodonusage=get_codon_usage(cuspp=f"{abspath(dirname(__file__)))}/../data/64_1_1_all_nuclear.cusp.txt" #FIXME if prokaryote is used ?
 
         #create BEs and pos_muts for back-compatibility
         from beditor.lib.global_vars import cols_dbes

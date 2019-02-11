@@ -65,8 +65,8 @@ def pipeline_chunks(cfgp=None,cfg=None):
                 makedirs(cfg[i])
 
         #backup inputs
-        cfgoutp='{}/cfg.yml'.format(cfg[0])    
-        dinoutp='{}/dinput.tsv'.format(cfg[0])    
+        cfgoutp=f'{cfg[0]}/cfg.yml'    
+        dinoutp=f'{cfg[0]}/dinput.tsv'    
         if not exists(cfgoutp) or cfg['force']:
             with open(cfgoutp, 'w') as f:
                 yaml.dump(cfg, f, default_flow_style=False)
@@ -82,7 +82,7 @@ def pipeline_chunks(cfgp=None,cfg=None):
             makedirs(cfg['prjd'])
         for i in range(0,4+1,1):
             if not exists(cfg[i]):
-                makedirs(cfg[i])            
+                makedirs(cfg[i])      
         if cfg['step']==None:
             stepall=True
         else:
@@ -103,16 +103,16 @@ def pipeline_chunks(cfgp=None,cfg=None):
             from beditor.lib.make_guides import dseq2dguides
             cfg['step']=3
             dseq2dguides(cfg)
-            stepi2time[3]=get_datetime(ret_obj=True)            
+            stepi2time[3]=get_datetime(ret_obj=True)
         if (cfg['step']==4 or stepall)  and cfg['step2ignore']!=4:
             from beditor.lib.get_specificity import dguides2offtargets
             cfg['step']=4
             dguides2offtargets(cfg)
-            stepi2time[4]=get_datetime(ret_obj=True)        
+            stepi2time[4]=get_datetime(ret_obj=True)
         
         for stepi in range(1,5,1):
             if (stepi in stepi2time) and (stepi-1 in stepi2time):
-                print(f"time taken by step#{stepi:02d} = {str(stepi2time[stepi]-stepi2time[stepi-1])}")                
+                print(f"time taken by step#{stepi:02d} = {str(stepi2time[stepi]-stepi2time[stepi-1])}")
 
 from beditor.lib.io_dfs import fhs2data_combo_appended
 from beditor.lib.global_vars import stepi2name
@@ -266,6 +266,25 @@ def validcfg(cfg):
         else:
             opt_validity.append(False)
             logging.error(f"invalid option: {cfg[opt]} is not in [{','.join([s if not s is None else 'None' for s in opts])}]")
+    for option in ['BE name and PAM','pams','BEs']:
+        if not (option in cfg): cfg[option]=None
+    if (cfg['pams'] is None) and (cfg['BEs'] is None):
+        if not cfg['BE name and PAM'] is None:
+            if isinstance(cfg['BE name and PAM'],str):
+                cfg['BE name and PAM']=[cfg['BE name and PAM']]
+        else:
+            opt_validity.append(False)       
+            logging.error(f"invalid option: BE PAM not specified")
+    elif (cfg['pams'] is None) or (cfg['BEs'] is None):
+        opt_validity.append(False)       
+        logging.error(f"invalid option: BE PAM not specified")     
+    else:
+        from itertools import product
+        cfg['BE name and PAM']=list(product(cfg['BEs'],cfg['pams']))
+        del cfg['pams']
+        del cfg['BEs']
+#     if cfg['test']:
+#         print(cfg)
     return all(opt_validity)
 
 def validinput(cfg,din): 
@@ -298,7 +317,6 @@ def pipeline(cfgp,step=None,test=False,force=False):
     from glob import glob
     cfgp=abspath(cfgp)
     cfg=yaml.load(open(cfgp, 'r'))
-    
     # check inputs
     if not exists(cfg['dinp']):
         logging.error(f"input file {cfg['dinp']} is not found.")
@@ -483,13 +501,11 @@ def main():
     parser.add_argument('-v','--version', action='version',version=version_info)
     args = parser.parse_args()
 
-    if args.lister is not None:
-        if args.lister:
-            from .lib.io_dfs import del_Unnamed
-            d=del_Unnamed(pd.read_table(f"{dirname(realpath(__file__))}/data/dbepams.tsv")).loc[:,['method','PAM']]
-            print(d)                
+    if args.lister:
+        from .lib.io_dfs import del_Unnamed
+        d=del_Unnamed(pd.read_table(f"{dirname(realpath(__file__))}/data/dbepams.tsv")).loc[:,['method','PAM']]
+        print(d)
     else:
-
         from beditor.lib.io_strs import get_logger
         if args.test:
             level=logging.INFO
