@@ -16,62 +16,11 @@ from Bio import motifs,Seq,AlignIO
 import logging
 
 from beditor.lib.io_dfs import *
-from beditor.lib.global_vars import multint2reg,multint2regcomplement,nt2complement,cols_dpam
+from beditor.lib.global_vars import nt2complement
 from beditor.lib.io_seqs import reverse_complement_multintseq,reverse_complement_multintseqreg,str2seq
-from beditor.lib.io_strs import s2re
 from beditor.lib.global_vars import stepi2cols    
+from beditor.configure import get_be2dpam
 
-
-
-def dpam2dpam_strands(dpam,pams):
-    """
-    Duplicates dpam dataframe to be compatible for searching PAMs on - strand
-
-    :param dpam: dataframe with pam information
-    :param pams: pams to be used for actual designing of guides.
-    """
-    
-    dpam=del_Unnamed(dpam)
-    dpam['rPAM']=dpam.apply(lambda x : s2re(x['PAM'],multint2reg) ,axis=1)
-    dpam=set_index(dpam,'PAM')
-    dpam['strand']='+'
-    dpamr=pd.DataFrame(columns=dpam.columns)
-    dpam.loc[:,'reverse complement']=np.nan
-    dpam.loc[:,'original']=np.nan
-    for pam in dpam.index:
-        pamr=reverse_complement_multintseq(pam,nt2complement)
-        dpam.loc[pam,'reverse complement']=pamr
-        dpam.loc[pam,'original']=pam
-        dpamr.loc[pamr,'original']=pam
-        dpam.loc[pam,'original position']=dpam.loc[pam,'PAM position']
-        dpamr.loc[pamr,'original position']=dpam.loc[pam,'PAM position']
-        dpamr.loc[pamr,['PAM position','guide length']]=dpam.loc[pam,['PAM position','guide length']]
-        dpamr.loc[pamr,['rPAM']]=reverse_complement_multintseqreg(pam,multint2regcomplement,nt2complement)    
-    dpamr['PAM position']= dpamr.apply(lambda x: 'up' if x['PAM position']=='down' else 'down',axis=1)
-    dpamr['strand']='-'
-    dpam_strands=dpam.append(dpamr,sort=True)
-    dpam_strands.index.name='PAM'
-    dpam_strands.loc[:,'is a reverse complement']=pd.isnull(dpam_strands.loc[:,'reverse complement'])
-    pams_strands=pams+dpam_strands.loc[pams,'reverse complement'].dropna().tolist()
-    dpam_strands=dpam_strands.loc[pams_strands,:]
-    return dpam_strands
-
-def get_be2dpam(din,test=False):
-    """
-    make BE to dpam mapping i.e. dict
-    
-    :param din: df with BE and PAM info all cols_dpam needed
-    """
-    be2dpam={}
-    be2pam=din.loc[:,['method','PAM']].drop_duplicates().set_index('method').to_dict()['PAM']
-    if test:
-        print(be2pam)
-    for be in be2pam:
-        pam=be2pam[be]
-        dpam=din.loc[((din['PAM']==pam) & (din['method']==be)),cols_dpam]
-        dpam_strands=dpam2dpam_strands(dpam,pams=[pam])
-        be2dpam[be]=set_index(dpam_strands,'PAM')                
-    return be2dpam
 
 def get_pam_searches(dpam,seq,pos_codon,
                     test=False):
@@ -208,14 +157,12 @@ def make_guides(cfg,dseq,dmutagenesis,
     :param test: debug mode on
     :param dbug: more verbose
     """
-    from beditor.lib.io_strs import s2re
     flankaas=7#FIXME if flank length changes
 
     dseq=dseq.reset_index()
     dseq.index=range(len(dseq))
     # make dpam per be
     be2dpam=get_be2dpam(dbepams,test=cfg['test'])
-    
     gierrfltmutpos=[]
     gierrdenan=[]
     gierrfltguidel=[]

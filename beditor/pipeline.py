@@ -326,7 +326,7 @@ def pipeline(cfgp,step=None,test=False,force=False):
         logging.error(f"configuration file {cfgp} is not valid.")
         print(cfg)
         sys.exit(1)
-
+    
     if (cfg['mutations']=='substitutions'):    
         if not exists(cfg['dsubmap_preferred_path']):
             logging.critical(f"dsubmap_preferred_path is {cfg['dsubmap_preferred_path']}")

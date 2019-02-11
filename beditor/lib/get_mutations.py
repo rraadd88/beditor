@@ -10,7 +10,7 @@ import itertools
 
 from Bio import SeqIO, Alphabet, Seq, SeqUtils
 from Bio import motifs,Seq,AlignIO
-
+from beditor.configure import get_be2dpam
 import logging
 
 def dbes2dbes_strands(dBEs):
@@ -458,6 +458,7 @@ def dseq2dmutagenesis(cfg):
     cfg['plotd']=cfg['datad']
     dmutagenesisp=f"{cfg['datad']}/dmutagenesis.tsv"
     dmutagenesisallp=f"{cfg['datad']}/dmutagenesis_all.tsv"
+
     if not exists(dmutagenesisp) or cfg['force']:
         dseq=pd.read_csv(f"{cfg[cfg['step']-1]}/dsequences.tsv",sep='\t')
         if cfg['mutation_format']=='nucleotide':
@@ -474,14 +475,17 @@ def dseq2dmutagenesis(cfg):
             aas=list(dseq['aminoacid: wild-type'].unique())#['S','T','Y']
 
         dcodontable=get_codon_table(aa=aas)
-        dcodonusage=get_codon_usage(cuspp=f"{abspath(dirname(__file__)))}/../data/64_1_1_all_nuclear.cusp.txt" #FIXME if prokaryote is used ?
-
+        dcodonusage=get_codon_usage(cuspp=f"{abspath(dirname(__file__))}/../data/64_1_1_all_nuclear.cusp.txt")
+        #FIXME if prokaryote is used ?
         #create BEs and pos_muts for back-compatibility
         from beditor.lib.global_vars import cols_dbes
         dbepams=pd.read_table(f"{dirname(realpath(__file__))}/../data/dbepams.tsv")
+        # make dpam per be
+        be2dpam=get_be2dpam(dbepams,test=cfg['test']) 
+        
         dBEs=dbepams.loc[:,cols_dbes]
         dBEs=dbes2dbes_strands(dBEs)
-        dBEs=dBEs.loc[dBEs['method'].isin(cfg['BEs']),:]
+        dBEs=dBEs.loc[dBEs['method'].isin(be2dpam.keys()),:]
         
         BEs2mutations={}
         for method in dBEs['method'].unique():
