@@ -7,10 +7,12 @@ import matplotlib.pyplot as plt
 
 from os.path import exists,realpath,dirname
 import itertools
-
 from Bio import SeqIO, Alphabet, Seq, SeqUtils
 from Bio import motifs,Seq,AlignIO
 from rohan.dandage.io_dfs import * 
+
+from rohan.dandage.io_dfs import *
+
 # from beditor.configure import get_be2dpam
 import logging
 
@@ -126,7 +128,7 @@ def get_possible_mutagenesis(cfg,dcodontable,dcodonusage,
                         if '-' in method.split(' on ')[1]:
                             ntwt=str(Seq.Seq(ntwt,Alphabet.generic_dna).reverse_complement())
                             ntmut=str(Seq.Seq(ntmut,Alphabet.generic_dna).reverse_complement())
-                        dmutagenesis=write_dmutagenesis(**{'cdni':cdni,
+                        dmutagenesis_row={'cdni':cdni,
                         'posi':posi+1,
                         'codon':codon,
                         'codonmut':codonmut,
@@ -134,7 +136,9 @@ def get_possible_mutagenesis(cfg,dcodontable,dcodonusage,
                         'ntmut':ntmut,
                         'aa':aa,
                         'aamut':aamut,
-                        'method':method})
+                        'method':method}
+#                         print(dmutagenesis_row)
+                        dmutagenesis=write_dmutagenesis(**dmutagenesis_row)
         return dmutagenesis,muti
     def get_dm(dmutagenesis,BEs,positions_dm,codon,muti,cdni):
         """
@@ -300,10 +304,10 @@ def get_possible_mutagenesis(cfg,dcodontable,dcodonusage,
             print(codon)
         #single nucleuotide mutations
         dmutagenesis,muti=get_sm(dmutagenesis,BEs,positions,codon,muti,cdni)
-        #double nucleotide mutations
-        dmutagenesis,muti=get_dm(dmutagenesis,BEs,positions_dm,codon,muti,cdni)
-        #triple nucleotide mutations
-        dmutagenesis,muti=get_tm(dmutagenesis,BEs,positions_tm,codon,muti,cdni)
+#         #double nucleotide mutations
+#         dmutagenesis,muti=get_dm(dmutagenesis,BEs,positions_dm,codon,muti,cdni)
+#         #triple nucleotide mutations
+#         dmutagenesis,muti=get_tm(dmutagenesis,BEs,positions_tm,codon,muti,cdni)
         # #double nucleotide mutations combinations
         # dmutagenesis,muti=get_dm_combo(dmutagenesis,BEs,positions_dm,codon,muti,cdni,method='undefined')
         # #triple nucleotide mutations combinations
@@ -313,6 +317,10 @@ def get_possible_mutagenesis(cfg,dcodontable,dcodonusage,
         logging.warning('no guides designed; saving an empty table.')
         dmutagenesis=saveemptytable(cfg)        
     else:
+        to_table(dmutagenesis,'test.tsv') #FIXME
+        print(dmutagenesis.shape)
+        dmutagenesis=dmutagenesis.dropna() #FIXME
+        print(dmutagenesis.shape)
         dmutagenesis['nucleotide mutation: count']=[len(s) for s in dmutagenesis['nucleotide mutation']]
         dmutagenesis=dmutagenesis.sort_values('codon')  
         # Adding information of Allowed activity window
@@ -338,8 +346,8 @@ def get_submap(cfg):
                      'medium': 5,
                      'low': 10}
     if not cfg['host'] in ['saccharomyces_cerevisiae','homo_sapiens']:
-        host='saccharomyces_cerevisiae'
-        logging.warning("for mimetic substitutions, substitution matrix of {host} is used")
+        host='homo_sapiens'
+        logging.warning("for mimetic substitutions are not available for {cfg['host']} instead substitution matrix of {host} is being used")
     else:
         host=cfg['host']
     try:
@@ -426,10 +434,11 @@ def filterdmutagenesis(dmutagenesis,cfg):
     # filter non interchageables
     if 'non_intermutables' in cfg:
         if not cfg['non_intermutables'] is None:
-            non_intermutables=list(itertools.permutations(''.join(cfg['non_intermutables']),2))
-            dmutagenesis.loc[(dmutagenesis.apply(lambda row: not (row['amino acid'], 
-                                                  row['amino acid mutation']) in non_intermutables, axis=1)),:]    
-            logging.info('dmutagenesis.shape: '+str(dmutagenesis.shape))    
+            if len(cfg['non_intermutables'])!=0:            
+                non_intermutables=list(itertools.permutations(''.join(cfg['non_intermutables']),2))
+                dmutagenesis.loc[(dmutagenesis.apply(lambda row: not (row['amino acid'], 
+                                                      row['amino acid mutation']) in non_intermutables, axis=1)),:]    
+                logging.info('dmutagenesis.shape: '+str(dmutagenesis.shape))    
     return dmutagenesis
 
 def dseq2dmutagenesis(cfg):

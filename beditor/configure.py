@@ -167,7 +167,7 @@ def validcfg(cfg,outcfg=False):
     if (cfg['pams'] is None) and (cfg['BEs'] is None):
         if not cfg['BE name and PAM'] is None:
             if isinstance(cfg['BE name and PAM'],str):
-                cfg['BE name and PAM']=[cfg['BE name and PAM']]
+                cfg['BE name and PAM']=cfg['BE name and PAM']
         else:
             opt_validity.append(False)       
             logging.error(f"invalid option: BE PAM not specified")
@@ -177,19 +177,19 @@ def validcfg(cfg,outcfg=False):
     else:
         from itertools import product
         cfg['BE name and PAM']=[list(t) for t in product(cfg['BEs'],cfg['pams'])]
-        BE_names=list(np.unique([t[0] for t in cfg['BE name and PAM']]))
-        PAMs=list(np.unique([t[1] for t in cfg['BE name and PAM']]))
-        cfg['BE names']=[str(s) for s in BE_names]
-        cfg['PAMs']=[str(s) for s in PAMs]
-        del cfg['pams']
-        del cfg['BEs']    
+    BE_names=list(np.unique([t[0] for t in cfg['BE name and PAM']]))
+    PAMs=list(np.unique([t[1] for t in cfg['BE name and PAM']]))
+    cfg['BE names']=[str(s) for s in BE_names]
+    cfg['PAMs']=[str(s) for s in PAMs]
+    del cfg['pams']
+    del cfg['BEs']    
     if outcfg:
         #save run specific debepams
         cfg['dbepamsp']=f"{cfg[0]}/dbepams.tsv"
         dbepams=pd.read_table(f"{dirname(realpath(__file__))}/data/dbepams.tsv")
         dbepams['strand']='+'
         dbepams=dbes2dbes_strands(dbepams)
-        dbepams=dbepams.loc[dbepams['method'].isin(cfg['BE names']),:]
+        dbepams=dbepams.loc[(dbepams['method'].isin(cfg['BE names']) & dbepams['PAM'].isin(cfg['PAMs'])),:]
         to_table(dbepams,cfg['dbepamsp'])            
         return cfg
     else:
