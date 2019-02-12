@@ -11,7 +11,8 @@ import pandas as pd
 import subprocess
 import logging
 from beditor.lib.io_sys import runbashcmd    
-    
+from rohan.dandage.io_dfs import *
+
 def get_genomes(cfg):
     """
     Installs genomes
@@ -127,7 +128,7 @@ def get_genomes(cfg):
     return cfg
 
 # validity of inputs
-def validcfg(cfg): 
+def validcfg(cfg,outcfg=False): 
     """
     Checks if configuration dict is valid i.e. contains all the required fields
 
@@ -178,15 +179,21 @@ def validcfg(cfg):
         cfg['BE name and PAM']=[list(t) for t in product(cfg['BEs'],cfg['pams'])]
         BE_names=list(np.unique([t[0] for t in cfg['BE name and PAM']]))
         PAMs=list(np.unique([t[1] for t in cfg['BE name and PAM']]))
-        print(BE_names,PAMs)
         cfg['BE names']=[str(s) for s in BE_names]
         cfg['PAMs']=[str(s) for s in PAMs]
         del cfg['pams']
-        del cfg['BEs']
-    
-#     if cfg['test']:
-#         print(cfg)
-    return all(opt_validity),cfg
+        del cfg['BEs']    
+    if outcfg:
+        #save run specific debepams
+        cfg['dbepamsp']=f"{cfg[0]}/dbepams.tsv"
+        dbepams=pd.read_table(f"{dirname(realpath(__file__))}/data/dbepams.tsv")
+        dbepams['strand']='+'
+        dbepams=dbes2dbes_strands(dbepams)
+        dbepams=dbepams.loc[dbepams['method'].isin(cfg['BE names']),:]
+        to_table(dbepams,cfg['dbepamsp'])            
+        return cfg
+    else:
+        return all(opt_validity)
 
 def validinput(cfg,din): 
     """
@@ -212,6 +219,20 @@ from beditor.lib.io_seqs import reverse_complement_multintseq,reverse_complement
 from beditor.lib.io_dfs import *
 from beditor.lib.io_strs import s2re
 from beditor.lib.global_vars import multint2reg,multint2regcomplement,nt2complement
+
+def dbes2dbes_strands(dBEs):
+    """
+    add reverse strand editing methods in the dBEs dataframe
+    
+    :param dBEs: pandas dataframe with BE methods
+    """
+    from beditor.lib.global_vars import nt2complement
+    dBEs_=dBEs.copy()
+    dBEs_['strand']='-'
+    for col_nt in ['nucleotide','nucleotide mutation']:
+        dBEs_[col_nt]=dBEs_[col_nt].apply(lambda x : nt2complement[x])
+    dBEs=dBEs.append(dBEs_,sort=True)
+    return dBEs
 
 def dpam2dpam_strands(dpam,pams):
     """
@@ -258,7 +279,8 @@ def get_be2dpam(din,test=False):
         print(be2pam)
     for be in be2pam:
         pam=be2pam[be]
-        dpam=din.loc[((din['PAM']==pam) & (din['method']==be)),cols_dpam]
+        dpam=din.loc[((din['PAM']==pam) & (din['method']==be) & (din['strand']=='+')),cols_dpam]
         dpam_strands=dpam2dpam_strands(dpam,pams=[pam])
         be2dpam[be]=set_index(dpam_strands,'PAM')                
     return be2dpam
+

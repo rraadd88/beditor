@@ -446,6 +446,7 @@ def plot_dist_dofftargets(dofftargets,plotp=None):
     
 from glob import glob
 from beditor.lib.io_dfs import del_Unnamed,set_index
+from beditor.lib.global_vars import cols_dpam
 from os.path import exists,splitext,dirname,splitext,basename,realpath
 def plot_vizbysteps(cfg):  
     prjd=cfg['prjd']

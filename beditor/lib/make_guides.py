@@ -15,7 +15,7 @@ from Bio import SeqIO, Alphabet, Data, Seq, SeqUtils
 from Bio import motifs,Seq,AlignIO
 import logging
 
-from beditor.lib.io_dfs import *
+from rohan.dandage.io_dfs import *
 from beditor.lib.global_vars import nt2complement
 from beditor.lib.io_seqs import reverse_complement_multintseq,reverse_complement_multintseqreg,str2seq
 from beditor.lib.global_vars import stepi2cols    
@@ -162,6 +162,7 @@ def make_guides(cfg,dseq,dmutagenesis,
     dseq=dseq.reset_index()
     dseq.index=range(len(dseq))
     # make dpam per be
+    dbepams=read_table(cfg['dbepamsp'])
     be2dpam=get_be2dpam(dbepams,test=cfg['test'])
     gierrfltmutpos=[]
     gierrdenan=[]
@@ -174,14 +175,14 @@ def make_guides(cfg,dseq,dmutagenesis,
             dseqi=pd.DataFrame(dseq.loc[gi,dseq_cols+['amino acid mutation']]).T
             dmutagenesis_gi=pd.merge(dseqi,
                 dmutagenesis,
-                how='left',
+                how='inner',
                 left_on=['aminoacid: wild-type','codon: wild-type','amino acid mutation'],
                 right_on=['amino acid','codon','amino acid mutation'])                    
         else:
             dseqi=pd.DataFrame(dseq.loc[gi,dseq_cols]).T
             dmutagenesis_gi=pd.merge(dseqi,
                 dmutagenesis,
-                how='left',
+                how='inner',
                 left_on=['aminoacid: wild-type','codon: wild-type'],
                 right_on=['amino acid','codon'])        
         if len(dmutagenesis_gi)!=0:

@@ -250,8 +250,7 @@ def pipeline(cfgp,step=None,test=False,force=False):
         logging.error(f"input file {cfg['dinp']} is not found.")
         sys.exit(1)
 
-    isvalidcfg,cfg=validcfg(cfg)
-    if not isvalidcfg:
+    if not validcfg(cfg):
         logging.error(f"configuration file {cfgp} is not valid.")
         print(cfg)
         sys.exit(1)
@@ -320,6 +319,9 @@ def pipeline(cfgp,step=None,test=False,force=False):
     for i in range(5):
         if not exists(cfg[i]):
             makedirs(cfg[i])
+    # prep be and pam
+    cfg=validcfg(cfg,outcfg=True)
+            
     #backup combo inputs
     cfgoutp=f'{cfg[0]}/cfg.yml'
     dinoutp=f'{cfg[0]}/dinput.tsv'    

@@ -14,20 +14,6 @@ from rohan.dandage.io_dfs import *
 # from beditor.configure import get_be2dpam
 import logging
 
-def dbes2dbes_strands(dBEs):
-    """
-    add reverse strand editing methods in the dBEs dataframe
-    
-    :param dBEs: pandas dataframe with BE methods
-    """
-    from beditor.lib.global_vars import nt2complement
-    dBEs_=dBEs.copy()
-    dBEs_['strand']='-'
-    for col_nt in ['nucleotide','nucleotide mutation']:
-        dBEs_[col_nt]=dBEs_[col_nt].apply(lambda x : nt2complement[x])
-    dBEs=dBEs.append(dBEs_,sort=True)
-    return dBEs
-
 def get_codon_table(aa, tax_id=None):
     """
     Gets host specific codon table.
@@ -412,9 +398,9 @@ def filterdmutagenesis(dmutagenesis,cfg):
             logging.info('dmutagenesis.shape: '+str(dmutagenesis.shape))    
 
     # filter by method
-    if 'BEs' in cfg:
-        if not cfg['BEs'] is None:
-            dmutagenesis=dmutagenesis.loc[dmutagenesis['method'].isin(cfg['BEs']),:]
+    if 'BE names' in cfg:
+        if not cfg['BE names'] is None:
+            dmutagenesis=dmutagenesis.loc[dmutagenesis['method'].isin(cfg['BE names']),:]
             logging.info('dmutagenesis.shape: '+str(dmutagenesis.shape))    
 
     # filter by submap
@@ -480,19 +466,14 @@ def dseq2dmutagenesis(cfg):
         #FIXME if prokaryote is used ?
         #create BEs and pos_muts for back-compatibility
         from beditor.lib.global_vars import cols_dbes
-        dbepams=pd.read_table(f"{dirname(realpath(__file__))}/../data/dbepams.tsv")
-        # make dpam per be
-#         be2dpam=get_be2dpam(dbepams,test=cfg['test']) 
+        dbepams=read_table(cfg['dbepamsp'])
         dBEs=dbepams.loc[:,cols_dbes]
-        dBEs['strand']='+'
-        dBEs=dbes2dbes_strands(dBEs)
-        dBEs=dBEs.loc[dBEs['method'].isin(cfg['BE names']),:]
-        print(cfg['BE names'],dBEs['method'].unique())
+#         print(cfg['BE names'],dBEs['method'].unique())
         BEs2mutations={}
         for method in dBEs['method'].unique():
             for strand in dBEs['strand'].unique():
                 dBEsi=dBEs.loc[(dBEs['method']==method) & (dBEs['strand']==strand),:]
-                print(method,strand,dBEsi)
+#                 print(method,strand,dBEsi)
                 BEs2mutations[f"{method} on {strand} strand"]=[dBEsi['nucleotide'].unique().tolist()[0],
                                                                dBEsi['nucleotide mutation'].unique().tolist()]
                
@@ -501,7 +482,7 @@ def dseq2dmutagenesis(cfg):
          'distance of codon start from PAM: minimum',
          'distance of codon start from PAM: maximum']].drop_duplicates().set_index('method')
 
-        print(BEs2mutations,pos_muts.shape)
+#         print(BEs2mutations,pos_muts.shape)
 #         brk
         dmutagenesis=get_possible_mutagenesis(cfg,dcodontable=dcodontable,dcodonusage=dcodonusage,
                                     BEs=BEs2mutations,pos_muts=pos_muts,

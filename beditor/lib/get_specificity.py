@@ -380,7 +380,7 @@ def dalignbedannot2daggbyguide(cfg):
                 daggbyguide.loc[guideid,'beditor score']=get_beditorscore_per_guide(guide_seq=dalignbedannotguide['guide+PAM sequence'].unique()[0], 
                                            strategy=dalignbedannotguide['strategy'].unique()[0],
                                            align_seqs_scores=dalignbedannotguide['beditor score'],
-                                           BEs=cfg['BEs']
+                                           BEs=cfg['BE names']
     #                                        test=cfg['test']
                                           )
                 daggbyguide.loc[guideid,'CFD score']=dalignbedannotguide['CFD score'].mean() #FIXME if mean is not appropriate
