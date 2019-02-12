@@ -47,7 +47,8 @@ def get_genomes(cfg):
     genome_fastad='{}/{}'.format(dirname(realpath(__file__)),ensembl_fastad)
     cfg['genomep']='{}/genome.fa'.format(genome_fastad)
     if not exists(cfg['genomep']):
-        logging.error('not found: {}'.format(cfg['genomep']))
+        logging.error(f"not found: {cfg['genomep']}")
+        logging.info(f"downloading file: {cfg['genomep']}")
         if not '/test_beditor/' in cfg['cfgp']:
             ifdlref = input("Download genome at {}?[Y/n]: ".format(genome_fastad))
         else:
@@ -101,7 +102,9 @@ def get_genomes(cfg):
     genome_gff3d='{}/{}'.format(dirname(realpath(__file__)),ensembl_gff3d)
     cfg['genomegffp']='{}/genome.gff3'.format(genome_gff3d)
     if not exists(cfg['genomegffp']):
-        logging.error('not found: {}'.format(cfg['genomegffp']))
+        logging.error(f"not found: {cfg['genomegffp']}")
+        logging.info(f"downloading file: {cfg['genomegffp']}")
+        
         if not '/test_beditor/' in cfg['cfgp']:
             ifdlref = input("Download genome annotations at {}?[Y/n]: ".format(genome_gff3d))
         else:
