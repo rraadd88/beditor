@@ -12,16 +12,7 @@ from beditor.lib.global_vars import aminoacids
 import subprocess
 import logging
 
-
-sg.SetOptions(background_color='#FFFFFF',      
-           text_element_background_color='#F8F8F8',      
-           element_background_color='#F8F8F8',      
-           scrollbar_color=None,      
-           input_elements_background_color='#FFFFFF',      
-           progress_meter_color = ('green', 'blue'),      
-           button_color=('white','#6863FF'))
-
-# functions
+# gui io
 def resetwinvals(win,vals): 
     for k in vals:
         try:
@@ -41,6 +32,15 @@ def runcom(command, *args):
             print(err.decode("utf-8"))      
     except:      
         pass
+
+# gui aes
+sg.SetOptions(background_color='#FFFFFF',      
+           text_element_background_color='#F8F8F8',      
+           element_background_color='#F8F8F8',      
+           scrollbar_color=None,      
+           input_elements_background_color='#FFFFFF',      
+           progress_meter_color = ('green', 'blue'),      
+           button_color=('white','#6863FF'))
     
 def splitlist(l,n): return [l[i:i + n] for i in range(0, len(l), n)]
 def h1(s,width=None,size=20,kws={}):return sg.Text(s, size=(int(len(s)*2) if width is None else width, 1), font=("Monospace", size),**kws)
@@ -63,18 +63,6 @@ nts=''.join(list(nt2complement.keys()))
 # beditorp=dirname(beditor.__file__)
 beditorp='.'
 
-# def get_bes():
-#     dBEs=pd.read_table(f"{beditorp}/data/dBEs.tsv")
-#     dBEs=dBEs.loc[(dBEs['strand']=='+'),:].set_index('method').drop_duplicates()
-#     bes=[sg.Checkbox(method,tooltip=f"{dBEs.loc[method,'nucleotide']}:{dBEs.loc[method,'nucleotide mutation']} editing window: {dBEs.loc[method,'distance of mutation from PAM: minimum']}-{dBEs.loc[method,'distance of mutation from PAM: maximum']}", key=f"BEs {method}") for method in dBEs.index]+[sg.Button('add new base editor',key='add_be')]
-#     bes=splitlist(bes,n=5)
-#     return  bes
-# def get_pam():
-#     dpam=pd.read_table(f"{beditorp}/data/dpam.tsv").set_index('PAM').drop_duplicates()
-#     pams=[sg.Checkbox(PAM,tooltip=f"{dpam.loc[PAM,'Description']}\nposition: {dpam.loc[PAM,'position']}stream\nguide length: {dpam.loc[PAM,'guide length']}", key=f"pams {PAM}") for PAM in dpam.index]+[sg.Button('add new PAM',key='add_pam'),]              
-#     pams=splitlist(pams,n=8)
-#     return pams
-
 def dropna(x):
     x_=[]
     for i in x:
@@ -93,8 +81,6 @@ def get_dbepams():
     dbepams['editing window']=dbepams.apply(lambda x : f"{x['window start']}-{x['window end']}bp", axis=1)
     dbepams['BE type and PAM']=dbepams.apply(lambda x : ' '.join([f"{k}:{str(x[k])}" if k!='BE type' else f"{str(x[k])}" for k in ['BE type','PAM']]), axis=1)
     dbepams['BE name and editing window']=dbepams.apply(lambda x : ' '.join([f"{k}:{str(x[k])}" if k!='BE name' else f"{str(x[k])}" for k in ['BE name','editing window']]), axis=1)
-    # def l2s(l): return '/'.join(list(np.sort(l)))
-    # def uniq(l): return '/'.join(list(np.sort(l)))
     return dbepams.reset_index()
 dbepams=get_dbepams()
 
@@ -317,12 +303,6 @@ def get_mutation(vals2):
         buls=np.array([vals2[k] for k in keys])
         mutation.append(keys[buls][0].replace(s,''))
     return ':'.join(mutation)
-
-
-# %run gui.py
-# button, values = win.Layout(layout).Read()
-# print(values)
-# sg.Popup(button, values)
 
 win = sg.Window('beditor').Layout(layout)  
 win_addbepam_active=False  

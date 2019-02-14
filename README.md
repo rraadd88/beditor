@@ -50,13 +50,13 @@ Usage
 1.  Run the analysis.
 
 ``` {.sourceCode .text}
-beditor --cfg configuration.yml
+beditor configuration.yml
 ```
 
 2.  Run a single step in the analysis.
 
 ``` {.sourceCode .text}
-beditor --cfg --step {step number} configuration.yml
+beditor --step {step number} configuration.yml
 ```
 `step number` and corresponding analysis:
 
@@ -67,14 +67,7 @@ beditor --cfg --step {step number} configuration.yml
 4: Check offtarget-effects
 ``` 
 
-3. To list existing pams and editors
-
-``` {.sourceCode .text}
-beditor --list pams
-beditor --list editors
-```
-
-4. Help
+3. Help
 
 ``` {.sourceCode .text}
 beditor --help

@@ -419,12 +419,11 @@ def main():
     """
     version_info='%(prog)s v{version}'.format(version=pkg_resources.require("beditor")[0].version)
     parser = argparse.ArgumentParser(description=version_info)
-    parser.add_argument("--cfg", help="path to configuration file in YAML format.", 
-                        action="store", default=False)    
+    parser.add_argument("cfg", help="path to configuration file in YAML format.", 
+                        action="store", default=None,
+                       )    
     parser.add_argument("--step", help="1: Get genomic loci flanking the target site,\n2: Get possible mutagenesis strategies,\n3: Design guides,\n 4: Check offtarget-effects \n else all the steps are run in tandem.", dest="step", 
                         type=float,action="store", choices=[1,2,3,4],default=None)  
-    parser.add_argument("--list", help="lists base editors PAMs installed in beditor. ", dest="lister", 
-                        action='store_true', default=False)
     parser.add_argument("--test", help="Debug mode on", dest="test", 
                         action='store_true', default=False)    
     parser.add_argument("--force", help="Overwrite existing outputs.", dest="force", 
@@ -432,11 +431,9 @@ def main():
     parser.add_argument('-v','--version', action='version',version=version_info)
     args = parser.parse_args()
 
-    if args.lister:
-        from .lib.io_dfs import del_Unnamed
-        d=del_Unnamed(pd.read_table(f"{dirname(realpath(__file__))}/data/dbepams.tsv")).loc[:,['method','PAM']]
-        print(d)
-    else:
+    print(args)
+    
+    if not args.cfg is None:
         from beditor.lib.io_strs import get_logger
         if args.test:
             level=logging.INFO
@@ -446,11 +443,14 @@ def main():
                    argv=list(vars(args).values()),
                    level=level,
                    dp=None)
-        
+
         logging.info(f"start\nlog file: {logp}")
         print(f"start\nlog file: {logp}")
         pipeline(args.cfg,step=args.step,
             test=args.test,force=args.force)
+    else:
+        parser.print_help()
+        sys.exit(1)        
 
 if __name__ == '__main__':
     main()
