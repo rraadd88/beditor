@@ -12,7 +12,6 @@ from beditor.lib.global_vars import aminoacids
 import subprocess
 import logging
 
-test=False
 
 sg.SetOptions(background_color='#FFFFFF',      
            text_element_background_color='#F8F8F8',      
@@ -522,8 +521,7 @@ while True:
         win=resetwinvals(win,vals1)        
     elif ev1 == 'run beditor':      
         try:
-            runcom('beditor --force --cfg ../test_beditor/dataset_saccharomyces_cerevisiae/mutation_format_aminoacid_mutation_mutations_rev.yml') #FIXME
-            # runcom(f"beditor --force --cfg ")
+            runcom(f"beditor --cfg {vals1['cfgp']}")
             win.FindElement('run beditor error').Update(f"finished!",text_color='green')
         except:
             win.FindElement('run beditor error').Update(f"errored!",text_color='red')            
