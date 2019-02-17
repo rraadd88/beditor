@@ -281,7 +281,7 @@ def pipeline(cfgp,step=None,test=False,force=False):
     if not 'chunksize' in cfg:
         cfg['chunksize']=200        
     if not 'max_subs_per_codon' in cfg:
-        cfg['max_subs_per_codon']=200      
+        cfg['max_subs_per_codon']=1      
         
     #step
     cfg['step']=step
