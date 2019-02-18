@@ -275,8 +275,8 @@ def get_be2dpam(din,test=False):
     """
     be2dpam={}
     be2pam=din.loc[:,['method','PAM']].drop_duplicates().set_index('method').to_dict()['PAM']
-    if test:
-        print(be2pam)
+#     if test:
+#         print(be2pam)
     for be in be2pam:
         pam=be2pam[be]
         dpam=din.loc[((din['PAM']==pam) & (din['method']==be) & (din['strand']=='+')),cols_dpam]

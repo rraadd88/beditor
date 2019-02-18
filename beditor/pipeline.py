@@ -244,7 +244,7 @@ def pipeline(cfgp,step=None,test=False,force=False):
     import yaml
     from glob import glob
     cfgp=abspath(cfgp)
-    cfg=yaml.load(open(cfgp, 'r'))
+    cfg=yaml.load(open(cfgp, 'r'))    
     # check inputs
     if not exists(cfg['dinp']):
         logging.error(f"input file {cfg['dinp']} is not found.")
@@ -300,7 +300,7 @@ def pipeline(cfgp,step=None,test=False,force=False):
         cfg['reverse_mutations']=False
     elif cfg['reverse_mutations'] is None:
         cfg['reverse_mutations']=False
-    
+        
     if cfg['make_control_pos']:
         cfg['keep_mutation_nonsense']=True
 

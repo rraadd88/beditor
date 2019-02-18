@@ -162,7 +162,7 @@ def make_guides(cfg,dseq,dmutagenesis,
     dseq=dseq.reset_index()
     dseq.index=range(len(dseq))
     if not 'pos control' in dseq:
-        dseq['pos control']==False
+        dseq['pos control']=False
     dseq_cols=['transcript: id','aminoacid: position','aminoacid: wild-type','codon: wild-type','id','pos control']    
     # make dpam per be
     dbepams=read_table(cfg['dbepamsp'])
