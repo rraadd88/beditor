@@ -191,9 +191,13 @@ def get_seq_aminoacid(cfg,din):
     if cfg['make_control_pos']:
         dseq['pos control']=False
         dseq_=dseq.copy()
-        dseq['pos control']=True
+        dseq_['pos control']=True
+#         if not cfg['reverse_mutations']:
         dseq_['amino acid mutation']='*'
+#         else:
+#             dseq_['amino acid']='*'
         dseq=dseq.append(dseq_,sort=True).drop_duplicates()
+        dseq=dseq.sort_values(by='id')
     dseq.to_csv(f"{cfg['dsequencesp']}",sep='\t')
     del ensembl
 
