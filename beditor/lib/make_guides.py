@@ -161,6 +161,9 @@ def make_guides(cfg,dseq,dmutagenesis,
 
     dseq=dseq.reset_index()
     dseq.index=range(len(dseq))
+    if not 'pos control' in dseq:
+        dseq['pos control']==False
+    dseq_cols=['transcript: id','aminoacid: position','aminoacid: wild-type','codon: wild-type','id','pos control']    
     # make dpam per be
     dbepams=read_table(cfg['dbepamsp'])
     be2dpam=get_be2dpam(dbepams,test=cfg['test'])
@@ -169,7 +172,6 @@ def make_guides(cfg,dseq,dmutagenesis,
     gierrfltguidel=[]
     gierrpamnotfound=[]
     gierrcannotmutate=[]
-    dseq_cols=['transcript: id','aminoacid: position','aminoacid: wild-type','codon: wild-type','id',]
     for gi in dseq.index:
         if cfg['mutations']=='mutations':
             dseqi=pd.DataFrame(dseq.loc[gi,dseq_cols+['amino acid mutation']]).T
@@ -266,14 +268,21 @@ def make_guides(cfg,dseq,dmutagenesis,
         dguides=dguides.loc[(dguides.apply(lambda x : np.sum([x['activity sequence'].count(nt) for nt in  x['nucleotide']])==len(x['nucleotide']),axis=1)),:]
         logging.info(dguides.shape)
         if len(dguides)!=0:
+            dguides.loc[:,'strategy']=dguides.apply(lambda x: f"{x['method']};{x['strand']};@{int(x['distance of mutation from PAM'])};{x['PAM']};{x['codon']}:{x['codon mutation']};{x['amino acid']}:{x['amino acid mutation']};",axis=1)
+            dguides.loc[:,'guide: id']=dguides.apply(lambda x: f"{x['id']}|{int(x['aminoacid: position']) if not pd.isnull(x['aminoacid: position']) else 'nucleotide'}|({x['strategy']})",axis=1)
+            dguides.loc[:,'guide+PAM length']=dguides.apply(lambda x: len(x['guide+PAM sequence']),axis=1)
+            dguides=dguides.drop_duplicates(subset=['guide: id'])
+            
             logging.info('#filter by location of mutation within guide')
             dguides_neg_control=dguides.loc[dguides.apply(lambda x : False if (x['distance of mutation from PAM: minimum']<=abs(x['distance of mutation from PAM'])<=x['distance of mutation from PAM: maximum']) else True,axis=1),:]
-            dguides=dguides.loc[dguides.apply(lambda x : True if (x['distance of mutation from PAM: minimum']<=abs(x['distance of mutation from PAM'])<=x['distance of mutation from PAM: maximum']) else False,axis=1),:]
+            if len(dguides_neg_control)==0:
+                dguides_neg_control=None
+            dguides=dguides.loc[dguides.apply(lambda x : True if (x['distance of mutation from PAM: minimum']<=abs(x['distance of mutation from PAM'])<=x['distance of mutation from PAM: maximum']) else False,axis=1),:]            
             if len(dguides)!=0:
-                dguides.loc[:,'strategy']=dguides.apply(lambda x: f"{x['method']};{x['strand']};@{int(x['distance of mutation from PAM'])};{x['PAM']};{x['codon']}:{x['codon mutation']};{x['amino acid']}:{x['amino acid mutation']};",axis=1)
-                dguides.loc[:,'guide: id']=dguides.apply(lambda x: f"{x['id']}|{int(x['aminoacid: position']) if not pd.isnull(x['aminoacid: position']) else 'nucleotide'}|({x['strategy']})",axis=1)
-                dguides.loc[:,'guide+PAM length']=dguides.apply(lambda x: len(x['guide+PAM sequence']),axis=1)
-                dguides=dguides.drop_duplicates(subset=['guide: id'])
+                dguides_pos_control=dguides.loc[dguides['pos control'],:]
+                if len(dguides_pos_control)==0:
+                    dguides_pos_control=None
+                dguides=dguides.loc[~dguides['pos control'],:]                
                 return dguides,dguides_noflt,err2idxs,dguides_neg_control,dguides_pos_control
             else:
                 return None,dguides_noflt,None,None,None       
@@ -360,9 +369,9 @@ def dseq2dguides(cfg):
                     logging.info(err2idxs)
                 with open(dguideslinp+'.err.json', 'w') as f:
                     json.dump(err2idxs, f)
-                if cfg['make_control_pos']:
+                if cfg['make_control_pos'] and not dguides_pos_control is None:
                     to_table(dguides_pos_control,f"{dguideslinp}.pos_control.tsv")
-                if cfg['make_control_neg']:
+                if cfg['make_control_neg'] and not dguides_neg_control is None:
                     to_table(dguides_neg_control,f"{dguideslinp}.neg_control.tsv")                    
             else:
                 from beditor.lib.global_vars import saveemptytable
