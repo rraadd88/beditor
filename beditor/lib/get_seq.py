@@ -159,40 +159,41 @@ def get_seq_aminoacid(cfg,din):
     dflankfa.index=[idx.split('(')[0] for idx in dflankfa.index]
     dflankfa.index.name='id'
     dseq=set_index(dbed,'id').join(set_index(dflankfa,'id'),rsuffix='.1')
-    dseq2compatible={'aminoacid: position':'aminoacid: position',
-     'gene: id':'gene: id',
-     'gene: name':'gene: name',
-     'protein: id':'protein: id',
-     'transcript: id':'seqid',
-     'transcript: sequence':'sequence',
-     'aminoacid: wild-type':'reference residue',
-     'codon: wild-type':'reference codon',
-     'contig':'contig',
-     'strand':'strand',
-     'start':'start',
-     'end':'end',
-     'codon start':'codon start',
-     'codon end':'codon end',
-    }
+    col2rename={'aminoacid: position': 'aminoacid: position',
+                 'gene: id': 'gene: id',
+                 'gene: name': 'gene: name',
+                 'protein: id': 'protein: id',
+                 'seqid': 'transcript: id',
+                 'sequence': 'transcript: sequence',
+                 'reference residue': 'aminoacid: wild-type',
+                 'reference codon': 'codon: wild-type',
+                 'contig': 'contig',
+                 'strand': 'strand',
+                 'start': 'start',
+                 'end': 'end',
+                 'codon start': 'codon start',
+                 'codon end': 'codon end'}
     if 'amino acid mutation' in dseq:
-        dseq2compatible['amino acid mutation']='amino acid mutation'
-    dseq.to_csv(cfg['dseqtmpp'],sep='\t')
+        col2rename['amino acid mutation']='amino acid mutation'
     
-    dseq=dseq[list(dseq2compatible.values())]
-    dseq.columns=list(dseq2compatible.keys())
-#             dseq.to_csv('data/dseq.csv')            
-
+    dseq=dseq.loc[:,col2rename.keys()]
+    dseq=dseq.rename(columns=col2rename)
+    
     logging.info(dseq.columns.tolist())
     logging.info(din.columns.tolist())
     dseq=pd.merge(dseq.reset_index(),din,on=['transcript: id','aminoacid: position'])
     logging.info(dseq.columns.tolist())
-    set_index(dseq,'id')
     if 'reverse_mutations' in cfg:
         if cfg['reverse_mutations']:
             from beditor.lib.io_dfs import dfswapcols
             dseq=dfswapcols(dseq,['aminoacid: wild-type','amino acid mutation'])
             dseq['codon: mutation']=dseq['codon: wild-type'].copy()
-            
+    if cfg['make_control_pos']:
+        dseq['pos control']=False
+        dseq_=dseq.copy()
+        dseq['pos control']=True
+        dseq_['amino acid mutation']='*'
+        dseq=dseq.append(dseq_,sort=True).drop_duplicates()
     dseq.to_csv(f"{cfg['dsequencesp']}",sep='\t')
     del ensembl
 
@@ -265,9 +266,7 @@ def din2dseq(cfg):
     cfg['plotd']=cfg['datad']
     # get dna and protein sequences 
     dsequencesp=f"{cfg['datad']}/dsequences.tsv"
-    dseqtmpp=f"{cfg['datad']}/dseqtmp.tsv"
     cfg['dsequencesp']=dsequencesp
-    cfg['dseqtmpp']=dseqtmpp
     if not exists(dsequencesp) or cfg['force']:
         cfg['dinp']=f"{cfg[cfg['step']-1]}/dinput.tsv"
         din=pd.read_table(cfg['dinp'])
@@ -290,7 +289,7 @@ def din2dseq(cfg):
                     get_seq_aminoacid(cfg,din)
             elif cfg['mutation_format']=='nucleotide':
                 if all([True for c in mutation_format2cols['nucleotide'] if c in din]):
-                    get_seq_nucleotide(cfg,din)
+                    get_seq_nucleotide(cfg,din)                
             else:
                 raise(ValueError(f"invalid value of cfg['mutation_format']: {cfg['mutation_format']}"))
             

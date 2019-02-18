@@ -289,16 +289,20 @@ def pipeline(cfgp,step=None,test=False,force=False):
     cfg['test']=test
     cfg['force']=force
     cfg['cfgp']=cfgp
+    
     # step 04 offtargets
     if not 'mismatches_max' in cfg:
         cfg['mismatches_max']=2
     elif cfg['mismatches_max'] is None:
         cfg['mismatches_max']=2
-        # logging.info(f"setting mismatches_max to {cfg['mismatches_max']}") 
+
     if not 'reverse_mutations' in cfg:
         cfg['reverse_mutations']=False
     elif cfg['reverse_mutations'] is None:
         cfg['reverse_mutations']=False
+    
+    if cfg['make_control_pos']:
+        cfg['keep_mutation_nonsense']=True
 
     if not 'step2ignore' in cfg:
             cfg['step2ignore']=None

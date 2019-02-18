@@ -252,7 +252,8 @@ def make_guides(cfg,dseq,dmutagenesis,
         logging.info('get dposition')
         dpositions=dguides.apply(lambda x: guide2dpositions(x),axis=1).apply(pd.Series)
 #         posmut,posmutfrompam,distmutfrompam,posguideini,posguideend,activity_sequence
-        dpositions.columns=['position of mutation','position of mutation from PAM','distance of mutation from PAM',
+        dpositions.columns=['position of mutation','position of mutation from PAM',
+                            'distance of mutation from PAM',
                            'position of guide ini','position of guide end','activity sequence']
 #         dguides.to_csv('test_dguides.csv',sep='\t')
 #         dpositions.to_csv('test_dposition.csv',sep='\t')
@@ -265,23 +266,21 @@ def make_guides(cfg,dseq,dmutagenesis,
         dguides=dguides.loc[(dguides.apply(lambda x : np.sum([x['activity sequence'].count(nt) for nt in  x['nucleotide']])==len(x['nucleotide']),axis=1)),:]
         logging.info(dguides.shape)
         if len(dguides)!=0:
-            # if dbug:
-            #     dguides.to_csv('test.tsv',sep='\t')
             logging.info('#filter by location of mutation within guide')
+            dguides_neg_control=dguides.loc[dguides.apply(lambda x : False if (x['distance of mutation from PAM: minimum']<=abs(x['distance of mutation from PAM'])<=x['distance of mutation from PAM: maximum']) else True,axis=1),:]
             dguides=dguides.loc[dguides.apply(lambda x : True if (x['distance of mutation from PAM: minimum']<=abs(x['distance of mutation from PAM'])<=x['distance of mutation from PAM: maximum']) else False,axis=1),:]
             if len(dguides)!=0:
-
                 dguides.loc[:,'strategy']=dguides.apply(lambda x: f"{x['method']};{x['strand']};@{int(x['distance of mutation from PAM'])};{x['PAM']};{x['codon']}:{x['codon mutation']};{x['amino acid']}:{x['amino acid mutation']};",axis=1)
                 dguides.loc[:,'guide: id']=dguides.apply(lambda x: f"{x['id']}|{int(x['aminoacid: position']) if not pd.isnull(x['aminoacid: position']) else 'nucleotide'}|({x['strategy']})",axis=1)
                 dguides.loc[:,'guide+PAM length']=dguides.apply(lambda x: len(x['guide+PAM sequence']),axis=1)
                 dguides=dguides.drop_duplicates(subset=['guide: id'])
-                return dguides,dguides_noflt,err2idxs
+                return dguides,dguides_noflt,err2idxs,dguides_neg_control,dguides_pos_control
             else:
-                return None,dguides_noflt,None        
+                return None,dguides_noflt,None,None,None       
         else:
-            return None,dguides_noflt,None        
+            return None,dguides_noflt,None,None,None        
     else:
-        return None,None,None        
+        return None,None,None,None,None        
 
 def dinnucleotide2dsequencesproper(dsequences,dmutagenesis,dbug=False):
     """
@@ -348,7 +347,7 @@ def dseq2dguides(cfg):
             dmutagenesis['strand']=dmutagenesis.apply(lambda x : x['mutation on strand'].replace(' strand',''),axis=1)        
             dmutagenesis.to_csv(dmutagenesisp,sep='\t')
 
-            dguideslin,dguides_noflt,err2idxs=make_guides(cfg,dsequences,
+            dguideslin,dguides_noflt,err2idxs,dguides_neg_control,dguides_pos_control=make_guides(cfg,dsequences,
                         dmutagenesis,
                            test=cfg['test'],
                            # dbug=True,
@@ -361,10 +360,14 @@ def dseq2dguides(cfg):
                     logging.info(err2idxs)
                 with open(dguideslinp+'.err.json', 'w') as f:
                     json.dump(err2idxs, f)
+                if cfg['make_control_pos']:
+                    to_table(dguides_pos_control,f"{dguideslinp}.pos_control.tsv")
+                if cfg['make_control_neg']:
+                    to_table(dguides_neg_control,f"{dguideslinp}.neg_control.tsv")                    
             else:
                 from beditor.lib.global_vars import saveemptytable
                 logging.warning('no guides designed; saving an empty table.')
-                saveemptytable(cfg,dguideslinp)
+                saveemptytable(cfg,dguideslinp)                
         else:
             from beditor.lib.global_vars import saveemptytable
             logging.warning('no guides designed; saving an empty table.')
