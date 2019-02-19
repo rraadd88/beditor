@@ -9,9 +9,7 @@ from os.path import exists,realpath,dirname
 import itertools
 from Bio import SeqIO, Alphabet, Seq, SeqUtils
 from Bio import motifs,Seq,AlignIO
-from rohan.dandage.io_dfs import * 
-
-from rohan.dandage.io_dfs import *
+from beditor.lib.io_dfs import * 
 
 # from beditor.configure import get_be2dpam
 import logging

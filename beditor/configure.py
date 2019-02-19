@@ -11,7 +11,7 @@ import pandas as pd
 import subprocess
 import logging
 from beditor.lib.io_sys import runbashcmd    
-from rohan.dandage.io_dfs import *
+from beditor.lib.io_dfs import * 
 
 def get_genomes(cfg):
     """

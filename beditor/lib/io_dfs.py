@@ -15,6 +15,50 @@ from beditor.lib.io_nums import is_numeric
 
 import logging
 
+#tsv io
+def read_table(p):
+    if p.endswith('.tsv') or p.endswith('.tab'):
+        return del_Unnamed(pd.read_table(p))
+    elif p.endswith('.csv'):
+        return del_Unnamed(pd.read_csv(p,sep=','))
+    elif p.endswith('.pqt') or p.endswith('.parquet'):
+        return del_Unnamed(read_table_pqt(p))
+    else: 
+        logging.error(f'unknown extension {p}')
+def read_table_pqt(p):
+    return del_Unnamed(pd.read_parquet(p,engine='fastparquet'))
+    
+def to_table(df,p):
+    if p.endswith('.tsv') or p.endswith('.tab'):
+        if not exists(dirname(p)) and dirname(p)!='':
+            makedirs(dirname(p),exist_ok=True)
+        df.to_csv(p,sep='\t')
+    elif p.endswith('.pqt') or p.endswith('.parquet'):
+        to_table_pqt(df,p)
+    else: 
+        logging.error(f'unknown extension {p}')        
+def to_table_pqt(df,p):
+    if not exists(dirname(p)) and dirname(p)!='':
+        makedirs(dirname(p),exist_ok=True)
+    df.to_parquet(p,engine='fastparquet',compression='gzip',)
+
+def tsv2pqt(p):
+    to_table_pqt(pd.read_table(p,low_memory=False),f"{p}.pqt")
+    
+def read_excel(p,sheet_name=None,):
+    xl = pd.ExcelFile(p)
+    xl.sheet_names  # see all sheet names
+    if sheet_name is None:
+        sheet_name=input(', '.join(xl.sheet_names))
+    return xl.parse(sheet_name) 
+
+def to_excel(sheetname2df,datap,):
+    writer = pd.ExcelWriter(datap)
+    for sn in sheetname2df:
+        sheetname2df[sn].to_excel(writer,sn)
+    writer.save()
+
+
 def set_index(data,col_index):
     """
     Sets the index if the index is not present

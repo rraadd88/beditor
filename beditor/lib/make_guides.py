@@ -15,12 +15,11 @@ from Bio import SeqIO, Alphabet, Data, Seq, SeqUtils
 from Bio import motifs,Seq,AlignIO
 import logging
 
-from rohan.dandage.io_dfs import *
 from beditor.lib.global_vars import nt2complement
 from beditor.lib.io_seqs import reverse_complement_multintseq,reverse_complement_multintseqreg,str2seq
 from beditor.lib.global_vars import stepi2cols    
 from beditor.configure import get_be2dpam
-
+from beditor.lib.io_dfs import * 
 
 def get_pam_searches(dpam,seq,pos_codon,
                     test=False):
