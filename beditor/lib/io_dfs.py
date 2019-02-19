@@ -8,7 +8,7 @@
 ``io_dfs``
 ================================
 """
-from os.path import basename,exists
+from os.path import basename,exists,dirname
 import pandas as pd
 import numpy as np
 from beditor.lib.io_nums import is_numeric
