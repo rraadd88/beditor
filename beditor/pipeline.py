@@ -40,6 +40,11 @@ def pipeline_chunks(cfgp=None,cfg=None):
 
     if not ('step2ignore' in cfg):
         cfg['step2ignore']=None
+    
+    if not 'make_control_neg' in cfg:
+        cfg['make_control_neg']=False
+    if not 'make_control_pos' in cfg:
+        cfg['make_control_pos']=False
         
     if not cfg['step2ignore'] is None:
         step_last=cfg['step2ignore']-1
@@ -188,6 +193,7 @@ def make_outputs(cfg,plot=True):
     prjd=cfg['prjd']
     #make one output table and stepwise plots
     datad=f"{prjd}/05_output"
+    makedirs(datad, exist_ok=True)
     #table
     doutputp=f"{datad}/doutput.tsv" #FIXME if steps are added
     if not exists(doutputp) or cfg['force']:
