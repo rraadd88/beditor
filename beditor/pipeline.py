@@ -311,7 +311,7 @@ def pipeline(cfgp,step=None,test=False,force=False):
         cfg['keep_mutation_nonsense']=True
 
     if not 'step2ignore' in cfg:
-            cfg['step2ignore']=None
+        cfg['step2ignore']=None
 
     # deps and genome are only needed if running step =1 or 4
     cfg['step2ignoredl']=[2,3]
@@ -407,11 +407,13 @@ def pipeline(cfgp,step=None,test=False,force=False):
             pool.close(); pool.join()         
             collect_chunks(cfg,chunkcfgps)
             # get_outputs
-            _=make_outputs(cfg)        
+            if not cfg['step2ignore'] is None:
+                _=make_outputs(cfg)        
     else:
         pipeline_chunks(cfg=cfg)
         if not '/chunk' in cfgp:
-            _=make_outputs(cfg)        
+            if not cfg['step2ignore'] is None:
+                _=make_outputs(cfg)        
 
 #     pipeline_chunks(cfgp)
     logging.shutdown()
