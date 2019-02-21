@@ -187,7 +187,7 @@ def make_guides(cfg,dseq,dmutagenesis,
                 left_on=['aminoacid: wild-type','codon: wild-type'],
                 right_on=['amino acid','codon'])        
         if len(dmutagenesis_gi)!=0:
-            logging.info(f"working on {dseq.loc[gi,'id']}")
+#             logging.info(f"working on {dseq.loc[gi,'id']}")
 #             codon=dseq.loc[gi,'codon: wild-type']
             pos_codon=(flankaas)*3    
             dpam=be2dpam[dmutagenesis_gi['method'].unique()[0]]
