@@ -148,9 +148,11 @@ def collect_chunks(cfg,chunkcfgps):
                     if step==3:
                         # save the control guides
                         for control_type in ['pos','neg']:
-                            dguides_controlp=f"{cfg[3]}/dguides.tsv.{control_type}_control.tsv"
+                            dguides_controlp=f"{cfg['prjd']}/05_output/dguides.tsv.{control_type}_control.tsv"
                             if cfg[f'make_control_{control_type}']:
                                 if not exists(dguides_controlp):
+                                    from beditor.output import collectchuckfiles
+                                    from beditor.lib.global_vars import stepi2colsoutput
                                     dguides_control=collectchuckfiles(cfg, fpinchunk=f'03_guides/dguides.tsv.{control_type}_control.tsv')
                                     if not dguides_control is None:
                                         dguides_control=dguides_control.loc[:,list(set(dguides_control.columns).intersection(stepi2colsoutput[3]))]    

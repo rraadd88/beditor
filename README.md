@@ -206,13 +206,13 @@ Stores the output of step #1. Extracting sequences flanking mutation site.
 2. 02_mutagenesis/
 Stores the output of step #2. Estimating the editable mutations based on base editors chosen.
 3. 03_guides/
-Stores the output of step #3. Designed guides along with control guides. 
-positive control guides are designed so that they introduce stop mutation in genes being targeted.
-begative control guides lack editable nucleotide in the window of maximum activity, thereby supposed to not introduce any mutation.
+Stores the output of step #3. Designed guides.
 4. 04_offtargets/
 Stores the output of step #4. Offtarget effects.
 5. 05_outputs/
-Stores combined output and visualizations.
+Stores combined output and visualizations and sets of positive and negative control guides.   
+positive control guides are designed so that they introduce stop mutation in genes being targeted.  
+begative control guides lack editable nucleotide in the window of maximum activity, thereby supposed to not introduce any mutation.  
 
 Also,
 - 00_input/

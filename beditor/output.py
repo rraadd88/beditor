@@ -1,3 +1,16 @@
+import sys
+from os.path import exists,splitext,dirname,splitext,basename,realpath,abspath
+from os import makedirs
+import argparse
+import pkg_resources
+
+import numpy as np
+import pandas as pd
+pd.options.mode.chained_assignment = None
+
+from multiprocessing import Pool
+import logging
+import yaml
 
 def collectchuckfiles(cfg,fpinchunk,force=False):
     """
@@ -20,4 +33,4 @@ def collectchuckfiles(cfg,fpinchunk,force=False):
                                      labels_coln='chunk#')
         return dout 
     else:
-        logging.error(f'no files found: {dps_p}')
+        logging.info(f'no files found: {dps_p}')
