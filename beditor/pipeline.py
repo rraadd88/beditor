@@ -18,6 +18,7 @@ from multiprocessing import Pool
 import logging
 from beditor.configure import get_genomes,validcfg,validinput
 from beditor.lib.io_sys import runbashcmd
+from beditor.lib.io_dfs import read_table,to_table
 from beditor.lib.io_strs import get_datetime
 import yaml 
 
@@ -40,12 +41,7 @@ def pipeline_chunks(cfgp=None,cfg=None):
 
     if not ('step2ignore' in cfg):
         cfg['step2ignore']=None
-    
-    if not 'make_control_neg' in cfg:
-        cfg['make_control_neg']=False
-    if not 'make_control_pos' in cfg:
-        cfg['make_control_pos']=False
-        
+            
     if not cfg['step2ignore'] is None:
         step_last=cfg['step2ignore']-1
     else:
@@ -117,7 +113,7 @@ def pipeline_chunks(cfgp=None,cfg=None):
         
         for stepi in range(1,5,1):
             if (stepi in stepi2time) and (stepi-1 in stepi2time):
-                print(f"time taken by step#{stepi:02d} = {str(stepi2time[stepi]-stepi2time[stepi-1])}")
+                logging.info(f"time taken by step#{stepi:02d} = {str(stepi2time[stepi]-stepi2time[stepi-1])}")
 
 from beditor.lib.io_dfs import fhs2data_combo_appended
 from beditor.lib.global_vars import stepi2name
@@ -149,35 +145,21 @@ def collect_chunks(cfg,chunkcfgps):
                                                  labels_coln='chunk#')
                     dout.to_csv(doutp,sep='\t')
                     del dout
+                    if step==3:
+                        # save the control guides
+                        for control_type in ['pos','neg']:
+                            dguides_controlp=f"{cfg[3]}/dguides.tsv.{control_type}_control.tsv"
+                            if cfg[f'make_control_{control_type}']:
+                                if not exists(dguides_controlp):
+                                    dguides_control=collectchuckfiles(cfg, fpinchunk=f'03_guides/dguides.tsv.{control_type}_control.tsv')
+                                    if not dguides_control is None:
+                                        dguides_control=dguides_control.loc[:,list(set(dguides_control.columns).intersection(stepi2colsoutput[3]))]    
+                                        to_table(dguides_control,dguides_controlp)                                        
                 else:
                     logging.warning(f"no chunks found for step {step}: {stepi2name[step]}")                    
             else:
                 logging.warning(f"no chunks found for step {step}: {stepi2name[step]}")
 
-def collectchuckfiles(cfg,fpinchunk,force=False):
-    """
-    Collects minor chunk files
-
-    :param cfg: configuration dict
-    :param fpinchunk: path inside chuck's project directory
-    :param force: if True overwrites the outputs 
-    """
-    from beditor.lib.io_dfs import fhs2data_combo_appended
-    from beditor.lib.global_vars import stepi2name
-    from beditor.lib.io_nums import str2num
-    from os.path import basename
-    from glob import glob
-    doutp=f"{cfg['prjd']}/{fpinchunk}"
-    if not exists(doutp) or force:
-        dps_=glob(f"{cfg['prjd']}/chunks/chunk0*/{fpinchunk}")
-#         print(dps_)
-        dout=fhs2data_combo_appended(dps_,sep='\t',
-                                     labels_coln='chunk#')
-        makedirs(dirname(doutp),exist_ok=True)
-        dout.to_csv(doutp,sep='\t')
-    else:
-        dout=pd.read_table(doutp)        
-    return dout 
 
 from glob import glob
 from beditor.lib.plot_res import plot_vizbysteps
@@ -218,9 +200,6 @@ def make_outputs(cfg,plot=True):
                         del dstep
                     else:
                         cols_on=list(set(doutput.columns.tolist()).intersection(dstep.columns.tolist()))
-#                         print('left',doutput.columns.tolist())
-#                         print('right',dstep.columns.tolist())
-#                         print('common',cols_on)
                         if len(cols_on)!=0:         
                             doutput=pd.merge(doutput,dstep,on=cols_on,how='left')
                         else:
@@ -306,6 +285,11 @@ def pipeline(cfgp,step=None,test=False,force=False):
         cfg['reverse_mutations']=False
     elif cfg['reverse_mutations'] is None:
         cfg['reverse_mutations']=False
+
+    if not 'make_control_neg' in cfg:
+        cfg['make_control_neg']=False
+    if not 'make_control_pos' in cfg:
+        cfg['make_control_pos']=False
         
     if cfg['make_control_pos']:
         cfg['keep_mutation_nonsense']=True
@@ -455,11 +439,12 @@ def main():
                    argv=list(vars(args).values()),
                    level=level,
                    dp=None)
-
-        logging.info(f"start\nlog file: {logp}")
-        print(f"start\nlog file: {logp}")
+        time_ini=get_datetime(ret_obj=True)
+        logging.info(f"start. log file: {logp}")
+        print(f"start. log file: {logp}")
         pipeline(args.cfg,step=args.step,
             test=args.test,force=args.force)
+        logging.info(f'end. time taken={str(get_datetime(ret_obj=True)-time_ini)}')
     else:
         parser.print_help()
         sys.exit(1)        
