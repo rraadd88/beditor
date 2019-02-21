@@ -83,7 +83,7 @@ def genomeocoords2bed(df, col_genomeocoord):
         dbed.columns=['chromosome', 'start', 'end','strand']
         dbed['id']=df[col_genomeocoord]
         dbed['NM']=np.nan
-        return dbed[bed_colns]
+        return dbed.replace('',np.nan).loc[:,bed_colns].dropna(subset=['chromosome','start','end','id','strand'],how='any')
     else:
         return pd.DataFrame(columns=['chromosome', 'start', 'end','strand','id','NM'])
 
