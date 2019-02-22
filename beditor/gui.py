@@ -12,7 +12,10 @@ from beditor.lib.global_vars import aminoacids
 import subprocess
 import logging
 
+# vars beditor
+nts=''.join(list(nt2complement.keys()))
 # beditor io
+
 def dropna(x):
     x_=[]
     for i in x:
@@ -26,11 +29,11 @@ def unique(l,drop=None):
     return tuple(np.unique(l))
 def unique_dropna(l): return dropna(unique(l,drop='nan'))
 def get_dbepams():
-    dbepams=pd.read_table(f'{dirname(realpath(__file__))}/data/dbepams.tsv')
-    dbepams['BE type']=dbepams.apply(lambda x : f"{x['nucleotide wt']}-{x['nucleotide mutation']}", axis=1)
+    dbepams=pd.read_table(f'{dirname(abspath(__file__))}/data/dbepams.tsv')
+    dbepams['BE type']=dbepams.apply(lambda x : f"{x['nucleotide']}-{x['nucleotide mutation']}", axis=1)
     dbepams['editing window']=dbepams.apply(lambda x : f"{x['window start']}-{x['window end']}bp", axis=1)
     dbepams['BE type and PAM']=dbepams.apply(lambda x : ' '.join([f"{k}:{str(x[k])}" if k!='BE type' else f"{str(x[k])}" for k in ['BE type','PAM']]), axis=1)
-    dbepams['BE name and editing window']=dbepams.apply(lambda x : ' '.join([f"{k}:{str(x[k])}" if k!='BE name' else f"{str(x[k])}" for k in ['BE name','editing window']]), axis=1)
+    dbepams['BE name and editing window']=dbepams.apply(lambda x : ' '.join([f"{k}:{str(x[k])}" if k!='BE name' else f"{str(x[k])}" for k in ['method','editing window']]), axis=1)
     return dbepams.reset_index()
 
 import yaml
@@ -50,8 +53,6 @@ def loadcfginwinvals(win,vals):
             win.FindElement(k).Update(vals[k])
     return win 
 
-
-
 def get_mutation(vals2):
     mutation=[]
     for s in ['from','to']:
@@ -70,7 +71,7 @@ def guival2cfg(val):
     cfg={}
     cfg['host']=val['Species name (Ensembl assembly)'].split(' (')[0]
     cfg['genomeassembly']=val['Species name (Ensembl assembly)'].split(' (')[1].replace(')','')
-    cfg['genomerelease']=int(val['genomerelease'])
+    cfg['genomerelease']=int(val['genomerelease'].replace('genome release=',''))
     # cfg['BE and PAM']=[f"{val['BE name and editing window']} PAM:{pam}"]
     cfg['BE name and PAM']=[[val['BE name and editing window'].split(' editing window:')[0],
                              val['BE type and PAM'].split(' PAM:')[1]]]
@@ -100,13 +101,21 @@ def guival2cfg(val):
     # 
 
 # gui io
-def resetwinvals(win,vals): 
+def resetwinvals(win,vals,test=False): 
     for k in vals:
         try:
-            win.FindElement(k).Update(vals[k])
+            # if not radio
+            if not 'mutation_format ' in k:
+                win.FindElement(k).Update(vals[k])                            
         except:
             if test:
                 print(f'resetwinvals error with key={k}')
+    options=['mutation_format aminoacid','mutation_format nucleotide']
+    for opt, opt_ in zip(options,options[::-1]):
+        if vals[opt] and not vals[opt_]: 
+            win.FindElement(opt_).Update(vals[opt_])
+            win.FindElement(opt).Update(vals[opt])
+            break
     return win 
 
 def runcom(command, *args):      
@@ -126,8 +135,14 @@ def h1(s,width=None,size=20,kws={}):return sg.Text(s, size=(int(len(s)*2) if wid
 def h2(s,width=15,size=15,kws={}):return sg.Text(f"  {s}", size=(int(len(s)*2) if width is None else width, 1), font=("Monospace", size),**kws)
 def h3(s,width=None,size=10,kws={}):return sg.Text(f"    {s}", size=(int(len(s)*1.5) if width is None else width, 1), font=("Monospace", size),**kws)
 def normal(s,width=None,size=10,kws={}):return sg.Text(f"{s}", size=(int(len(s)*1.5) if width is None else width, 1), font=("Monospace", size),**kws)
-    
-def get_layout():
+h2_font=("Monospace", 15)
+h3_font=("Monospace", 10)
+kws_frame={'font':h2_font,
+'relief':'sunken'}
+kws_button_big={'font':h2_font,}
+kws_button_small={'font':h3_font,}
+
+def get_layout(test=False):
     # gui aes
     sg.SetOptions(background_color='#FFFFFF',      
                text_element_background_color='#F8F8F8',      
@@ -136,26 +151,19 @@ def get_layout():
                input_elements_background_color='#FFFFFF',      
                progress_meter_color = ('green', 'blue'),      
                button_color=('white','#6863FF'))
-    h2_font=("Monospace", 15)
-    h3_font=("Monospace", 10)
-    kws_frame={'font':h2_font,
-    'relief':'sunken'}
-    kws_button_big={'font':h2_font,}
-    kws_button_small={'font':h3_font,}
+
     win_width=80
-    win = sg.Window('beditor', default_element_size=(width, 1),
+    win = sg.Window('beditor', default_element_size=(win_width, 1),
     #                    resizable=True
                       )
     
-    # vars beditor
-    nts=''.join(list(nt2complement.keys()))
 
     # beditorp=dirname(beditor.__file__)
     beditorp='.'
 
     dbepams=get_dbepams()
 
-    dspecies=pd.read_table(f'{dirname(realpath(__file__))}/data/dspecies.tsv')
+    dspecies=pd.read_table(f'{dirname(abspath(__file__))}/data/dspecies.tsv')
     species=['Saccharomyces cerevisiae (R64-1-1)']+list(np.sort(dspecies['Scientific name (Ensembl Assembly)'].tolist()))
 
     layout_advanced_setting=[[sg.Button('load a configuration file', key='optional: load configuration file_',button_color=('black','white'))],    
@@ -231,7 +239,7 @@ def get_layout():
                 tooltip='Species name (Ensembl assembly)',
                 # enable_events=True,
                 size=(43, 1)),     
-         sg.InputCombo([int(i) for i in range(90,94,1)][::-1],tooltip='Ensembl genome release eg. 93',size=(17, 1),key='genomerelease')],
+         sg.InputCombo([f"genome release={i}" for i in range(91,94,1)][::-1],tooltip='Ensembl genome release eg. 93',size=(17, 1),key='genomerelease')],
         [sg.Frame('BE and PAM',
             [[h2('BE type and PAM',width=30,kws={'tooltip':'genome information of host organism.'}),
                 sg.InputCombo(list(np.sort(dbepams['BE type and PAM'].unique())),
@@ -263,10 +271,10 @@ def get_layout():
         sg.Text('', key='error din',text_color='red',size=(25, 1)),
         ],    
         [h2('mutation mode',width=24),
-         sg.Radio('create mutations', "mutation_do", key='reverse_mutations create', default=True),
+         sg.Radio('create mutations', "mutation_do", key='reverse_mutations create'),
          sg.Radio('remove mutations', "mutation_do",key='reverse_mutations remove')],
         [h2('mutation format',width=24),
-         sg.Radio('nucleotide', "mutation_format",key='mutation_format nucleotide', default=True),
+         sg.Radio('nucleotide', "mutation_format",key='mutation_format nucleotide',),
          sg.Radio('amino acid', "mutation_format",key='mutation_format aminoacid')],
         [h2('assign # of cpus',width=24,kws={'tooltip':'number of cores/cpus to be used. higher is faster.'}),
          sg.Slider(range=(1, multiprocessing.cpu_count()-1), orientation='h', size=(25, 5),
@@ -315,42 +323,41 @@ def get_layout():
 ## POPUP
 layout_addbepam = [
             [sg.Frame('BE',[[normal('name',width=25),sg.InputText(default_text='name',key='BE name')],
-                       [normal('nucleotide mutation',width=25,
-                        kws={'tooltip':'length of guide/sgrna sequence.'}),
-                        sg.Text('', key='error mutation',text_color='red',size=(25, 1))],
-                       [normal('from',width=25),
-                        sg.Radio('A', "wt nucleotide",key='fromA',default=False), 
-                        sg.Radio('T', "wt nucleotide",key='fromT',default=False),
-                        sg.Radio('G', "wt nucleotide",key='fromG',default=False),
-                        sg.Radio('C', "wt nucleotide",key='fromC',default=False)],
-                       [normal('to',width=25),
-                        sg.Radio('A', "mt nucleotide",key='toA',default=False), 
-                        sg.Radio('T', "mt nucleotide",key='toT',default=False),
-                        sg.Radio('G', "mt nucleotide",key='toG',default=False),
-                        sg.Radio('C', "mt nucleotide",key='toC',default=False)],
-                       [normal('editing window',width=25,
-                        kws={'tooltip':'length of guide/sgrna sequence.'}),
-                       sg.Text('', key='editing window error',text_color='red',size=(25, 1))],
-                       [normal('minimum distance from PAM',width=25,
-                        kws={'tooltip':'length of guide/sgrna sequence.'}),
-                        sg.Slider(range=(10, 24), orientation='h', size=(15, 5), default_value=13,key='editing window min'),],
-                       [normal('maximum distance from PAM',width=25,kws={'tooltip':'length of guide/sgrna sequence.'}),
-                        sg.Slider(range=(10, 24), orientation='h', size=(15, 5), default_value=20,key='editing window max'),],],**kws_frame)],
-                       [sg.Frame('PAM',[[normal('PAM',width=25),sg.InputText(default_text='PAM sequence',key='PAM'),
-                        sg.Text('', key='error',text_color='red',size=(25, 1))
-                        ],
-                      [normal('position',width=25),
-                      sg.InputCombo(['downstream','upstream'],tooltip='wrt edited nucleotide',size=(15, 1))],
-                      [normal('guide length',width=25,kws={'tooltip':'length of guide/sgrna sequence.'}),
-                       sg.Slider(range=(10, 24), orientation='h', size=(15, 5), default_value=20),],
-                      [normal('description',width=25),
-                      sg.InputText(default_text='description',key='description')]],**kws_frame)
-           ],  
-           [sg.Button('add'),sg.Cancel()],  
+            [normal('nucleotide mutation',width=25,
+            kws={'tooltip':'length of guide/sgrna sequence.'}),
+            sg.Text('', key='error mutation',text_color='red',size=(25, 1))],
+            [normal('from',width=25),
+            sg.Radio('A', "wt nucleotide",key='fromA',default=False), 
+            sg.Radio('T', "wt nucleotide",key='fromT',default=False),
+            sg.Radio('G', "wt nucleotide",key='fromG',default=False),
+            sg.Radio('C', "wt nucleotide",key='fromC',default=False)],
+            [normal('to',width=25),
+            sg.Radio('A', "mt nucleotide",key='toA',default=False), 
+            sg.Radio('T', "mt nucleotide",key='toT',default=False),
+            sg.Radio('G', "mt nucleotide",key='toG',default=False),
+            sg.Radio('C', "mt nucleotide",key='toC',default=False)],
+            [normal('editing window',width=25,
+            kws={'tooltip':'length of guide/sgrna sequence.'}),
+            sg.Text('', key='editing window error',text_color='red',size=(25, 1))],
+            [normal('minimum distance from PAM',width=25,
+            kws={'tooltip':'length of guide/sgrna sequence.'}),
+            sg.Slider(range=(10, 24), orientation='h', size=(15, 5), default_value=13,key='editing window min'),],
+            [normal('maximum distance from PAM',width=25,kws={'tooltip':'length of guide/sgrna sequence.'}),
+            sg.Slider(range=(10, 24), orientation='h', size=(15, 5), default_value=20,key='editing window max'),],],**kws_frame)],
+            [sg.Frame('PAM',[[normal('PAM',width=25),sg.InputText(default_text='PAM sequence',key='PAM'),
+            sg.Text('', key='error',text_color='red',size=(25, 1))
+            ],
+            [normal('position',width=25),
+            sg.InputCombo(['downstream','upstream'],tooltip='wrt edited nucleotide',size=(15, 1))],
+            [normal('guide length',width=25,kws={'tooltip':'length of guide/sgrna sequence.'}),
+            sg.Slider(range=(10, 24), orientation='h', size=(15, 5), default_value=20),],
+            [normal('description',width=25),
+            sg.InputText(default_text='description',key='description')]],**kws_frame)],  
+            [sg.Button('add'),sg.Cancel()],  
             ]
 
     
-def main():
+def main(test=False):
     layout=get_layout()
     win = sg.Window('beditor').Layout(layout)  
     win_addbepam_active=False  
@@ -365,13 +372,14 @@ def main():
         if ev1 is None:  
             break  
         if ev1=='BE type and PAM':
+            dbepams=get_dbepams()
             dbepams_=dbepams.groupby('BE type and PAM').agg({'BE name and editing window':unique_dropna,}).reset_index()
             l=tuple(dbepams_.loc[dbepams_['BE type and PAM']==vals1['BE type and PAM'],'BE name and editing window'].sort_values().tolist()[0])
             win.FindElement('BE name and editing window').Update(values=l)
             win.FindElement('add_bepam').Update(disabled=True)                    
             win.FindElement('BE and PAM clear').Update(disabled=False)
             win.FindElement('BE name and editing window').Update(disabled=False)
-            win=resetwinvals(win,vals1)
+            # win=resetwinvals(win,vals1)
         elif ev1 == 'add_bepam'  and not win_addbepam_active:  
             win_add_bepam_active = True  
             win.Hide()  
@@ -392,7 +400,6 @@ def main():
                            ]): 
                         if test:
                             print(ev2, vals2)
-    #                     win_add_bepam=resetwinvals(win_add_bepam,{k:vals2[k] for k in vals2 if not (k.startswith('from') or k.startswith('to'))})
                         win_add_bepam=resetwinvals(win_add_bepam,vals2)
                         win_add_bepam.FindElement('error mutation').Update("* invalid")
                     elif not vals2['editing window min']<vals2['editing window max']:
@@ -401,9 +408,6 @@ def main():
                     elif not isstrallowed(s=vals2['PAM'],form=f"^[{nts}]*$"): 
                         win_add_bepam=resetwinvals(win_add_bepam,vals2)
                         win_add_bepam.FindElement('error').Update('* invalid nucleotide')
-    #                 elif vals2['PAM'] in dpam.index.tolist():
-    #                     win_add_bepam=resetwinvals(win_add_bepam,vals2)
-    #                     win_add_bepam.FindElement('error').Update('* already added')
                     else:
                         # get the keys and print on the gui 
                         print(vals2)
@@ -433,9 +437,6 @@ def main():
                 cfg=yaml.load(open(vals1['cfginp'],'r'))
                 listed_keys=['BEs','pams']
                 del_keys=['max_subs_per_codon','mutations','chunksize']
-                # list_keys={'deps':['bwa','bedtools','samtools'],
-                #            'mutation': ['mimetism_level','mutation_format','mutations','reverse_mutations'],
-                #           }
                 for k in listed_keys:
                     if not isinstance(cfg[k],list):
                         cfg[k]=[cfg[k]]
@@ -484,17 +485,42 @@ def main():
             normalised2cols=dict(zip([normalisestr(c) for c in cols_din],cols_din))
             din=din.rename(columns={c:normalised2cols[normalisestr(c)] for c in din})
             if ('genome coordinate' in din) and (not 'transcript: id' in din):
-                win.FindElement('mutation_format nucleotide').Update(True)
+                win.FindElement('mutation_format aminoacid').Update(value=False)
+                win.FindElement('mutation_format nucleotide').Update(value=True)
+                vals1['mutation_format aminoacid']=False
+                vals1['mutation_format nucleotide']=True
             elif (not 'genome coordinate' in din) and ('transcript: id' in din):
-                win.FindElement('mutation_format aminoacid').Update(True)
-                if ('aminoacid: position' in din) and (not 'amino acid mutation' in din):
-                    win.FindElement('mutation_format aminoacid').Update(True)
-            win.FindElement('mutation table').Update(vals1['mutation table'])            
-    #         except:
-    #             win.FindElement('error din').Update("* make sure the file is tab separated.")            
-            win=resetwinvals(win,vals1)        
+                win.FindElement('mutation_format nucleotide').Update(value=False)
+                win.FindElement('mutation_format aminoacid').Update(value=True)
+                vals1['mutation_format aminoacid']=True
+                vals1['mutation_format nucleotide']=False
+                # if ('aminoacid: position' in din) and (not 'amino acid mutation' in din):
+                #     win.FindElement('reverse_mutations remove').Update(value=False)
+                #     win.FindElement('reverse_mutations create').Update(value=True)
+            else:
+                vals1['mutation_format aminoacid']=False
+                vals1['mutation_format nucleotide']=False
+            win.FindElement('mutation table').Update(vals1['mutation table'])
+            win=resetwinvals(win,vals1)
+        elif ev1 == 'mutation_format nucleotide':
+            vals1['mutation_format nucleotide']=True
+            vals1['mutation_format aminoacid']=False
+            win=resetwinvals(win,vals1)
+        elif ev1 == 'mutation_format aminoacid':
+            vals1['mutation_format nucleotide']=False
+            vals1['mutation_format aminoacid']=True
+            win=resetwinvals(win,vals1)
+        elif ev1 == 'reverse_mutations create':
+            vals1['reverse_mutations create']=True
+            vals1['reverse_mutations remove']=False
+            win=resetwinvals(win,vals1)
+        elif ev1 == 'reverse_mutations remove':
+            vals1['reverse_mutations create']=False
+            vals1['reverse_mutations remove']=True
+            win=resetwinvals(win,vals1)
         elif ev1 == 'save cfgp':
             if vals1['cfgp']!='' or vals1['cfgp']!='path to save configuration file (.yml)':
+                vals1['cfgp']= f"{vals1['cfgp']}".yml if not vals1['cfgp'].endswith('.yml') else vals1['cfgp']
                 if test:
                     yaml.dump(vals1,open(vals1['cfgp']+'_test.yml', 'w'), default_flow_style=False)            
                 cfg=guival2cfg(vals1)
