@@ -137,8 +137,8 @@ def get_possible_mutagenesis(cfg,dcodontable,dcodonusage,
                         'method':method}
 #                         print(dmutagenesis_row)
                         dmutagenesis=write_dmutagenesis(**dmutagenesis_row)
-                else:
-                    logging.warning(f"BEs[{method}][0]!=codon[{posi}]")
+#                 else:
+#                     logging.warning(f"BEs[{method}][0]!=codon[{posi}]")
         return dmutagenesis,muti
 
     #double nucleotide mutations
