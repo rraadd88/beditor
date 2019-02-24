@@ -13,6 +13,48 @@ import logging
 from beditor.lib.io_sys import runbashcmd    
 from beditor.lib.io_dfs import * 
 
+def get_genomeurls(name,release,test=False):
+    name=name.lower().replace(' ','_')
+    release=int(release)
+    import ftplib
+    host='ftp.ensembl.org'
+    ftp=ftplib.FTP(host,user='anonymous', passwd='anonymous')
+    contig_mito=['MTDNA','MITO','MT']    
+    dtype=['dna','gff3']
+    subds=[ f'fasta/{name}/dna/',f'gff3/{name}/']
+    dtype2subd=dict(zip(dtype,subds))
+    dtype2url={}
+    for dtype in dtype2subd:
+        subd=dtype2subd[dtype]
+        ext=f'/pub/release-{int(release)}/{subd}'
+        if test:
+            print(ext)
+        ftp.cwd(ext)
+        if dtype=='dna':
+            file_fmt='.fa.gz'        
+            fns_=[p for p in ftp.nlst() if p.endswith(file_fmt) and ('dna_sm.chromosome.' in p)]
+            fns_=[fn for fn in fns_ if not '.chr.' in fn]
+            #remove mito and contigs
+            fns=[]
+            for p in fns_:
+                contig=p.split('dna_sm.chromosome.')[1].split(file_fmt)[0]
+                if (not '.' in contig) and (not len(contig)>5) and (not contig in contig_mito):
+                    fns.append(p)
+            urls=[f"ftp://{host}{ext}{fn}" for fn in fns]
+            dtype2url[dtype]=urls
+        elif dtype=='gff3':
+            file_fmt=f'{release}.gff3.gz'                    
+            print(file_fmt)
+#             fns=[p for p in ftp.nlst()]
+            fns=[p for p in ftp.nlst() if p.endswith(file_fmt) and (not 'chromosome' in p) and (not 'abinitio' in p) and (not 'patch' in p) and (not 'scaff' in p)  and (not '.chr.' in p)]
+            print(fns)
+            if len(fns)>1:
+                logging.warning(f'two files instead of one found for {dtype}')
+                if test:
+                    print(fns)                
+            url=f"ftp://{host}{ext}{fns[0]}"
+            dtype2url[dtype]=url
+    return dtype2url
 def get_genomes(cfg):
     """
     Installs genomes
@@ -22,27 +64,15 @@ def get_genomes(cfg):
     
     runbashcmd(f"pyensembl install --reference-name {cfg['genomeassembly']} --release {cfg['genomerelease']} --species {cfg['host']}")
 
-    import pyensembl
-    ensembl = pyensembl.EnsemblRelease(species=pyensembl.species.Species.register(
-                                        latin_name=cfg['host'],
-                                        synonyms=[cfg['host']],
-                                        reference_assemblies={
-                                            cfg['genomeassembly']: (cfg['genomerelease'], cfg['genomerelease']),
-                                        }),release=cfg['genomerelease'])
-    contig_mito=['MTDNA','MITO','MT']
-    contigs=[c for c in ensembl.contigs() if ((not '.' in c) and (len(c)<5) and (c not in contig_mito))]    
-    if len(contigs)==0:
-        contigs=[c for c in ensembl.contigs()]
-        # logging.error([c for c in ensembl.contigs()])
-        # logging.error('no contigs identified by pyensembl; aborting')
-        # sys.exit(0)
+    if 'step2ignore' in cfg:
+        if cfg['step2ignore']==4:
+            return cfg
+        
+    #download genome for step 5 specificity
+    contigurls=get_genomeurls(cfg['host'],cfg['genomerelease'],test=True)['dna']
+
     logging.info(f"{len(contigs)} contigs/chromosomes in the genome")
     logging.info(contigs)
-    # raw genome next
-    if 'human' in cfg['host'].lower():
-        cfg['host']='homo_sapiens'
-    if 'yeast' in cfg['host'].lower():
-        cfg['host']='saccharomyces_cerevisiae'
     host_="_".join(s for s in cfg['host'].split('_')).capitalize()
     ensembl_fastad='pub/release-{}/fasta/{}/dna/'.format(cfg['genomerelease'],cfg['host'])
     genome_fastad='{}/{}'.format(dirname(realpath(__file__)),ensembl_fastad)
@@ -56,26 +86,13 @@ def get_genomes(cfg):
             ifdlref='Y'
         if ifdlref=='Y':
         # #FIXME download contigs and cat and get index, sizes
-            for contig in contigs:
-                if 'GRCh37' in cfg['genomeassembly']:
-                    #Homo_sapiens.GRCh37.75.dna_sm.chromosome.1.fa.gz
-                    fn=f"{cfg['host'].capitalize()}.{cfg['genomeassembly']}.{cfg['genomerelease']}.dna_sm.chromosome.{contig}.fa.gz"
-                else:
-                    fn=f"{cfg['host'].capitalize()}.{cfg['genomeassembly']}.dna_sm.chromosome.{contig}.fa.gz"
-                fp='{}/{}'.format(ensembl_fastad,fn)
+            for contigurl in contigurls:
+                fn=basename(contigurl)
+                fp=f'{ensembl_fastad}/{fn}'
+                logging.info(f"downloading: {contigurl}")
                 if not exists(fp):
-                    cmd=f"wget -q -x -nH ftp://ftp.ensembl.org/{fp} -P {dirname(realpath(__file__))}"
-                    try:
-                        runbashcmd(cmd,test=cfg['test'])
-                    except:
-                        fn=f"{cfg['host'].capitalize()}.{cfg['genomeassembly']}.dna_sm.toplevel.fa.gz"
-                        fp='{}/{}'.format(ensembl_fastad,fn)                        
-                        if not exists(fp):
-                            cmd=f"wget -q -x -nH ftp://ftp.ensembl.org/{fp} -P {dirname(realpath(__file__))}"
-                            # print(cmd)
-                            runbashcmd(cmd,test=cfg['test'])
-                            break
-            #                 break
+                    cmd=f"wget -q -x -nH {contigurl} -P {dirname(realpath(__file__))}"
+                    runbashcmd(cmd,test=cfg['test'])
             # make the fa ready
             if not exists(cfg['genomep']):
                 cmd='gunzip {}*.fa.gz;cat {}/*.fa > {}/genome.fa;'.format(genome_fastad,genome_fastad,genome_fastad)
@@ -98,9 +115,11 @@ def get_genomes(cfg):
         runbashcmd(cmd,test=cfg['test'])
     else:
         logging.info('sizes of contigs are present')
-
+        
+    #download gff3
+    ensembl_gff3p=get_contigurls(cfg['host'],cfg['genomerelease'],test=True)['gff3']
     ensembl_gff3d='pub/release-{}/gff3/{}/'.format(cfg['genomerelease'],cfg['host'])    
-    genome_gff3d='{}/{}'.format(dirname(realpath(__file__)),ensembl_gff3d)
+    genome_gff3d=f'{dirname(realpath(__file__))}/{ensembl_gff3d}'
     cfg['genomegffp']='{}/genome.gff3'.format(genome_gff3d)
     if not exists(cfg['genomegffp']):
         logging.error(f"not found: {cfg['genomegffp']}")
@@ -115,12 +134,11 @@ def get_genomes(cfg):
             fn='{}.{}.{}.gff3.gz'.format(cfg['host'].capitalize(),cfg['genomeassembly'],cfg['genomerelease'])
             fp='{}/{}'.format(ensembl_gff3d,fn)
             if not exists(fp):
-                cmd='wget -x -nH ftp://ftp.ensembl.org/{} -P {}'.format(fp,dirname(realpath(__file__)))
+                cmd=f'wget -x -nH {ensembl_gff3p} -P {dirname(realpath(__file__))}'
                 runbashcmd(cmd,test=cfg['test'])
             # move to genome.gff3
                 cmd='cp {}/{} {}'.format(genome_gff3d,fn,cfg['genomegffp'])
                 runbashcmd(cmd,test=cfg['test'])
-
         else:
             logging.error('abort')
             sys.exit(1)

@@ -71,7 +71,8 @@ def guival2cfg(val):
     cfg={}
     cfg['host']=val['Species name (Ensembl assembly)'].split(' (')[0]
     cfg['genomeassembly']=val['Species name (Ensembl assembly)'].split(' (')[1].replace(')','')
-    cfg['genomerelease']=int(val['genomerelease'].replace('genome release=',''))
+#     cfg['genomerelease']=int(val['genomerelease'].replace('genome release=',''))
+    cfg['genomerelease']=95
     # cfg['BE and PAM']=[f"{val['BE name and editing window']} PAM:{pam}"]
     cfg['BE name and PAM']=[[val['BE name and editing window'].split(' editing window:')[0],
                              val['BE type and PAM'].split(' PAM:')[1]]]
@@ -244,8 +245,9 @@ def get_layout(test=False):
                       default_value='Species name (Ensembl assembly)',
                 tooltip='Species name (Ensembl assembly)',
                 # enable_events=True,
-                size=(43, 1)),     
-         sg.InputCombo([f"genome release={i}" for i in range(91,94,1)][::-1],tooltip='Ensembl genome release eg. 93',size=(17, 1),key='genomerelease')],
+                size=(60, 1)),     
+#          sg.InputCombo([f"genome release={i}" for i in range(91,94,1)][::-1],tooltip='Ensembl genome release eg. 93',size=(17, 1),key='genomerelease')
+        ],
         [sg.Frame('BE and PAM',
             [[h2('BE type and PAM',width=30,kws={'tooltip':'genome information of host organism.'}),
                 sg.InputCombo(list(np.sort(dbepams['BE type and PAM'].unique())),
