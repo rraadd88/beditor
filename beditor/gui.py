@@ -69,6 +69,10 @@ def guival2cfg(val):
     val['mimetism_level']=None if val['mimetism_level']=='' else val['mimetism_level']
 
     cfg={}
+    if val["calculate beditor scores"]:
+        cfg['step2ignore']=4
+    else:
+        cfg['step2ignore']=None        
     cfg['host']=val['Species name (Ensembl assembly)'].split(' (')[0]
     cfg['genomeassembly']=val['Species name (Ensembl assembly)'].split(' (')[1].replace(')','')
 #     cfg['genomerelease']=int(val['genomerelease'].replace('genome release=',''))
@@ -287,12 +291,9 @@ def get_layout(test=False):
          sg.Radio('amino acid', "mutation_format",key='mutation_format aminoacid')],
         [h2('assign # of cpus',width=24,kws={'tooltip':'number of cores/cpus to be used. higher is faster.'}),
          sg.Slider(range=(1, multiprocessing.cpu_count()-1), orientation='h', size=(25, 5),
-                   default_value=int(multiprocessing.cpu_count()*0.5),key='cores'),         
-        ],
-        [sg.Checkbox('', key="step2ignore 4", default=False),
-         normal('calculate beditor scores',size=15,width=30,kws={'tooltip':'celculate editability of gRNAs.'}),
-         sg.Checkbox('', key="make_control", default=False),
-         normal('design control gRNAs',size=15,width=30,kws={}),],
+                   default_value=int(multiprocessing.cpu_count()*0.5),key='cores'),],
+        [sg.Checkbox('', key="calculate beditor scores", default=False),
+         normal('calculate beditor scores',size=15,width=30,kws={'tooltip':'celculate editability of gRNAs.'}),],
         [sg.Button('go to next step  '+' '*52, key='configuretorun',**kws_button_big),
         sg.Text('', key='configure error',text_color='red',size=(25, 1))],    
 
