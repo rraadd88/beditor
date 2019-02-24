@@ -39,9 +39,14 @@ def pipeline_chunks(cfgp=None,cfg=None):
     cfg[3]=cfg['prjd']+'/03_guides/'
     cfg[4]=cfg['prjd']+'/04_offtargets/'
 
+    # back compatibility
+    if not 'make_control_neg' in cfg:
+        cfg['make_control_neg']=False
+    if not 'make_control_pos' in cfg:
+        cfg['make_control_pos']=False        
+        
     if not ('step2ignore' in cfg):
-        cfg['step2ignore']=None
-            
+        cfg['step2ignore']=None            
     if not cfg['step2ignore'] is None:
         step_last=cfg['step2ignore']-1
     else:

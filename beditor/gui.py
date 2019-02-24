@@ -59,7 +59,7 @@ def get_mutation(vals2):
         keys=np.array([k for k in vals2 if str(k).startswith(s) and len(str(k))==len(str(s))+1])
         buls=np.array([vals2[k] for k in keys])
         mutation.append(keys[buls][0].replace(s,''))
-    return ':'.join(mutation)
+    return '-'.join(mutation)
 
 
 ## coonvert vals to cfg
@@ -110,12 +110,18 @@ def resetwinvals(win,vals,test=False):
         except:
             if test:
                 print(f'resetwinvals error with key={k}')
-    options=['mutation_format aminoacid','mutation_format nucleotide']
-    for opt, opt_ in zip(options,options[::-1]):
-        if vals[opt] and not vals[opt_]: 
-            win.FindElement(opt_).Update(vals[opt_])
-            win.FindElement(opt).Update(vals[opt])
-            break
+    radios= [['mutation_format aminoacid','mutation_format nucleotide'],
+            ['reverse_mutations create','reverse_mutations remove']]               
+    for options in radios:
+        for opt, opt_ in zip(options,options[::-1]):
+            if (not vals[opt]) and (not vals[opt_]):
+                win.FindElement(opt_).Update(False)
+                win.FindElement(opt).Update(False)
+                break 
+            if vals[opt] and not vals[opt_]: 
+                win.FindElement(opt_).Update(vals[opt_])
+                win.FindElement(opt).Update(vals[opt])
+                break
     return win 
 
 def runcom(command, *args):      
@@ -258,7 +264,8 @@ def get_layout(test=False):
                     ],
             [h2('',width=30),
             sg.Button('Custom',key='add_bepam',tooltip='Use custom new BE and PAM.'),
-             sg.Text('', key='add_bepam print',text_color='green',size=(22, 1)),sg.Button('Clear', key='BE and PAM clear',disabled=True)],
+             sg.Text('', key='add_bepam print',text_color='green',size=(22, 1)),
+             sg.Button('Clear', key='BE and PAM clear',disabled=True)],
             ],
             key='BE and PAM',
             tooltip='base editor/s to use.',
@@ -278,13 +285,18 @@ def get_layout(test=False):
          sg.Radio('amino acid', "mutation_format",key='mutation_format aminoacid')],
         [h2('assign # of cpus',width=24,kws={'tooltip':'number of cores/cpus to be used. higher is faster.'}),
          sg.Slider(range=(1, multiprocessing.cpu_count()-1), orientation='h', size=(25, 5),
-                   default_value=int(multiprocessing.cpu_count()*0.5),key='cores'),
+                   default_value=int(multiprocessing.cpu_count()*0.5),key='cores'),         
         ],
+        [sg.Checkbox('', key="step2ignore 4", default=False),
+         normal('calculate beditor scores',size=15,width=30,kws={'tooltip':'celculate editability of gRNAs.'}),
+         sg.Checkbox('', key="make_control", default=False),
+         normal('design control gRNAs',size=15,width=30,kws={}),],
         [sg.Button('go to next step  '+' '*52, key='configuretorun',**kws_button_big),
         sg.Text('', key='configure error',text_color='red',size=(25, 1))],    
 
         ##OPTIONS
-        [sg.Button('advanced settings', key='configure_advanced_',button_color=('black','white'),**kws_button_small)],
+        [sg.Button('advanced settings', key='configure_advanced_',button_color=('black','white'),**kws_button_small),
+                     sg.Button('Clear', key='clear all',disabled=False)],
         [sg.Frame('',
         layout_advanced_setting,
         # tooltip='optional because the dependencies would be otherwise\ninstalled by beditor.',
@@ -357,13 +369,13 @@ layout_addbepam = [
             ]
 
     
-def main(test=False):
-    layout=get_layout()
+def gui(test=False):
+    layout=get_layout(test=test)
     win = sg.Window('beditor').Layout(layout)  
     win_addbepam_active=False  
 
     bulconfigure_advanced=False
-
+    _ev1, _vals1 = win.Read()
     while True:  
         ev1, vals1 = win.Read()
         if test:
@@ -415,6 +427,9 @@ def main(test=False):
                         win_add_bepam_active = False  
                         win.UnHide()  
                         win.FindElement('add_bepam print').Update(f"{get_mutation(vals2)} {vals2['BE name']} {vals2['editing window min']}-{vals2['editing window max']}bp")
+                        win.FindElement('BE type and PAM').Update(values=[f"{get_mutation(vals2)} PAM:{vals2['PAM']}",])
+                        win.FindElement('BE name and editing window').Update(values=[f"method:{vals2['BE name']} editing window:{int(vals2['editing window min'])}-{int(vals2['editing window max'])}bp",])
+
                         win.FindElement('BE type and PAM').Update(disabled=True)
                         win.FindElement('BE name and editing window').Update(disabled=True)
                         win.FindElement('BE and PAM clear').Update(disabled=False)
@@ -424,10 +439,11 @@ def main(test=False):
                     win_add_bepam_active = False  
                     win.UnHide()  
                     break
-            win=resetwinvals(win,vals1)        
+            win=resetwinvals(win,vals1)
         elif ev1 == 'BE and PAM clear':
             win.FindElement('BE and PAM clear').Update(disabled=False)
-            win.FindElement('BE type and PAM').Update(disabled=False)
+            dbepams=get_dbepams()
+            win.FindElement('BE type and PAM').Update(values=list(np.sort(dbepams['BE type and PAM'].unique())),disabled=False)
             win.FindElement('BE name and editing window').Update(disabled=False)
             win.FindElement('add_bepam').Update(disabled=False)
             win.FindElement('add_bepam print').Update("")
@@ -469,8 +485,11 @@ def main(test=False):
             win=resetwinvals(win,vals1)        
         elif ev1=='configuretorun':
             #check vals
-            keys=np.array(['mutation table','Species name (Ensembl assembly)','BE type and PAM','BE name and editing window'])
-            buls=np.array([vals1[k]=='' for k in keys])
+            if vals1['add_bepam print']=='':
+                keys=np.array(['mutation table','Species name (Ensembl assembly)','BE type and PAM','BE name and editing window'])
+            else:
+                keys=np.array(['mutation table','Species name (Ensembl assembly)'])
+            buls=np.array([vals1[k]=='' for k in keys])            
             if len(keys[buls])!=0:
                 win.FindElement('configure error').Update(f"invalid {' and '.join(list(keys[buls]))}",text_color='red')
             else:
@@ -494,12 +513,11 @@ def main(test=False):
                 win.FindElement('mutation_format aminoacid').Update(value=True)
                 vals1['mutation_format aminoacid']=True
                 vals1['mutation_format nucleotide']=False
-                # if ('aminoacid: position' in din) and (not 'amino acid mutation' in din):
-                #     win.FindElement('reverse_mutations remove').Update(value=False)
-                #     win.FindElement('reverse_mutations create').Update(value=True)
             else:
                 vals1['mutation_format aminoacid']=False
                 vals1['mutation_format nucleotide']=False
+            vals1['reverse_mutations create']=True
+            vals1['reverse_mutations remove']=False                
             win.FindElement('mutation table').Update(vals1['mutation table'])
             win=resetwinvals(win,vals1)
         elif ev1 == 'mutation_format nucleotide':
@@ -518,6 +536,9 @@ def main(test=False):
             vals1['reverse_mutations create']=False
             vals1['reverse_mutations remove']=True
             win=resetwinvals(win,vals1)
+        elif ev1=='clear all':
+            win=resetwinvals(win,_vals1)
+
         elif ev1 == 'save cfgp':
             if vals1['cfgp']!='' or vals1['cfgp']!='path to save configuration file (.yml)':
                 vals1['cfgp']= f"{vals1['cfgp']}".yml if not vals1['cfgp'].endswith('.yml') else vals1['cfgp']
@@ -543,6 +564,3 @@ def main(test=False):
         # elif ev1 == 'host':
         #     print(vals1['cfgoutp'])
         #     win.FindElement('mutation_format aminoacid').Update(True)
-    
-if __name__ == '__main__':
-    main()
