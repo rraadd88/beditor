@@ -27,19 +27,33 @@ def get_genomeurls(name,release,test=False):
     for dtype in dtype2subd:
         subd=dtype2subd[dtype]
         ext=f'/pub/release-{int(release)}/{subd}'
-        if test:
-            print(ext)
+#         if test:
+#             print(ext)
         ftp.cwd(ext)
         if dtype=='dna':
             file_fmt='.fa.gz'        
-            fns_=[p for p in ftp.nlst() if p.endswith(file_fmt) and ('dna_sm.chromosome.' in p)]
-            fns_=[fn for fn in fns_ if not '.chr.' in fn]
-            #remove mito and contigs
-            fns=[]
-            for p in fns_:
-                contig=p.split('dna_sm.chromosome.')[1].split(file_fmt)[0]
-                if (not '.' in contig) and (not len(contig)>5) and (not contig in contig_mito):
-                    fns.append(p)
+            if test:
+                print(len(ftp.nlst()))
+            fns_=[p for p in ftp.nlst() if p.endswith(file_fmt) and ('dna_sm' in p) and (not 'nonchromosomal' in p) and (not '.primary_assembly.' in p) and (not '.chr.' in p)]
+            if len(fns_)>1:
+                fns_=[fn for fn in fns_ if (not 'dna_sm.toplevel' in fn) and (not '.alt.' in fn)]
+                if test:
+                    print(fns_)
+                #contigs are present
+                if sum(['dna_sm.chromosome.' in fn for fn in fns_])!=0:
+                    #remove mito and contigs
+                    fns=[]
+                    for p in fns_:
+                        contig=p.split('dna_sm.chromosome.')[1].split(file_fmt)[0]
+                        if (not '.' in contig) and (not len(contig)>5) and (not contig in contig_mito):
+                            fns.append(p)
+                else:
+                    brk
+            else:
+                fns=[fn for fn in fns_ if 'dna_sm.toplevel' in fn]
+            if len(fns)==0:
+                logging.warning(f'no genome files found: {dtype}')                
+                print(ftp.nlst())
             urls=[f"ftp://{host}{ext}{fn}" for fn in fns]
             dtype2url[dtype]=urls
         elif dtype=='gff3':
@@ -50,11 +64,14 @@ def get_genomeurls(name,release,test=False):
             print(fns)
             if len(fns)>1:
                 logging.warning(f'two files instead of one found for {dtype}')
-                if test:
-                    print(fns)                
+#                 if test:
+#                     print(fns)                
             url=f"ftp://{host}{ext}{fns[0]}"
             dtype2url[dtype]=url
+    if test:
+        print(dtype2url)
     return dtype2url
+
 def get_genomes(cfg):
     """
     Installs genomes
@@ -69,10 +86,6 @@ def get_genomes(cfg):
             return cfg
         
     #download genome for step 5 specificity
-    contigurls=get_genomeurls(cfg['host'],cfg['genomerelease'],test=True)['dna']
-
-    logging.info(f"{len(contigs)} contigs/chromosomes in the genome")
-    logging.info(contigs)
     host_="_".join(s for s in cfg['host'].split('_')).capitalize()
     ensembl_fastad='pub/release-{}/fasta/{}/dna/'.format(cfg['genomerelease'],cfg['host'])
     genome_fastad='{}/{}'.format(dirname(realpath(__file__)),ensembl_fastad)
@@ -86,6 +99,10 @@ def get_genomes(cfg):
             ifdlref='Y'
         if ifdlref=='Y':
         # #FIXME download contigs and cat and get index, sizes
+            contigurls=get_genomeurls(cfg['host'],cfg['genomerelease'],
+                                      test=False)['dna']
+            logging.info(f"{len(contigurls)} contigs/chromosomes in the genome")
+            logging.info(contigurls)
             for contigurl in contigurls:
                 fn=basename(contigurl)
                 fp=f'{ensembl_fastad}/{fn}'
@@ -117,7 +134,6 @@ def get_genomes(cfg):
         logging.info('sizes of contigs are present')
         
     #download gff3
-    ensembl_gff3p=get_contigurls(cfg['host'],cfg['genomerelease'],test=True)['gff3']
     ensembl_gff3d='pub/release-{}/gff3/{}/'.format(cfg['genomerelease'],cfg['host'])    
     genome_gff3d=f'{dirname(realpath(__file__))}/{ensembl_gff3d}'
     cfg['genomegffp']='{}/genome.gff3'.format(genome_gff3d)
@@ -133,6 +149,8 @@ def get_genomes(cfg):
         # #FIXME download contigs and cat and get index, sizes
             fn='{}.{}.{}.gff3.gz'.format(cfg['host'].capitalize(),cfg['genomeassembly'],cfg['genomerelease'])
             fp='{}/{}'.format(ensembl_gff3d,fn)
+            ensembl_gff3p=get_genomeurls(cfg['host'],cfg['genomerelease'],
+                                                         test=False)['gff3']
             if not exists(fp):
                 cmd=f'wget -x -nH {ensembl_gff3p} -P {dirname(realpath(__file__))}'
                 runbashcmd(cmd,test=cfg['test'])
