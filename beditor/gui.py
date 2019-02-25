@@ -256,6 +256,7 @@ def get_layout(test=False):
             [[h2('BE type and PAM',width=30,kws={'tooltip':'genome information of host organism.'}),
                 sg.InputCombo(list(np.sort(dbepams['BE type and PAM'].unique())),
                         key='BE type and PAM',
+                        disabled=False,
                         default_value='choose BE type and PAM',
                         enable_events=True,
                         size=(50, 1)),
@@ -264,7 +265,7 @@ def get_layout(test=False):
                 sg.InputCombo(list(np.sort(dbepams['BE name and editing window'].unique())),
                         key='BE name and editing window',
                         default_value='choose BE and editing window',
-                        # enable_events=True,
+                        enable_events=True,
                         disabled=True,
                         size=(50, 1)),
                     ],
@@ -290,10 +291,9 @@ def get_layout(test=False):
          sg.Radio('nucleotide', "mutation_format",key='mutation_format nucleotide',),
          sg.Radio('amino acid', "mutation_format",key='mutation_format aminoacid')],
         [h2('assign # of cpus',width=24,kws={'tooltip':'number of cores/cpus to be used. higher is faster.'}),
-         sg.Slider(range=(1, multiprocessing.cpu_count()-1), orientation='h', size=(25, 5),
-                   default_value=int(multiprocessing.cpu_count()*0.5),key='cores'),],
-        [sg.Checkbox('', key="calculate beditor scores", default=False),
-         normal('calculate beditor scores',size=15,width=30,kws={'tooltip':'celculate editability of gRNAs.'}),],
+         sg.Slider(range=(1, multiprocessing.cpu_count()-1), orientation='h', size=(25, 5), default_value=int(multiprocessing.cpu_count()*0.5),key='cores'),
+         sg.Checkbox('', key="beditor scores", default=False),
+         normal('beditor scores',size=15,width=30,kws={'tooltip':'celculate editability of gRNAs.'}),],
         [sg.Button('go to next step  '+' '*52, key='configuretorun',**kws_button_big),
         sg.Text('', key='configure error',text_color='red',size=(25, 1))],    
 
@@ -378,23 +378,28 @@ def gui(test=False):
     win_addbepam_active=False  
 
     bulconfigure_advanced=False
-    _ev1, _vals1 = win.Read()
+    init=True
     while True:  
         ev1, vals1 = win.Read()
+        if init:
+            _ev1, _vals1 = ev1, vals1
+            init=False
         if test:
             print(ev1)
             print(vals1)
         if ev1 is None:  
             break  
         if ev1=='BE type and PAM':
+            # print('event: BE type and PAM')
             dbepams=get_dbepams()
             dbepams_=dbepams.groupby('BE type and PAM').agg({'BE name and editing window':unique_dropna,}).reset_index()
             l=tuple(dbepams_.loc[dbepams_['BE type and PAM']==vals1['BE type and PAM'],'BE name and editing window'].sort_values().tolist()[0])
+            win.FindElement('BE name and editing window').Update(disabled=False)
             win.FindElement('BE name and editing window').Update(values=l)
             win.FindElement('add_bepam').Update(disabled=True)                    
             win.FindElement('BE and PAM clear').Update(disabled=False)
             win.FindElement('BE name and editing window').Update(disabled=False)
-            # win=resetwinvals(win,vals1)
+            win=resetwinvals(win,vals1)
         elif ev1 == 'add_bepam'  and not win_addbepam_active:  
             win_add_bepam_active = True  
             win.Hide()  
