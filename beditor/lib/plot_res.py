@@ -12,7 +12,7 @@ import numpy as np
 
 import matplotlib.pyplot as plt
 plt.style.use('ggplot')
-from os.path import exists
+from os.path import exists,dirname,basename
 from os import makedirs
 
 from Bio import SeqIO, Alphabet, Data, Seq, SeqUtils
@@ -490,6 +490,7 @@ def plot_vizbysteps(cfg):
     plotps=glob(plotp+'*')
     if len(plotps)==0 or cfg['force']:
         plotpf=plotp+"_{method}.png"
+        makedirs(dirname(plotp),exist_ok=True)
         dstepp=f"{cfg[stepi]}/d{cfg[stepi].replace('/','').split('_')[-1]}.tsv"
         if exists(dstepp):
             dstep=del_Unnamed(pd.read_table(dstepp)).drop_duplicates()
