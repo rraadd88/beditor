@@ -78,7 +78,7 @@ def guival2cfg(val):
 #     cfg['genomerelease']=int(val['genomerelease'].replace('genome release=',''))
     cfg['genomerelease']=95
     # cfg['BE and PAM']=[f"{val['BE name and editing window']} PAM:{pam}"]
-    cfg['BE name and PAM']=[[val['BE name and editing window'].split(' editing window:')[0],
+    cfg['BE name and PAM']=[[val['BE name and editing window'].split(' editing window:')[0].replace('method:',''),
                              val['BE type and PAM'].split(' PAM:')[1]]]
     cfg['cores']=int(val['cores'])
 
@@ -99,6 +99,7 @@ def guival2cfg(val):
     cfg['mutations']='mimetic' if (val['mimetism_level'] is None and not val['dsubmap_preferred_path'] is None) else 'substitutions' if (val['mimetism_level'] is None and (not val['dsubmap_preferred_path'] is None)) else 'mutations'
 
     deps=['samtools','bedtools','bwa',]
+    cfg['gui']=True    
     for dep in deps:
         cfg[dep]=val[dep]
     yaml.dump(cfg,open(val['cfgp'],'w'))
@@ -292,7 +293,7 @@ def get_layout(test=False):
          sg.Radio('amino acid', "mutation_format",key='mutation_format aminoacid')],
         [h2('assign # of cpus',width=24,kws={'tooltip':'number of cores/cpus to be used. higher is faster.'}),
          sg.Slider(range=(1, multiprocessing.cpu_count()-1), orientation='h', size=(25, 5), default_value=int(multiprocessing.cpu_count()*0.5),key='cores'),
-         sg.Checkbox('', key="beditor scores", default=False),
+         sg.Checkbox('', key="calculate beditor scores", default=False),
          normal('beditor scores',size=15,width=30,kws={'tooltip':'celculate editability of gRNAs.'}),],
         [sg.Button('go to next step  '+' '*52, key='configuretorun',**kws_button_big),
         sg.Text('', key='configure error',text_color='red',size=(25, 1))],    
@@ -380,6 +381,7 @@ def gui(test=False):
     bulconfigure_advanced=False
     init=True
     while True:  
+        # gottu be in while loop to capture first event
         ev1, vals1 = win.Read()
         if init:
             _ev1, _vals1 = ev1, vals1
@@ -406,7 +408,8 @@ def gui(test=False):
             win_add_bepam = sg.Window('add new BE and PAM').Layout(layout_addbepam)  
             while True:            
                 ev2, vals2 = win_add_bepam.Read() 
-                print(ev2)
+                if test:
+                    print(ev2)
                 if ev2 is None:  
                     win_add_bepam.Close()  
                     win_add_bepam_active = False  
@@ -430,11 +433,13 @@ def gui(test=False):
                         win_add_bepam.FindElement('error').Update('* invalid nucleotide')
                     else:
                         # get the keys and print on the gui 
-                        print(vals2)
+                        if test:
+                            print(vals2)
                         win_add_bepam.Close()  
                         win_add_bepam_active = False  
                         win.UnHide()  
                         win.FindElement('add_bepam print').Update(f"{get_mutation(vals2)} {vals2['BE name']} {vals2['editing window min']}-{vals2['editing window max']}bp")
+                        vals1['add_bepam print']=f"{get_mutation(vals2)} {vals2['BE name']} {vals2['editing window min']}-{vals2['editing window max']}bp"
                         win.FindElement('BE type and PAM').Update(values=[f"{get_mutation(vals2)} PAM:{vals2['PAM']}",])
                         win.FindElement('BE name and editing window').Update(values=[f"method:{vals2['BE name']} editing window:{int(vals2['editing window min'])}-{int(vals2['editing window max'])}bp",])
 
@@ -493,8 +498,10 @@ def gui(test=False):
             win=resetwinvals(win,vals1)        
         elif ev1=='configuretorun':
             #check vals
-            if vals1['add_bepam print']=='':
-                keys=np.array(['mutation table','Species name (Ensembl assembly)','BE type and PAM','BE name and editing window'])
+            # if vals1['add_bepam print']=='':
+            if win.FindElement('add_bepam print').DisplayText=='':
+                keys=np.array(['mutation table','Species name (Ensembl assembly)',
+                    'BE type and PAM','BE name and editing window'])
             else:
                 keys=np.array(['mutation table','Species name (Ensembl assembly)'])
             buls=np.array([vals1[k]=='' for k in keys])            
@@ -549,7 +556,7 @@ def gui(test=False):
 
         elif ev1 == 'save cfgp':
             if vals1['cfgp']!='' or vals1['cfgp']!='path to save configuration file (.yml)':
-                vals1['cfgp']= f"{vals1['cfgp']}".yml if not vals1['cfgp'].endswith('.yml') else vals1['cfgp']
+                vals1['cfgp']= f"{vals1['cfgp']}.yml" if not vals1['cfgp'].endswith('.yml') else vals1['cfgp']
                 if test:
                     yaml.dump(vals1,open(vals1['cfgp']+'_test.yml', 'w'), default_flow_style=False)            
                 cfg=guival2cfg(vals1)
