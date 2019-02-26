@@ -570,8 +570,9 @@ def gui(test=False):
             win=resetwinvals(win,vals1)        
         elif ev1 == 'run beditor':      
             try:
-                runcom(f"beditor {vals1['cfgp']}")
-                win.FindElement('run beditor error').Update(f"finished!",text_color='green')
+                win.FindElement('run beditor error').Update(f"running!",text_color='green')
+                runcom(f"source activate beditor; beditor {vals1['cfgp']}")
+                win.FindElement('run beditor error').Update(f"finished processing!\n outputs are stored at dirname({vals1['cfgp']})",text_color='green')
             except:
                 win.FindElement('run beditor error').Update(f"errored!",text_color='red')            
             #TODO create cfg and validate

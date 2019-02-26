@@ -78,7 +78,7 @@ def get_genomes(cfg):
     
     :param cfg: configuration dict
     """
-    print('checking if genome is installed/ downloading if necessary.')
+#     print('checking if genome is installed/ downloading if necessary.')
     logging.info('pyensembl: checking if genome is installed/ downloading if necessary.')
     runbashcmd(f"pyensembl install --reference-name {cfg['genomeassembly']} --release {cfg['genomerelease']} --species {cfg['host']}")
 
@@ -145,7 +145,7 @@ def get_genomes(cfg):
         logging.error(f"not found: {cfg['genomegffp']}")
         logging.info(f"downloading file: {cfg['genomegffp']}")
         
-        if (not '/test_beditor/' in cfg['cfgp']) or (not cfg['gui'])
+        if (not '/test_beditor/' in cfg['cfgp']) or (not cfg['gui']):
             ifdlref = input(f"Download genome annotations at {genome_gff3d}?[Y/n]: ")
         else:
             ifdlref = 'Y'
