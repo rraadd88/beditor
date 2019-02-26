@@ -1,6 +1,6 @@
 #!usr/bin/python
 
-# Copyright 2018, Rohan Dandage <rraadd_8@hotmail.com,rohan@igib.in>
+# Copyright 2018, Rohan Dandage <rraadd_8@hotmail.com>
 # This program is distributed under General Public License v. 3.  
 
 import sys
@@ -400,12 +400,12 @@ def pipeline(cfgp,step=None,test=False,force=False):
             pool.close(); pool.join()         
             collect_chunks(cfg,chunkcfgps)
             # get_outputs
-            if not cfg['step2ignore'] is None:
+            if cfg['step2ignore'] is None:
                 _=make_outputs(cfg)        
     else:
         pipeline_chunks(cfg=cfg)
         if not '/chunk' in cfgp:
-            if not cfg['step2ignore'] is None:
+            if cfg['step2ignore'] is None:
                 _=make_outputs(cfg)        
 
 #     pipeline_chunks(cfgp)
@@ -424,8 +424,8 @@ def main():
     """
     version_info='%(prog)s v{version}'.format(version=pkg_resources.require("beditor")[0].version)
     parser = argparse.ArgumentParser(description=version_info)
-    parser.add_argument("cfg", help="path to configuration file in YAML format.", 
-                        action="store", default=None,
+    parser.add_argument("--cfg", help="path to configuration file in YAML format.", 
+                        action="store", default=None, dest="cfg",type=str,
                        )    
     parser.add_argument("--step", help="1: Get genomic loci flanking the target site,\n2: Get possible mutagenesis strategies,\n3: Design guides,\n 4: Check offtarget-effects \n else all the steps are run in tandem.", dest="step", 
                         type=float,action="store", choices=[1,2,3,4],default=None)  
@@ -455,8 +455,11 @@ def main():
             test=args.test,force=args.force)
         logging.info(f'end. time taken={str(get_datetime(ret_obj=True)-time_ini)}')
     else:
-        parser.print_help()
-        sys.exit(1)        
+        from .gui import gui
+        gui(test=args.test)
+#     else:
+#         parser.print_help()
+#         sys.exit(1)        
 
 if __name__ == '__main__':
     main()

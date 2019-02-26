@@ -103,8 +103,12 @@ def get_genomes(cfg):
             ifdlref='Y'
         if ifdlref=='Y':
         # #FIXME download contigs and cat and get index, sizes
-            contigurls=get_genomeurls(cfg['host'],cfg['genomerelease'],
+            try:
+                contigurls=get_genomeurls(cfg['host'],cfg['genomerelease'],
                                       test=False)['dna']
+            except:
+                contigurls=get_genomeurls(cfg['host'],cfg['genomerelease'],
+                                      test=False)['dna']            
             logging.info(f"{len(contigurls)} contigs/chromosomes in the genome")
             logging.info(contigurls)
             for contigurl in contigurls:
@@ -153,8 +157,12 @@ def get_genomes(cfg):
         # #FIXME download contigs and cat and get index, sizes
             fn='{}.{}.{}.gff3.gz'.format(cfg['host'].capitalize(),cfg['genomeassembly'],cfg['genomerelease'])
             fp='{}/{}'.format(ensembl_gff3d,fn)
-            ensembl_gff3p=get_genomeurls(cfg['host'],cfg['genomerelease'],
-                                                         test=False)['gff3']
+            try: 
+                ensembl_gff3p=get_genomeurls(cfg['host'],cfg['genomerelease'],
+                                                             test=False)['gff3']
+            except:
+                ensembl_gff3p=get_genomeurls(cfg['host'],cfg['genomerelease'],
+                                                             test=False)['gff3']                
             if not exists(fp):
                 cmd=f'wget -x -nH {ensembl_gff3p} -P {dirname(realpath(__file__))}'
                 runbashcmd(cmd,test=cfg['test'])

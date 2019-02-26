@@ -125,7 +125,7 @@ def guidessam2dalignbed(cfg):
                                    'strand':strands}
                 #     col2dalignbed=dict(zip(cols,[a.split('|')[0],a.split('|')[1],a.split('|')[2],a,a.split('|')[3],a.split('|')[4] for a in algnids]))
                     dalignbed_=pd.DataFrame(col2dalignbed)
-                    dalignbed_['guide: id']=read.qname.replace('_',' ')
+                    dalignbed_['guide: id']=read.qname#.replace('_',' ')
                     dalignbed = dalignbed.append(dalignbed_,ignore_index=True,sort=True)
                 #     break
                 samfile.close()

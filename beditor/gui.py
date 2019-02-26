@@ -101,7 +101,10 @@ def guival2cfg(val):
     deps=['samtools','bedtools','bwa',]
     cfg['gui']=True    
     for dep in deps:
-        cfg[dep]=val[dep]
+        if val[dep]!='':
+            cfg[dep]=val[dep]
+        else:
+            cfg[dep]=dep            
     yaml.dump(cfg,open(val['cfgp'],'w'))
     return cfg
     # 
@@ -130,16 +133,17 @@ def resetwinvals(win,vals,test=False):
                 break
     return win 
 
-def runcom(command, *args):      
-    try:      
-        sp = subprocess.Popen([command, *args], shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)      
-        out, err = sp.communicate()      
-        if out:      
-            print(out.decode("utf-8"))      
-        if err:      
-            print(err.decode("utf-8"))      
-    except:      
-        pass
+# def runcom(command, *args):      
+#     try:      
+#         sp = subprocess.Popen([command, *args], shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)      
+#         out, err = sp.communicate()      
+#         if out:      
+#             print(out.decode("utf-8"))      
+#         if err:      
+#             print(err.decode("utf-8"))      
+#     except:      
+#         pass
+from beditor.lib.io_sys import runbashcmd
 
 # gui aes 
 def splitlist(l,n): return [l[i:i + n] for i in range(0, len(l), n)]
@@ -571,8 +575,8 @@ def gui(test=False):
         elif ev1 == 'run beditor':      
             try:
                 win.FindElement('run beditor error').Update(f"running!",text_color='green')
-                runcom(f"source activate beditor; beditor {vals1['cfgp']}")
-                win.FindElement('run beditor error').Update(f"finished processing!\n outputs are stored at dirname({vals1['cfgp']})",text_color='green')
+                runbashcmd(f"source activate beditor; beditor --cfg {vals1['cfgp']}")
+                win.FindElement('run beditor error').Update(f"finished processing!",text_color='green')
             except:
                 win.FindElement('run beditor error').Update(f"errored!",text_color='red')            
             #TODO create cfg and validate
