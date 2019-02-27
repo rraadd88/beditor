@@ -55,11 +55,11 @@ Open the GUI window.
 beditor
 ```
 
-*. tab1: input the configuration settings.  
+step1: input the configuration settings.  
 
 ![](docs/_static/gui1.png)
 
-*. tab2: save the configuration settings and run `beditor`.  
+step2: save the configuration settings and run `beditor`.  
 
 ![](docs/_static/gui2.png)
 
