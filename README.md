@@ -94,7 +94,37 @@ beditor --help
 Input format
 ------------------
 
-Input [1/2]: Configuration file. It contains all the options and paths to files needed by the analysis. 
+
+### Table with mutation information.  
+
+Note: Path to this tsv (tab-separated values) file is provided in configuration file as a value for variable called `dinp`. E.g. `dinp: input.tsv`. 
+
+According to the mutation_format opted in configuration.yml file and corresponding columns needed in input.
+
+#### nucleotide : ['genome coordinate','nucleotide mutation'].
+
+Example:
+
+| genome coordinate | nucleotide mutation |
+|-------------------|---------------------|
+| II:711491-711491+ | T                   |
+| II:712904-712904- | T                   |
+| II:714707-714707- | G                   |
+| II:716782-716782- | G                   |
+
+#### aminoacid  : ['transcript: id','aminoacid: position','amino acid mutation'].
+
+Example:
+
+| transcript: id | aminoacid: position | amino acid mutation |
+|----------------|---------------------|---------------------|
+| YAL040C        | 6                   | A                   |
+| YAL041W        | 18                  | A                   |
+| YAL042C-A      | 65                  | A                   |
+| YAL042W        | 3                   | C                   |
+| YAL043C        | 14                  | C                   |
+
+### [for command line usage] Configuration file. It contains all the options and paths to files needed by the analysis. 
 This YAML formatted file contains the all the analysis specific parameters.
 
 Template:
@@ -161,35 +191,6 @@ bedtools: bedtools
 bwa: bwa
 samtools: samtools
 ```
-
-Input [2/2]: Table with mutation information.  
-
-Note: Path to this tsv (tab-separated values) file is provided in configuration file as a value for variable called `dinp`. E.g. `dinp: input.tsv`. 
-
-According to the mutation_format opted in configuration.yml file and corresponding columns needed in input.
-
-### nucleotide : ['genome coordinate','nucleotide mutation'].
-
-Example:
-
-| genome coordinate | nucleotide mutation |
-|-------------------|---------------------|
-| II:711491-711491+ | T                   |
-| II:712904-712904- | T                   |
-| II:714707-714707- | G                   |
-| II:716782-716782- | G                   |
-
-### aminoacid  : ['transcript: id','aminoacid: position','amino acid mutation'].
-
-Example:
-
-| transcript: id | aminoacid: position | amino acid mutation |
-|----------------|---------------------|---------------------|
-| YAL040C        | 6                   | A                   |
-| YAL041W        | 18                  | A                   |
-| YAL042C-A      | 65                  | A                   |
-| YAL042W        | 3                   | C                   |
-| YAL043C        | 14                  | C                   |
 
 
 Output format
