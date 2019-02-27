@@ -57,11 +57,11 @@ Open the GUI window.
 beditor
 ```
 
-tab1: input the configuration settings.  
+*. tab1: input the configuration settings.  
 
 ![](docs/gui1.png)
 
-tab2: save the configuration settings and run `beditor`.  
+*. tab2: save the configuration settings and run `beditor`.  
 
 ![](docs/gui2.png)
 
