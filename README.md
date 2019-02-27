@@ -1,10 +1,8 @@
 # `beditor`
 
-<!--
 [![build status](
   http://img.shields.io/travis/rraadd88/beditor/master.svg?style=flat)](
  https://travis-ci.org/rraadd88/beditor) [![PyPI version](https://badge.fury.io/py/beditor.svg)](https://pypi.python.org/pypi/beditor)
--->
 
 <!--
 pandoc --from=markdown --to=rst --output=README.rst R
@@ -59,11 +57,11 @@ beditor
 
 *. tab1: input the configuration settings.  
 
-![](docs/gui1.png)
+![](docs/_static/gui1.png)
 
 *. tab2: save the configuration settings and run `beditor`.  
 
-![](docs/gui2.png)
+![](docs/_static/gui2.png)
 
 ### Command-line mode
 
