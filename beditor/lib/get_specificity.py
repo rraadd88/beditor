@@ -22,7 +22,7 @@ from beditor.lib.io_sys import runbashcmd
 from beditor.lib.io_seqs import fa2df 
 from beditor.lib.io_dfs import set_index,del_Unnamed,df2info 
 
-from beditor.lib.io_dfs import lambda2cols
+from beditor.lib.io_dfs import lambda2cols,read_table,to_table
 from beditor.lib.io_nums import str2num
 from beditor.lib.io_seqs import gffatributes2ids,hamming_distance,align
 
@@ -356,12 +356,17 @@ def dalignbedannot2daggbyguide(cfg):
     :param cfg: configuration dict
     """
     datatmpd=cfg['datatmpd']
-
+    
     dalignbedannot=del_Unnamed(pd.read_csv(cfg['dalignbedannotp'],sep='\t',low_memory=False))
     
-    daggbyguidep='{}/10_daggbyguide.tsv'.format(datatmpd)      
+    daggbyguidep=f'{datatmpd}/10_daggbyguide.tsv'      
     logging.info(basename(daggbyguidep))
     if not exists(daggbyguidep) or cfg['force']:
+        dbepams=read_table(cfg['dbepamsp'])
+        from beditor.lib.global_vars import cols_dbes
+    #     dbepams=pd.read_table(f"{dirname(realpath(__file__))}/../data/dbepams.tsv")
+        dBEs=dbepams.loc[:,cols_dbes]
+        dBEs=dBEs.loc[dBEs['method'].isin(cfg['BE names']),:]        
         daggbyguide=dalignbedannot.loc[(dalignbedannot['NM']==0),['guide: id','guide+PAM sequence','gene names', 'gene ids','transcript ids']].drop_duplicates(subset=['guide: id'])
         if len(daggbyguide)!=0:
             daggbyguide=set_index(daggbyguide,'guide: id')            
@@ -380,7 +385,7 @@ def dalignbedannot2daggbyguide(cfg):
                 daggbyguide.loc[guideid,'beditor score']=get_beditorscore_per_guide(guide_seq=dalignbedannotguide['guide+PAM sequence'].unique()[0], 
                                            strategy=dalignbedannotguide['strategy'].unique()[0],
                                            align_seqs_scores=dalignbedannotguide['beditor score'],
-                                           BEs=cfg['BE names']
+                                           dBEs=dBEs
     #                                        test=cfg['test']
                                           )
                 daggbyguide.loc[guideid,'CFD score']=dalignbedannotguide['CFD score'].mean() #FIXME if mean is not appropriate

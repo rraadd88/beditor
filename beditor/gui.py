@@ -64,12 +64,12 @@ def get_mutation(vals2):
 
 ## coonvert vals to cfg
 import numpy as np 
-def guival2cfg(val):
+def guival2cfg(val,vals2):
     val['dsubmap_preferred_path']=None if val['dsubmap_preferred_path']=='' else val['dsubmap_preferred_path']
     val['mimetism_level']=None if val['mimetism_level']=='' else val['mimetism_level']
 
     cfg={}
-    if val["calculate beditor scores"]:
+    if not val["calculate beditor scores"]:
         cfg['step2ignore']=4
     else:
         cfg['step2ignore']=None        
@@ -80,6 +80,14 @@ def guival2cfg(val):
     # cfg['BE and PAM']=[f"{val['BE name and editing window']} PAM:{pam}"]
     cfg['BE name and PAM']=[[val['BE name and editing window'].split(' editing window:')[0].replace('method:',''),
                              val['BE type and PAM'].split(' PAM:')[1]]]
+    be_type=val['BE type and PAM'].split(' ')[0]                             
+    cfg['BE type']=[[be_type.split('-')[0],be_type.split('-')[1]]]
+    if not vals2 is None:
+        cfg['PAM position']=[vals2['PAM position'].replace('stream','')]                    
+        cfg['guide length']=[vals2['guide length']]    
+
+    window=val['BE name and editing window'].split(' editing window:')[1].replace('bp','')                         
+    cfg['BE editing window']=[[int(window.split('-')[0]),int(window.split('-')[1])]]
     cfg['cores']=int(val['cores'])
 
     cfg['dinp']=val['mutation table']
@@ -100,6 +108,7 @@ def guival2cfg(val):
 
     deps=['samtools','bedtools','bwa',]
     cfg['gui']=True    
+
     for dep in deps:
         if val[dep]!='':
             cfg[dep]=val[dep]
@@ -123,14 +132,15 @@ def resetwinvals(win,vals,test=False):
             ['reverse_mutations create','reverse_mutations remove']]               
     for options in radios:
         for opt, opt_ in zip(options,options[::-1]):
-            if (not vals[opt]) and (not vals[opt_]):
-                win.FindElement(opt_).Update(False)
-                win.FindElement(opt).Update(False)
-                break 
-            if vals[opt] and not vals[opt_]: 
-                win.FindElement(opt_).Update(vals[opt_])
-                win.FindElement(opt).Update(vals[opt])
-                break
+            if (opt in vals) and (opt_ in vals):
+                if (not vals[opt]) and (not vals[opt_]):
+                    win.FindElement(opt_).Update(False)
+                    win.FindElement(opt).Update(False)
+                    break 
+                if vals[opt] and not vals[opt_]: 
+                    win.FindElement(opt_).Update(vals[opt_])
+                    win.FindElement(opt).Update(vals[opt])
+                    break
     return win 
 
 # def runcom(command, *args):      
@@ -294,7 +304,7 @@ def get_layout(test=False):
          sg.Radio('remove mutations', "mutation_do",key='reverse_mutations remove')],
         [h2('mutation format',width=24),
          sg.Radio('nucleotide', "mutation_format",key='mutation_format nucleotide',),
-         sg.Radio('amino acid', "mutation_format",key='mutation_format aminoacid')],
+         sg.Radio('amino acid', "mutation_format",key='mutation_format aminoacid',)],
         [h2('assign # of cpus',width=24,kws={'tooltip':'number of cores/cpus to be used. higher is faster.'}),
          sg.Slider(range=(1, multiprocessing.cpu_count()-1), orientation='h', size=(25, 5), default_value=int(multiprocessing.cpu_count()*0.5),key='cores'),
          sg.Checkbox('', key="calculate beditor scores", default=False),
@@ -368,11 +378,10 @@ layout_addbepam = [
             sg.Text('', key='error',text_color='red',size=(25, 1))
             ],
             [normal('position',width=25),
-            sg.InputCombo(['downstream','upstream'],tooltip='wrt edited nucleotide',size=(15, 1))],
+            sg.InputCombo(['downstream','upstream'],default_value='upstream',tooltip='wrt position of gRNA',size=(15, 1),key='PAM position')],
             [normal('guide length',width=25,kws={'tooltip':'length of guide/sgrna sequence.'}),
-            sg.Slider(range=(10, 24), orientation='h', size=(15, 5), default_value=20),],
-            [normal('description',width=25),
-            sg.InputText(default_text='description',key='description')]],**kws_frame)],  
+            sg.Slider(range=(10, 24), orientation='h', size=(15, 5), default_value=20,key='guide length'),],
+            ],**kws_frame)],  
             [sg.Button('add'),sg.Cancel()],  
             ]
 
@@ -420,10 +429,8 @@ def gui(test=False):
                     win.UnHide()  
                     break
                 elif ev2 == 'add':  
-                    if any([vals2['fromA'] and vals2['toA'],
-                            vals2['fromT'] and vals2['toT'],
-                            vals2['fromG'] and vals2['toG'],
-                            vals2['fromC'] and vals2['toC']
+                    if any([vals2['fromA'] and vals2['toA'],vals2['fromT'] and vals2['toT'],
+                            vals2['fromG'] and vals2['toG'],vals2['fromC'] and vals2['toC']
                            ]): 
                         if test:
                             print(ev2, vals2)
@@ -432,21 +439,20 @@ def gui(test=False):
                     elif not vals2['editing window min']<vals2['editing window max']:
                         win_add_bepam=resetwinvals(win_add_bepam,vals2)
                         win_add_bepam.FindElement('editing window error').Update("* invalid")
-                    elif not isstrallowed(s=vals2['PAM'],form=f"^[{nts}]*$"): 
+                    elif not isstrallowed(s=vals2['PAM'],form=f"^[{nts}]*$"):
                         win_add_bepam=resetwinvals(win_add_bepam,vals2)
                         win_add_bepam.FindElement('error').Update('* invalid nucleotide')
                     else:
-                        # get the keys and print on the gui 
+                        # get the keys and print on the gui
                         if test:
                             print(vals2)
-                        win_add_bepam.Close()  
-                        win_add_bepam_active = False  
-                        win.UnHide()  
+                        win_add_bepam.Close()
+                        win_add_bepam_active = False
+                        win.UnHide()
                         win.FindElement('add_bepam print').Update(f"{get_mutation(vals2)} {vals2['BE name']} {vals2['editing window min']}-{vals2['editing window max']}bp")
                         vals1['add_bepam print']=f"{get_mutation(vals2)} {vals2['BE name']} {vals2['editing window min']}-{vals2['editing window max']}bp"
                         win.FindElement('BE type and PAM').Update(values=[f"{get_mutation(vals2)} PAM:{vals2['PAM']}",])
                         win.FindElement('BE name and editing window').Update(values=[f"method:{vals2['BE name']} editing window:{int(vals2['editing window min'])}-{int(vals2['editing window max'])}bp",])
-
                         win.FindElement('BE type and PAM').Update(disabled=True)
                         win.FindElement('BE name and editing window').Update(disabled=True)
                         win.FindElement('BE and PAM clear').Update(disabled=False)
@@ -502,7 +508,8 @@ def gui(test=False):
             win=resetwinvals(win,vals1)        
         elif ev1=='configuretorun':
             #check vals
-            # if vals1['add_bepam print']=='':
+            if vals1['mutation table']=='path to the tsv file':
+                vals1['mutation table']=''    
             if win.FindElement('add_bepam print').DisplayText=='':
                 keys=np.array(['mutation table','Species name (Ensembl assembly)',
                     'BE type and PAM','BE name and editing window'])
@@ -563,7 +570,9 @@ def gui(test=False):
                 vals1['cfgp']= f"{vals1['cfgp']}.yml" if not vals1['cfgp'].endswith('.yml') else vals1['cfgp']
                 if test:
                     yaml.dump(vals1,open(vals1['cfgp']+'_test.yml', 'w'), default_flow_style=False)            
-                cfg=guival2cfg(vals1)
+                if not 'vals2' in locals():
+                    vals2=None
+                cfg=guival2cfg(vals1,vals2)
                 from beditor.pipeline import validcfg
                 if validcfg(cfg):
                     yaml.dump(cfg,open(vals1['cfgp'], 'w'), default_flow_style=False)

@@ -21,7 +21,7 @@ from Bio import motifs,Seq,AlignIO
 import logging
 
 from beditor.lib.io_strs import make_pathable_string
-from beditor.lib.io_dfs import df2info
+from beditor.lib.io_dfs import df2info,read_table,to_table
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
@@ -494,7 +494,8 @@ def plot_vizbysteps(cfg):
         dstepp=f"{cfg[stepi]}/d{cfg[stepi].replace('/','').split('_')[-1]}.tsv"
         if exists(dstepp):
             dstep=del_Unnamed(pd.read_table(dstepp)).drop_duplicates()
-            dbepams=pd.read_table(f'{dirname(realpath(__file__))}/../data/dbepams.tsv')
+#             dbepams=pd.read_table(f'{dirname(realpath(__file__))}/../data/dbepams.tsv')
+            dbepams=read_table(cfg['dbepamsp'])
             dpam=dbepams.loc[:,cols_dpam].drop_duplicates()
             dpam=set_index(dpam,'PAM')
             logging.info('plot_dist_dguides')

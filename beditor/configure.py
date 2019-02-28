@@ -175,6 +175,33 @@ def get_genomes(cfg):
     logging.info('genomes are installed!')
     return cfg
 
+def get_distance_of_mutation_from_pam(pam_position='down',
+                                        window_ini=4,
+                                        window_end=8,
+                                     guide_length=20):
+    """
+    down,20
+    8:13
+    4:17 
+    down,21
+    12:10
+    3:19    
+    """    
+    if pam_position=='down':
+        mn=guide_length-window_end+1
+        mx=mn+window_end-window_ini
+    elif pam_position=='up':
+        mn=window_ini
+        mx=window_end        
+    return mn,mx
+
+def get_distance_of_codon_from_PAM(d_pammin,d_pammax,pam_position):
+    if pam_position=='down':
+        mn,mx=d_pammin,d_pammax+2
+    elif pam_position=='up':
+        mn,mx=d_pammin+2,d_pammax
+    return mn,mx
+
 # validity of inputs
 def validcfg(cfg,outcfg=False): 
     """
@@ -235,6 +262,29 @@ def validcfg(cfg,outcfg=False):
         #save run specific debepams
         cfg['dbepamsp']=f"{cfg[0]}/dbepams.tsv"
         dbepams=pd.read_table(f"{dirname(realpath(__file__))}/data/dbepams.tsv")
+        # check if gui added custom be pam. add that to the prj table 
+        if cfg['gui']:
+            # there is only one pair of be and pam added by gui at a time
+            if (cfg['BE names'][0] not in dbepams['method']) or (cfg['PAMs'][0] not in dbepams['PAM']):
+                # got a new be and/or pam
+                # f"method:{vals2['BE name']} editing window:{int(vals2['editing window min'])}-{int(vals2['editing window max'])}bp"
+                if ('BE editing window' in cfg) and ('BE type' in cfg):
+                    row={'method':cfg['BE names'][0],
+                    'nucleotide':cfg['BE type'][0][0],
+                    'nucleotide mutation':cfg['BE type'][0][1],
+                     'window start':cfg['BE editing window'][0][0],
+                     'window end':cfg['BE editing window'][0][1],
+                     'PAM':cfg['PAMs'][0],
+                     'PAM position':cfg['PAM position'][0],
+                    'guide length':cfg['guide length'][0],
+                        }
+
+                    row['distance of mutation from PAM: minimum'],row['distance of mutation from PAM: maximum']=get_distance_of_mutation_from_pam(pam_position=row['PAM position'],window_ini=row['window start'],window_end=row['window end'],guide_length=row['guide length'])
+                    row['distance of codon start from PAM: minimum'],row['distance of codon start from PAM: maximum']=get_distance_of_codon_from_PAM(row['distance of mutation from PAM: minimum'],row['distance of mutation from PAM: maximum'],pam_position=row['PAM position'])
+                    dbepams=dbepams.append(row,ignore_index=True)
+                else:
+                    logging.error('BE editing window and BE type is needed for the new BE')                
+                
         dbepams['strand']='+'
         dbepams=dbes2dbes_strands(dbepams)
         dbepams=dbepams.loc[(dbepams['method'].isin(cfg['BE names']) & dbepams['PAM'].isin(cfg['PAMs'])),:]

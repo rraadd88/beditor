@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from os.path import dirname,realpath
 
 from beditor.lib.io_nums import rescale
 def get_ppamdist(guidelength,pamlength,pam_position,ppamdist_min,pmutatpam):
@@ -90,7 +91,7 @@ def get_beditorscore_per_alignment(NM,genic,alignment,pam_length,pam_position,
     
 def get_beditorscore_per_guide(guide_seq, strategy,
                                align_seqs_scores,
-                              BEs,
+                              dBEs,
                               penalty_activity_window=0.5,
                                test=False,
                               ):
@@ -104,12 +105,7 @@ def get_beditorscore_per_guide(guide_seq, strategy,
     :returns: beditor score per guide.
     """
     
-    #create BEs and pos_muts for back-compatibility
-    from os.path import dirname,realpath
-    from beditor.lib.global_vars import cols_dbes
-    dbepams=pd.read_table(f"{dirname(realpath(__file__))}/../data/dbepams.tsv")
-    dBEs=dbepams.loc[:,cols_dbes]
-    dBEs=dBEs.loc[dBEs['method'].isin(BEs),:]
+    #create pos_muts for back-compatibility
     pos_muts=dBEs.loc[:,['method','distance of mutation from PAM: minimum',
      'distance of mutation from PAM: maximum',
      'distance of codon start from PAM: minimum',
