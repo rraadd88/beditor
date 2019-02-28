@@ -108,7 +108,10 @@ def guival2cfg(val,vals2):
 
     deps=['samtools','bedtools','bwa',]
     cfg['gui']=True    
-
+    if not vals2 is None:
+        cfg['custom BE and PAM']=True
+    else:
+        cfg['custom BE and PAM']=False        
     for dep in deps:
         if val[dep]!='':
             cfg[dep]=val[dep]
@@ -336,7 +339,7 @@ def get_layout(test=False):
         sg.Text('', key='save cfgp error',text_color='red',size=(25, 1))
         ],
         [sg.Button('Run beditor'+' '*52, key='run beditor',**kws_button_big,disabled=True)],
-        [sg.Output(size=(90, 20))],
+        [sg.Image(f'{dirname(abspath(__file__))}/../docs/_static/guiload.gif',visible=True,key='guiload')],
         [sg.Text('', key='run beditor error',text_color='green',size=(25, 1))],    
 
         ]
@@ -582,8 +585,9 @@ def gui(test=False):
             win.FindElement('cfgp').Update(vals1['cfgp'])            
             win=resetwinvals(win,vals1)        
         elif ev1 == 'run beditor':      
+            win.FindElement('guiload').UpdateAnimation(source=f'{dirname(abspath(__file__))}/../docs/_static/guiload.gif',time_between_frames=0)
+            win.FindElement('run beditor error').Update(f"running!",text_color='green')
             try:
-                win.FindElement('run beditor error').Update(f"running!",text_color='green')
                 runbashcmd(f"source activate beditor; beditor --cfg {vals1['cfgp']}")
                 win.FindElement('run beditor error').Update(f"finished processing!",text_color='green')
             except:

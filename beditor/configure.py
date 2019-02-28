@@ -82,9 +82,9 @@ def get_genomes(cfg):
     logging.info('pyensembl: checking if genome is installed/ downloading if necessary.')
     runbashcmd(f"pyensembl install --reference-name {cfg['genomeassembly']} --release {cfg['genomerelease']} --species {cfg['host']}")
 
-    if 'step2ignore' in cfg:
-        if cfg['step2ignore']==4:
-            return cfg
+    # if 'step2ignore' in cfg:
+    #     if cfg['step2ignore']==4:
+    #         return cfg
         
     #download genome for step 5 specificity
     host_="_".join(s for s in cfg['host'].split('_')).capitalize()
@@ -265,7 +265,8 @@ def validcfg(cfg,outcfg=False):
         # check if gui added custom be pam. add that to the prj table 
         if cfg['gui']:
             # there is only one pair of be and pam added by gui at a time
-            if (cfg['BE names'][0] not in dbepams['method']) or (cfg['PAMs'][0] not in dbepams['PAM']):
+            if (not cfg['BE names'][0] in dbepams['method'].tolist()) or (not cfg['PAMs'][0] in dbepams['PAM'].tolist()):
+                # if custom BE and PAM
                 # got a new be and/or pam
                 # f"method:{vals2['BE name']} editing window:{int(vals2['editing window min'])}-{int(vals2['editing window max'])}bp"
                 if ('BE editing window' in cfg) and ('BE type' in cfg):

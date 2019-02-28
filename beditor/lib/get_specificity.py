@@ -383,11 +383,11 @@ def dalignbedannot2daggbyguide(cfg):
             for guideid in daggbyguide.index:
                 dalignbedannotguide=dalignbedannot.loc[(dalignbedannot['guide: id']==guideid),:]
                 daggbyguide.loc[guideid,'beditor score']=get_beditorscore_per_guide(guide_seq=dalignbedannotguide['guide+PAM sequence'].unique()[0], 
-                                           strategy=dalignbedannotguide['strategy'].unique()[0],
-                                           align_seqs_scores=dalignbedannotguide['beditor score'],
-                                           dBEs=dBEs
-    #                                        test=cfg['test']
-                                          )
+           strategy=dalignbedannotguide['strategy'].unique()[0],
+           align_seqs_scores=dalignbedannotguide['beditor score'],
+           dBEs=dBEs
+#                                        test=cfg['test']
+          )
                 daggbyguide.loc[guideid,'CFD score']=dalignbedannotguide['CFD score'].mean() #FIXME if mean is not appropriate
             daggbyguide['beditor score (log10)']=daggbyguide['beditor score'].apply(np.log10)
             dalignbedannot['alternate alignments count']=1
