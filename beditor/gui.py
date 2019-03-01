@@ -101,22 +101,22 @@ def guival2cfg(val,vals2):
 #     non_intermutables=list(keys[buls])
 #     non_intermutables=[s.replace('non-intermutable ','') for s in non_intermutables]
 #     cfg['non_intermutables']=non_intermutables
-    cfg['keep_mutation_nonsense']=True if val['keep_mutation_nonsense'] else False
-    cfg['mutation_type']='S' if (not val['mutation_type non-synonymous'] and val['mutation_type synonymous']) else 'N' if (val['mutation_type non-synonymous'] and not val['mutation_type synonymous']) else None 
+    cfg['keep_mutation_nonsense']=True
+    cfg['mutation_type']=None 
 
     cfg['mutations']='mutations'
 
-    deps=['samtools','bedtools','bwa',]
+#     deps=['samtools','bedtools','bwa',]
     cfg['gui']=True    
     if not vals2 is None:
         cfg['custom BE and PAM']=True
     else:
         cfg['custom BE and PAM']=False        
-    for dep in deps:
-        if val[dep]!='':
-            cfg[dep]=val[dep]
-        else:
-            cfg[dep]=dep            
+#     for dep in deps:
+#         if val[dep]!='':
+#             cfg[dep]=val[dep]
+#         else:
+#             cfg[dep]=dep            
     yaml.dump(cfg,open(val['cfgp'],'w'))
     return cfg
     # 
@@ -206,16 +206,16 @@ def get_layout(test=False):
                 title_color='gray',
                 visible=True if test else False,
                 **kws_frame)],
-                [sg.Button('specitf type of amino acid mutations', key='options for amino acid mutations_',button_color=('black','white'))],    
-                [sg.Frame('',
-                          [[h3('mutation type'),
-                             sg.Checkbox('non-synonymous', key="mutation_type non-synonymous", default=True),
-                             sg.Checkbox('synonymous', key="mutation_type synonymous", default=True),
-                             sg.Checkbox('include non-sense', key="keep_mutation_nonsense", default=True)]],
-            #               tooltip='base editor/s to use.',
-                            visible=True if test else False,
-                            key='options for amino acid mutations',
-                          **kws_frame)],
+#                 [sg.Button('specitf type of amino acid mutations', key='options for amino acid mutations_',button_color=('black','white'))],    
+#                 [sg.Frame('',
+#                           [[h3('mutation type'),
+#                              sg.Checkbox('non-synonymous', key="mutation_type non-synonymous", default=True),
+#                              sg.Checkbox('synonymous', key="mutation_type synonymous", default=True),
+#                              sg.Checkbox('include non-sense', key="keep_mutation_nonsense", default=True)]],
+#             #               tooltip='base editor/s to use.',
+#                             visible=True if test else False,
+#                             key='options for amino acid mutations',
+#                           **kws_frame)],
 #                 [sg.Button('infer mutated amino acid', key='optional: for infering amino acid mutations from wt_',
 #                            button_color=('black','white'))],    
 #                 [sg.Frame('',
@@ -247,19 +247,19 @@ def get_layout(test=False):
                             visible=True if test else False,
                             key='optional: design control gRNAs',
                           **kws_frame)],                          
-                [sg.Button('use custom dependencies', key='optional: dependencies paths_',button_color=('black','white'))],    
-                [sg.Frame('',
-                    [[h3('bedtools',width=20),sg.InputText(default_text='bedtools',
-                                                           tooltip='bash command or path to the source',key='bedtools')],              
-                    [h3('samtools',width=20),sg.InputText(default_text='samtools',
-                                                          tooltip='bash command or path to the source',key='samtools')],              
-                    [h3('bwa',width=20),sg.InputText(default_text='bwa',
-                                                     tooltip='bash command or path to the source',key='bwa')],],
-                  tooltip='optional because the dependencies would be otherwise\ninstalled by beditor.',
-                          title_color='gray',
-                    visible=True if test else False,
-                            key='optional: dependencies paths',
-                          **kws_frame)]]
+#                 [sg.Button('use custom dependencies', key='optional: dependencies paths_',button_color=('black','white'))],    
+#                 [sg.Frame('',
+#                     [[h3('bedtools',width=20),sg.InputText(default_text='bedtools',
+#                                                            tooltip='bash command or path to the source',key='bedtools')],              
+#                     [h3('samtools',width=20),sg.InputText(default_text='samtools',
+#                                                           tooltip='bash command or path to the source',key='samtools')],              
+#                     [h3('bwa',width=20),sg.InputText(default_text='bwa',
+#                                                      tooltip='bash command or path to the source',key='bwa')],],
+#                   tooltip='optional because the dependencies would be otherwise\ninstalled by beditor.',
+#                           title_color='gray',
+#                     visible=True if test else False,
+#                             key='optional: dependencies paths',
+#                           **kws_frame)]]
     # TAB01
     layout_configure=[
         # [h1('configure',width=40,kws={'tooltip':'this step would setup the parameters required for a beditor analysis.',})],
@@ -520,11 +520,16 @@ def gui(test=False):
             else:
                 keys=np.array(['mutation table','Species name (Ensembl assembly)'])
             buls=np.array([vals1[k]=='' for k in keys])            
-            if len(keys[buls])!=0:
+            
+            if len(keys[buls])==0:
+                din=del_Unnamed(pd.read_table(vals1['mutation table']))
+                if (('genome coordinate' in din) and (vals1['mutation_format aminoacid'])) or (('transcript: id' in din) and (vals1['mutation_format nucleotide'])):                
+                    win.FindElement('configure error').Update('run beditor',text_color='green')            
+                    win.FindElement('run').Update(disabled=False)  
+                else:             
+                    win.FindElement('configure error').Update("invalid mutation format",text_color='red')
+            else:             
                 win.FindElement('configure error').Update(f"invalid {' and '.join(list(keys[buls]))}",text_color='red')
-            else:
-                win.FindElement('configure error').Update('run beditor',text_color='green')            
-                win.FindElement('run').Update(disabled=False)  
             win=resetwinvals(win,vals1)        
             ##TODO check columns and rename
         elif ev1=='load din':
