@@ -65,8 +65,8 @@ def get_mutation(vals2):
 ## coonvert vals to cfg
 import numpy as np 
 def guival2cfg(val,vals2):
-    val['dsubmap_preferred_path']=None if val['dsubmap_preferred_path']=='' else val['dsubmap_preferred_path']
-    val['mimetism_level']=None if val['mimetism_level']=='' else val['mimetism_level']
+#     val['dsubmap_preferred_path']=None if val['dsubmap_preferred_path']=='' else val['dsubmap_preferred_path']
+#     val['mimetism_level']=None if val['mimetism_level']=='' else val['mimetism_level']
 
     cfg={}
     if not val["calculate beditor scores"]:
@@ -259,7 +259,8 @@ def get_layout(test=False):
 #                           title_color='gray',
 #                     visible=True if test else False,
 #                             key='optional: dependencies paths',
-#                           **kws_frame)]]
+#                           **kws_frame)]
+                            ]
     # TAB01
     layout_configure=[
         # [h1('configure',width=40,kws={'tooltip':'this step would setup the parameters required for a beditor analysis.',})],
@@ -523,7 +524,7 @@ def gui(test=False):
             
             if len(keys[buls])==0:
                 din=del_Unnamed(pd.read_table(vals1['mutation table']))
-                if (('genome coordinate' in din) and (vals1['mutation_format aminoacid'])) or (('transcript: id' in din) and (vals1['mutation_format nucleotide'])):                
+                if (('genome coordinate' in din) and (vals1['mutation_format nucleotide'])) or (('transcript: id' in din) and (vals1['mutation_format aminoacid'])):                
                     win.FindElement('configure error').Update('run beditor',text_color='green')            
                     win.FindElement('run').Update(disabled=False)  
                 else:             

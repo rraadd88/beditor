@@ -23,6 +23,9 @@ test/test_beditor/*
 test/.log*
 test_dataset/*
 
+# logs 
+.log*
+
 paper/latex.template
 paper/.Rhistory
 pub
