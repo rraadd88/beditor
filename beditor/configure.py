@@ -83,7 +83,7 @@ def get_genomes(cfg):
     runbashcmd(f"pyensembl install --reference-name {cfg['genomeassembly']} --release {cfg['genomerelease']} --species {cfg['host']}")
 
     # if 'step2ignore' in cfg:
-    #     if cfg['step2ignore']==4:
+    #     if cfg['step2ignore']==4:z`
     #         return cfg
         
     #download genome for step 5 specificity
