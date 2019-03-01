@@ -256,6 +256,8 @@ def validcfg(cfg,outcfg=False):
     PAMs=list(np.unique([t[1] for t in cfg['BE name and PAM']]))
     cfg['BE names']=[str(s) for s in BE_names]
     cfg['PAMs']=[str(s) for s in PAMs]
+    if 'guide length' in cfg:
+        cfg['guide length']=[int(i) for i in  cfg['guide length']]
     del cfg['pams']
     del cfg['BEs']    
     if outcfg:
@@ -273,10 +275,10 @@ def validcfg(cfg,outcfg=False):
                     row={'method':cfg['BE names'][0],
                     'nucleotide':cfg['BE type'][0][0],
                     'nucleotide mutation':cfg['BE type'][0][1],
-                     'window start':cfg['BE editing window'][0][0],
-                     'window end':cfg['BE editing window'][0][1],
-                     'PAM':cfg['PAMs'][0],
-                     'PAM position':cfg['PAM position'][0],
+                    'window start':cfg['BE editing window'][0][0],
+                    'window end':cfg['BE editing window'][0][1],
+                    'PAM':cfg['PAMs'][0],
+                    'PAM position':cfg['PAM position'][0],
                     'guide length':cfg['guide length'][0],
                         }
 
@@ -307,8 +309,9 @@ def validinput(cfg,din):
         if col in din:
             opt_validity.append(True)
         else:
+            
             opt_validity.append(False)
-            logging.error(f"invalid column name: {col} is not in [{','.join(mutation_format2cols[cfg['mutation_format']])}]")
+            logging.error(f"invalid column name: {col} is not in [{','.join(din.columns.tolist())}]")
     return all(opt_validity)
 
 # related to be and pam

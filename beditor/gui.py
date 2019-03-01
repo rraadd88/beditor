@@ -84,7 +84,7 @@ def guival2cfg(val,vals2):
     cfg['BE type']=[[be_type.split('-')[0],be_type.split('-')[1]]]
     if not vals2 is None:
         cfg['PAM position']=[vals2['PAM position'].replace('stream','')]                    
-        cfg['guide length']=[vals2['guide length']]    
+        cfg['guide length']=[int(vals2['guide length'])]    
 
     window=val['BE name and editing window'].split(' editing window:')[1].replace('bp','')                         
     cfg['BE editing window']=[[int(window.split('-')[0]),int(window.split('-')[1])]]
@@ -94,17 +94,17 @@ def guival2cfg(val,vals2):
     cfg['mutation_format']='nucleotide' if val['mutation_format nucleotide'] else 'aminoacid'
     cfg['reverse_mutations']=False if val['reverse_mutations create'] else True
     #advanced
-    cfg['dsubmap_preferred_path']=val['dsubmap_preferred_path']
-    cfg['mimetism_level']=val['mimetism_level']
-    keys=np.array([k for k in val if 'non-intermutable ' in str(k)])
-    buls=np.array([val[k] for k in keys])
-    non_intermutables=list(keys[buls])
-    non_intermutables=[s.replace('non-intermutable ','') for s in non_intermutables]
-    cfg['non_intermutables']=non_intermutables
+#     cfg['dsubmap_preferred_path']=val['dsubmap_preferred_path']
+#     cfg['mimetism_level']=val['mimetism_level']
+#     keys=np.array([k for k in val if 'non-intermutable ' in str(k)])
+#     buls=np.array([val[k] for k in keys])
+#     non_intermutables=list(keys[buls])
+#     non_intermutables=[s.replace('non-intermutable ','') for s in non_intermutables]
+#     cfg['non_intermutables']=non_intermutables
     cfg['keep_mutation_nonsense']=True if val['keep_mutation_nonsense'] else False
     cfg['mutation_type']='S' if (not val['mutation_type non-synonymous'] and val['mutation_type synonymous']) else 'N' if (val['mutation_type non-synonymous'] and not val['mutation_type synonymous']) else None 
 
-    cfg['mutations']='mimetic' if (val['mimetism_level'] is None and not val['dsubmap_preferred_path'] is None) else 'substitutions' if (val['mimetism_level'] is None and (not val['dsubmap_preferred_path'] is None)) else 'mutations'
+    cfg['mutations']='mutations'
 
     deps=['samtools','bedtools','bwa',]
     cfg['gui']=True    
@@ -216,27 +216,28 @@ def get_layout(test=False):
                             visible=True if test else False,
                             key='options for amino acid mutations',
                           **kws_frame)],
-                [sg.Button('infer mutated amino acid', key='optional: for infering amino acid mutations from wt_',button_color=('black','white'))],    
-                [sg.Frame('',
-                        [[h3('substitution map'),
-                          sg.InputText(default_text='',key='dsubmap_preferred_path'),
-                          sg.FileBrowse(button_text='Browse',file_types=(('Tab separated values file (csv)', '*.csv'),)),
-                        sg.Text('', key='required substitution map',text_color='red',size=(25, 1)),
-                          ],
-                        [h3('mimetic mutations'),
-                        sg.InputCombo(['high','medium','low'],key='mimetism_level',default_value='mimetism_level',
-                        tooltip='mimetism based substitutions allow\nmutations to amino acids with similar properties as of wt.\nmimetism level (high: only the best one, [medium: best 5], low: best 10)',
-                        size=(15, 1)),
-                        sg.Text('', key='required mimetic mutations',text_color='red',size=(25, 1)),
-                        ],
-                        [h3('non-intermutable', width=20),]+[sg.Checkbox(aa, key=f"non-intermutable {aa}", default=False) for aa in aminoacids[:10]],
-                        [h3('amino acids     ', width=20),]+[sg.Checkbox(aa, key=f"non-intermutable {aa}", default=False) for aa in aminoacids[11:]]
-                        ],              
-                        tooltip='required (*) if amino acid mutation (to) is not provided.',
-                          title_color='gray',
-                        key='optional: for infering amino acid mutations from wt',
-                        visible=True if test else False,
-                          **kws_frame)],
+#                 [sg.Button('infer mutated amino acid', key='optional: for infering amino acid mutations from wt_',
+#                            button_color=('black','white'))],    
+#                 [sg.Frame('',
+#                         [[h3('substitution map'),
+#                           sg.InputText(default_text='',key='dsubmap_preferred_path'),
+#                           sg.FileBrowse(button_text='Browse',file_types=(('Tab separated values file (csv)', '*.csv'),)),
+#                         sg.Text('', key='required substitution map',text_color='red',size=(25, 1)),
+#                           ],
+#                         [h3('mimetic mutations'),
+#                         sg.InputCombo(['high','medium','low'],key='mimetism_level',default_value='mimetism_level',
+#                         tooltip='mimetism based substitutions allow\nmutations to amino acids with similar properties as of wt.\nmimetism level (high: only the best one, [medium: best 5], low: best 10)',
+#                         size=(15, 1)),
+#                         sg.Text('', key='required mimetic mutations',text_color='red',size=(25, 1)),
+#                         ],
+#                         [h3('non-intermutable', width=20),]+[sg.Checkbox(aa, key=f"non-intermutable {aa}", default=False) for aa in aminoacids[:10]],
+#                         [h3('amino acids     ', width=20),]+[sg.Checkbox(aa, key=f"non-intermutable {aa}", default=False) for aa in aminoacids[11:]]
+#                         ],              
+#                         tooltip='required (*) if amino acid mutation (to) is not provided.',
+#                           title_color='gray',
+#                         key='optional: for infering amino acid mutations from wt',
+#                         visible=True if test else False,
+#                           **kws_frame)],
                 [sg.Button('design control gRNAs', key='optional: design control gRNAs_',button_color=('black','white'))],    
                 [sg.Frame('',
                           [[sg.Checkbox('positive controls', key="mutation_type non-synonymous", default=True),
@@ -340,7 +341,7 @@ def get_layout(test=False):
         ],
         [sg.Button('Run beditor'+' '*52, key='run beditor',**kws_button_big,disabled=True)],
         [sg.Image(f'{dirname(abspath(__file__))}/../docs/_static/guiload.gif',visible=True,key='guiload')],
-        [sg.Text('', key='run beditor error',text_color='green',size=(25, 1))],    
+        [sg.Text('', key='run beditor error',text_color='green',size=(50, 1))],    
 
         ]
 
@@ -591,7 +592,7 @@ def gui(test=False):
                 runbashcmd(f"source activate beditor; beditor --cfg {vals1['cfgp']}")
                 win.FindElement('run beditor error').Update(f"finished processing!",text_color='green')
             except:
-                win.FindElement('run beditor error').Update(f"errored!",text_color='red')            
+                win.FindElement('run beditor error').Update(f"errored! see command line",text_color='red')            
             #TODO create cfg and validate
             win=resetwinvals(win,vals1)        
         # elif ev1 == 'host':

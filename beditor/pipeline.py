@@ -337,7 +337,7 @@ def pipeline(cfgp,step=None,test=False,force=False):
         from beditor.lib.io_dfs import df2chucks
         din=pd.read_csv(cfg['dinp'],sep='\t',low_memory=False)
         if not validinput(cfg,din):
-            logging.error(f"configuration file {cfgp} is not valid.")
+            logging.error(f"input mutation file {cfg['dinp']} is not valid.")
             sys.exit(1)
         
         din=din.drop_duplicates()
@@ -400,13 +400,13 @@ def pipeline(cfgp,step=None,test=False,force=False):
             pool.close(); pool.join()         
             collect_chunks(cfg,chunkcfgps)
             # get_outputs
-            if cfg['step2ignore'] is None:
-                _=make_outputs(cfg)        
+#             if cfg['step2ignore'] is None:
+            _=make_outputs(cfg)        
     else:
         pipeline_chunks(cfg=cfg)
         if not '/chunk' in cfgp:
-            if cfg['step2ignore'] is None:
-                _=make_outputs(cfg)        
+#             if cfg['step2ignore'] is None:
+            _=make_outputs(cfg)        
 
 #     pipeline_chunks(cfgp)
     logging.shutdown()
