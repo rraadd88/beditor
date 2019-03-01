@@ -59,7 +59,7 @@ def get_codon_usage(cuspp):
     :returns: codon usage table (pandas dataframe)
     """
     # get codon usage stats
-    dcodonusage=pd.read_csv(cuspp,sep='\t',header=5)
+    dcodonusage=pd.read_csv(cuspp,sep='\t',header=5,keep_default_na=False)
     cols=''.join(dcodonusage.columns.tolist()).split(' ')
     dcodonusage.columns=[cols[-1]]
     dcodonusage.index.names=cols[:-1]
@@ -198,11 +198,11 @@ def get_submap_mimetic(cfg):
     else:
         host=cfg['host']
     try:
-        dsubmap=pd.read_csv(f'{dirname(realpath(__file__))}/../data/dsubmap_{host}.csv').set_index('AA1')
+        dsubmap=pd.read_csv(f'{dirname(realpath(__file__))}/../data/dsubmap_{host}.csv',keep_default_na=False).set_index('AA1')
     except:
         if cfg['test']:
             print(f"{dirname(realpath(__file__))}/data/dsubmap_{host}.csv")
-        dsubmap=pd.read_csv(f'data/dsubmap_{host}.csv').set_index('AA1')
+        dsubmap=pd.read_csv(f'data/dsubmap_{host}.csv',keep_default_na=False).set_index('AA1')
         
     dsubmap=dsubmap.T
     dsubmap.columns.name='amino acid'
@@ -261,7 +261,7 @@ def filterdmutagenesis(dmutagenesis,cfg):
             if cfg['mutations']=='mimetic':                
                 dsubmap=get_submap_mimetic(cfg)
             elif cfg['mutations']=='substitutions':
-                dsubmap=pd.read_csv(cfg['dsubmap_preferred_path'],sep='\t') # has two cols: amino acid and amino acid mutation
+                dsubmap=pd.read_csv(cfg['dsubmap_preferred_path'],sep='\t',keep_default_na=False) # has two cols: amino acid and amino acid mutation
             import seaborn as sns
             dsubmap.to_csv(f"{cfg['datad']}/dsubmap.tsv",sep='\t')
             dmutagenesis=pd.merge(dsubmap,dmutagenesis,on=['amino acid','amino acid mutation'],how='inner')
@@ -298,7 +298,7 @@ def dseq2dmutagenesis(cfg):
     dmutagenesisallp=f"{cfg['datad']}/dmutagenesis_all.tsv"
 
     if not exists(dmutagenesisp) or cfg['force']:
-        dseq=pd.read_csv(f"{cfg[cfg['step']-1]}/dsequences.tsv",sep='\t')
+        dseq=pd.read_csv(f"{cfg[cfg['step']-1]}/dsequences.tsv",sep='\t',keep_default_na=False)
         if cfg['mutation_format']=='nucleotide':
             from .global_vars import aminoacids as aas
         elif cfg['mutation_format']=='aminoacid':
@@ -317,7 +317,7 @@ def dseq2dmutagenesis(cfg):
         #FIXME if prokaryote is used ?
         #create BEs and pos_muts for back-compatibility
         from beditor.lib.global_vars import cols_dbes
-        dbepams=read_table(cfg['dbepamsp'])
+        dbepams=pd.read_table(cfg['dbepamsp'],keep_default_na=False)
         dBEs=dbepams.loc[:,cols_dbes]
 #         print(cfg['BE names'],dBEs['method'].unique())
         BEs2mutations={}

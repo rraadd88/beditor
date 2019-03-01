@@ -164,7 +164,7 @@ def make_guides(cfg,dseq,dmutagenesis,
         dseq['pos control']=False
     dseq_cols=['transcript: id','aminoacid: position','aminoacid: wild-type','codon: wild-type','id','pos control']    
     # make dpam per be
-    dbepams=read_table(cfg['dbepamsp'])
+    dbepams=pd.read_table(cfg['dbepamsp'],keep_default_na=False)
     be2dpam=get_be2dpam(dbepams,test=cfg['test'])
     gierrfltmutpos=[]
     gierrdenan=[]
@@ -333,12 +333,12 @@ def dseq2dguides(cfg):
     dguides_nofltp=f"{cfg['datad']}/dguides_noflt.tsv"
     dmutagenesisp=f"{cfg['datad']}/dmutagenesis.tsv"
     if not exists(dguideslinp) or cfg['force']:
-        dmutagenesis=pd.read_csv(f"{cfg[cfg['step']-1]}/dmutagenesis.tsv",sep='\t')
+        dmutagenesis=pd.read_csv(f"{cfg[cfg['step']-1]}/dmutagenesis.tsv",sep='\t',keep_default_na=False)
         if cfg['mutation_format']=='nucleotide':
-            dsequences=pd.read_csv(f"{cfg[cfg['step']-2]}/dsequences.tsv",sep='\t') #FIXME if numbering of steps is changed, this is gonna blow
+            dsequences=pd.read_csv(f"{cfg[cfg['step']-2]}/dsequences.tsv",sep='\t',keep_default_na=False) #FIXME if numbering of steps is changed, this is gonna blow
             dsequences,dmutagenesis=dinnucleotide2dsequencesproper(dsequences,dmutagenesis)
         elif cfg['mutation_format']=='aminoacid':
-            dsequences=pd.read_csv(f"{cfg[cfg['step']-2]}/dsequences.tsv",sep='\t') #FIXME if numbering of steps is changed, this is gonna blow
+            dsequences=pd.read_csv(f"{cfg[cfg['step']-2]}/dsequences.tsv",sep='\t',keep_default_na=False) #FIXME if numbering of steps is changed, this is gonna blow
             if 'reverse_mutations' in cfg:
                 if cfg['reverse_mutations']: 
 #                     from beditor.lib.global_vars import stepi2cols

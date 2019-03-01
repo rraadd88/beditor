@@ -195,7 +195,7 @@ def make_outputs(cfg,plot=True):
                 if exists(dstepp):
                     logging.info(f'combining {stepi}')
                     colsoutput=stepi2colsoutput[stepi]
-                    dstep=del_Unnamed(pd.read_table(dstepp))
+                    dstep=del_Unnamed(pd.read_table(dstepp,keep_default_na=False))
                     if 'reverse_mutations' in cfg:
                         if cfg['reverse_mutations']:
                             if stepi==0:
@@ -217,7 +217,7 @@ def make_outputs(cfg,plot=True):
         makedirs(dirname(doutputp),exist_ok=True)
         doutput.to_csv(doutputp,sep='\t')
     else:
-        doutput=pd.read_table(doutputp)
+        doutput=pd.read_table(doutputp,keep_default_na=False)
     # plot
     if plot:
         plot_vizbysteps(cfg)
@@ -335,7 +335,7 @@ def pipeline(cfgp,step=None,test=False,force=False):
                      ) 
     if (not '/chunk' in cfgp) and (step==1 or (step is None)):
         from beditor.lib.io_dfs import df2chucks
-        din=pd.read_csv(cfg['dinp'],sep='\t',low_memory=False)
+        din=pd.read_csv(cfg['dinp'],sep='\t',low_memory=False,keep_default_na=False)
         if not validinput(cfg,din):
             logging.error(f"input mutation file {cfg['dinp']} is not valid.")
             sys.exit(1)
@@ -348,7 +348,7 @@ def pipeline(cfgp,step=None,test=False,force=False):
         cfg_['step']=1 #gotta run step 1 isolated because of memory buid up otherwise
         pipeline_chunks(cfg=cfg_)
 
-        dseq=pd.read_csv(f"{cfg[1]}/dsequences.tsv",sep='\t',low_memory=False)
+        dseq=pd.read_csv(f"{cfg[1]}/dsequences.tsv",sep='\t',low_memory=False,keep_default_na=False)
         chunkps=df2chucks(dseq,chunksize=cfg['chunksize'],
                           outd=f"{cfg['prjd']}/chunks",
                           fn='din',return_fmt='\t',

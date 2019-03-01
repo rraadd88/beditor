@@ -29,7 +29,7 @@ def unique(l,drop=None):
     return tuple(np.unique(l))
 def unique_dropna(l): return dropna(unique(l,drop='nan'))
 def get_dbepams():
-    dbepams=pd.read_table(f'{dirname(abspath(__file__))}/data/dbepams.tsv')
+    dbepams=pd.read_table(f'{dirname(abspath(__file__))}/data/dbepams.tsv',keep_default_na=False)
     dbepams['BE type']=dbepams.apply(lambda x : f"{x['nucleotide']}-{x['nucleotide mutation']}", axis=1)
     dbepams['editing window']=dbepams.apply(lambda x : f"{x['window start']}-{x['window end']}bp", axis=1)
     dbepams['BE type and PAM']=dbepams.apply(lambda x : ' '.join([f"{k}:{str(x[k])}" if k!='BE type' else f"{str(x[k])}" for k in ['BE type','PAM']]), axis=1)
@@ -192,7 +192,7 @@ def get_layout(test=False):
 
     dbepams=get_dbepams()
 
-    dspecies=pd.read_table(f'{dirname(abspath(__file__))}/data/dspecies.tsv')
+    dspecies=pd.read_table(f'{dirname(abspath(__file__))}/data/dspecies.tsv',keep_default_na=False)
     species=['Saccharomyces cerevisiae (R64-1-1)']+list(np.sort(dspecies['Scientific name (Ensembl Assembly)'].tolist()))
 
     layout_advanced_setting=[[sg.Button('load a configuration file', key='optional: load configuration file_',button_color=('black','white'))],    
@@ -523,7 +523,7 @@ def gui(test=False):
             buls=np.array([vals1[k]=='' for k in keys])            
             
             if len(keys[buls])==0:
-                din=del_Unnamed(pd.read_table(vals1['mutation table']))
+                din=del_Unnamed(pd.read_table(vals1['mutation table'],keep_default_na=False))
                 if (('genome coordinate' in din) and (vals1['mutation_format nucleotide'])) or (('transcript: id' in din) and (vals1['mutation_format aminoacid'])):                
                     win.FindElement('configure error').Update('run beditor',text_color='green')            
                     win.FindElement('run').Update(disabled=False)  
@@ -535,7 +535,7 @@ def gui(test=False):
             ##TODO check columns and rename
         elif ev1=='load din':
     #         try:
-            din=del_Unnamed(pd.read_table(vals1['mutation table']))
+            din=del_Unnamed(pd.read_table(vals1['mutation table'],keep_default_na=False))
             cols_din=['genome coordinate','nucleotide mutation','transcript: id','aminoacid: position','amino acid mutation']
             normalised2cols=dict(zip([normalisestr(c) for c in cols_din],cols_din))
             din=din.rename(columns={c:normalised2cols[normalisestr(c)] for c in din})

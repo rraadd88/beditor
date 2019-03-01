@@ -19,9 +19,9 @@ import logging
 #tsv io
 def read_table(p):
     if p.endswith('.tsv') or p.endswith('.tab'):
-        return del_Unnamed(pd.read_table(p))
+        return del_Unnamed(pd.read_table(p,keep_default_na=False))
     elif p.endswith('.csv'):
-        return del_Unnamed(pd.read_csv(p,sep=','))
+        return del_Unnamed(pd.read_csv(p,sep=',',keep_default_na=False))
     elif p.endswith('.pqt') or p.endswith('.parquet'):
         return del_Unnamed(read_table_pqt(p))
     else: 
@@ -44,7 +44,7 @@ def to_table_pqt(df,p):
     df.to_parquet(p,engine='fastparquet',compression='gzip',)
 
 def tsv2pqt(p):
-    to_table_pqt(pd.read_table(p,low_memory=False),f"{p}.pqt")
+    to_table_pqt(pd.read_table(p,low_memory=False,keep_default_na=False),f"{p}.pqt")
     
 def read_excel(p,sheet_name=None,):
     xl = pd.ExcelFile(p)
@@ -149,7 +149,7 @@ def fhs2data_combo(fhs,cols,index,labels=None,col_sep=': '):
     if len(fhs)>0:
         for fhi,fh in enumerate(fhs):
             label=labels[fhi]
-            data=pd.read_csv(fh).set_index(index)
+            data=pd.read_csv(fh,keep_default_na=False).set_index(index)
             if fhi==0:
                 data_combo=pd.DataFrame(index=data.index)
                 for col in cols:
@@ -177,7 +177,7 @@ def fhs2data_combo_appended(fhs, cols=None,labels=None,labels_coln='labels',sep=
             try:
                 data=pd.read_csv(fh,sep=sep)
             except:
-                raise ValueError(f"something wrong with file pd.read_csv({fh},sep={sep})")
+                raise ValueError(f"something wrong with file pd.read_csv({fh},sep={sep},keep_default_na=False)")
             if len(data)!=0:
                 data.loc[:,labels_coln]=label
                 if not cols is None:

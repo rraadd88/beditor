@@ -177,8 +177,8 @@ def dalignbed2dalignbedguides(cfg):
     :param cfg: configuration dict
     """
     datatmpd=cfg['datatmpd']
-    dalignbed=del_Unnamed(pd.read_csv(cfg['dalignbedp'],sep='\t'))
-    dguides=set_index(del_Unnamed(pd.read_csv(cfg['dguidesp'],sep='\t')),'guide: id')
+    dalignbed=del_Unnamed(pd.read_csv(cfg['dalignbedp'],sep='\t',keep_default_na=False))
+    dguides=set_index(del_Unnamed(pd.read_csv(cfg['dguidesp'],sep='\t',keep_default_na=False)),'guide: id')
     
 #     if the error in human, use: `cut -f 1 data/alignment.bed.sorted.bed | sort| uniq -c | grep -v CHR | grep -v GL | grep -v KI`
     dalignbedguidesp=cfg['dalignbedguidesp']
@@ -221,8 +221,8 @@ def dalignbed2dalignbedguidesseq(cfg):
     :param cfg: configuration dict
     """
     datatmpd=cfg['datatmpd']
-    dalignbedguides=del_Unnamed(pd.read_csv(cfg['dalignbedguidesp'],sep='\t'))
-    dalignedfasta=del_Unnamed(pd.read_csv(cfg['dalignedfastap'],sep='\t'))
+    dalignbedguides=del_Unnamed(pd.read_csv(cfg['dalignbedguidesp'],sep='\t',keep_default_na=False))
+    dalignedfasta=del_Unnamed(pd.read_csv(cfg['dalignedfastap'],sep='\t',keep_default_na=False))
     dalignbedguidesseqp=cfg['dalignbedguidesseqp']
     logging.info(basename(dalignbedguidesseqp))
     if not exists(dalignbedguidesseqp) or cfg['force']:        
@@ -242,7 +242,7 @@ def dalignbedguidesseq2dalignbedstats(cfg):
     :param cfg: configuration dict
     """
     datatmpd=cfg['datatmpd']
-    dalignbedguidesseq=del_Unnamed(pd.read_csv(cfg['dalignbedguidesseqp'],sep='\t'))
+    dalignbedguidesseq=del_Unnamed(pd.read_csv(cfg['dalignbedguidesseqp'],sep='\t',keep_default_na=False))
     
     dalignbedstatsp=cfg['dalignbedstatsp']  
     logging.info(basename(dalignbedstatsp))
@@ -268,7 +268,7 @@ def dannots2dalignbed2dannotsagg(cfg):
     dannotsaggp=cfg['dannotsaggp']
     logging.info(basename(daannotp))
     if ((not exists(daannotp)) and (not exists(dannotsaggp))) or cfg['force']:
-        dannots=pd.read_csv(cfg['annotationsbedp'],sep='\t',
+        dannots=pd.read_csv(cfg['annotationsbedp'],sep='\t',keep_default_na=False,
                    names=bed_colns+[c+' annotation' if c in set(bed_colns).intersection(gff_colns) else c for c in gff_colns ],
                            low_memory=False)
         dannots=del_Unnamed(dannots)
@@ -284,12 +284,12 @@ def dannots2dalignbed2dannotsagg(cfg):
         logging.debug('or this step takes more time?')
         dannots.to_csv(daannotp,sep='\t')
     else:
-        dannots=pd.read_csv(daannotp,sep='\t',low_memory=False)
+        dannots=pd.read_csv(daannotp,sep='\t',low_memory=False,keep_default_na=False)
         dannots=del_Unnamed(dannots)
     logging.info(basename(dannotsaggp))
     if not exists(dannotsaggp) or cfg['force']:
         if not 'dannots' in locals():
-            dannots=pd.read_table(daannotp,low_memory=False)
+            dannots=pd.read_table(daannotp,low_memory=False,keep_default_na=False)
         dannots=del_Unnamed(dannots)
         dannots=dannots.reset_index()
         
@@ -325,8 +325,8 @@ def dannotsagg2dannots2dalignbedannot(cfg):
     """
     datatmpd=cfg['datatmpd']
     
-    dannotsagg=del_Unnamed(pd.read_csv(cfg['dannotsaggp'],sep='\t'))
-    dalignbedstats=del_Unnamed(pd.read_csv(cfg['dalignbedstatsp'],sep='\t'))
+    dannotsagg=del_Unnamed(pd.read_csv(cfg['dannotsaggp'],sep='\t',keep_default_na=False))
+    dalignbedstats=del_Unnamed(pd.read_csv(cfg['dalignbedstatsp'],sep='\t',keep_default_na=False))
     dalignbedannotp=cfg['dalignbedannotp']
     logging.info(basename(dalignbedannotp))
     if not exists(dalignbedannotp) or cfg['force']:
@@ -357,14 +357,13 @@ def dalignbedannot2daggbyguide(cfg):
     """
     datatmpd=cfg['datatmpd']
     
-    dalignbedannot=del_Unnamed(pd.read_csv(cfg['dalignbedannotp'],sep='\t',low_memory=False))
+    dalignbedannot=del_Unnamed(pd.read_csv(cfg['dalignbedannotp'],sep='\t',low_memory=False,keep_default_na=False))
     
     daggbyguidep=f'{datatmpd}/10_daggbyguide.tsv'      
     logging.info(basename(daggbyguidep))
     if not exists(daggbyguidep) or cfg['force']:
-        dbepams=read_table(cfg['dbepamsp'])
+        dbepams=pd.read_table(cfg['dbepamsp'],keep_default_na=False)
         from beditor.lib.global_vars import cols_dbes
-    #     dbepams=pd.read_table(f"{dirname(realpath(__file__))}/../data/dbepams.tsv")
         dBEs=dbepams.loc[:,cols_dbes]
         dBEs=dBEs.loc[dBEs['method'].isin(cfg['BE names']),:]        
         daggbyguide=dalignbedannot.loc[(dalignbedannot['NM']==0),['guide: id','guide+PAM sequence','gene names', 'gene ids','transcript ids']].drop_duplicates(subset=['guide: id'])
@@ -414,7 +413,7 @@ def dguides2offtargets(cfg):
     if not exists(dguidesp):        
         logging.warning(f"not found {dguidesp}")
         return saveemptytable(cfg,dofftargetsp)
-    dguides=pd.read_csv(dguidesp,sep='\t')
+    dguides=pd.read_csv(dguidesp,sep='\t',keep_default_na=False)
     if len(dguides)==0:
         logging.warning(f"dguides is empty.")
         return saveemptytable(cfg,dofftargetsp)       

@@ -461,7 +461,7 @@ def plot_vizbysteps(cfg):
         plotpf=plotp+"_{mutation_type}.png"
         dstepp=f"{cfg[stepi]}/d{cfg[stepi].replace('/','').split('_')[-1]}.tsv"
         if exists(dstepp):
-            dstep=del_Unnamed(pd.read_table(dstepp)).drop_duplicates()
+            dstep=del_Unnamed(pd.read_table(dstepp,keep_default_na=False)).drop_duplicates()
             if len(dstep)<1000:
                 logging.info('plot_submap_possibilities')
                 plot_submap_possibilities(dmutagenesis=dstep,
@@ -478,7 +478,7 @@ def plot_vizbysteps(cfg):
     if not exists(plotp) or cfg['force']:                               
         dstepp=f"{cfg[stepi]}/d{cfg[stepi].replace('/','').split('_')[-1]}.tsv"
         if exists(dstepp):
-            dstep=del_Unnamed(pd.read_table(dstepp)).drop_duplicates()
+            dstep=del_Unnamed(pd.read_table(dstepp,keep_default_na=False)).drop_duplicates()
             logging.info('plot_bar_dguides')
             plot_bar_dguides(dstep,plotp)
         else:
@@ -493,9 +493,9 @@ def plot_vizbysteps(cfg):
         makedirs(dirname(plotp),exist_ok=True)
         dstepp=f"{cfg[stepi]}/d{cfg[stepi].replace('/','').split('_')[-1]}.tsv"
         if exists(dstepp):
-            dstep=del_Unnamed(pd.read_table(dstepp)).drop_duplicates()
+            dstep=del_Unnamed(pd.read_table(dstepp,keep_default_na=False)).drop_duplicates()
 #             dbepams=pd.read_table(f'{dirname(realpath(__file__))}/../data/dbepams.tsv')
-            dbepams=read_table(cfg['dbepamsp'])
+            dbepams=pd.read_table(cfg['dbepamsp'],keep_default_na=False)
             dpam=dbepams.loc[:,cols_dpam].drop_duplicates()
             dpam=set_index(dpam,'PAM')
             logging.info('plot_dist_dguides')
@@ -512,8 +512,9 @@ def plot_vizbysteps(cfg):
         dsequencesp=f"{cfg[stepi-2]}/d{cfg[stepi-2].replace('/','').split('_')[-1]}.tsv"
         if exists(dguidesp):
             logging.info('plot_dna_features_view')
-            plot_dna_features_view(cfg,dsequences=del_Unnamed(pd.read_table(dsequencesp)).drop_duplicates(),
-                       dguides=del_Unnamed(pd.read_table(dguidesp)).drop_duplicates(),
+            plot_dna_features_view(cfg,
+                                   dsequences=del_Unnamed(pd.read_table(dsequencesp,keep_default_na=False)).drop_duplicates(),
+                       dguides=del_Unnamed(pd.read_table(dguidesp,keep_default_na=False)).drop_duplicates(),
                        plotd=plotd,more=False)
         else:
             logging.warning(f'not found: {dstepp}')
@@ -536,7 +537,7 @@ def plot_vizbysteps(cfg):
     if not exists(plotp) or cfg['force']:
         dstepp=f"{cfg[stepi]}/d{cfg[stepi].replace('/','').split('_')[-1]}.tsv"
         if exists(dstepp):
-            dstep=del_Unnamed(pd.read_table(dstepp)).drop_duplicates()
+            dstep=del_Unnamed(pd.read_table(dstepp,keep_default_na=False)).drop_duplicates()
             logging.info('plot_dist_dofftargets')
             plot_dist_dofftargets(dstep,plotp)
         else:

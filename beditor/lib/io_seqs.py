@@ -31,7 +31,7 @@ def reverse_complement_multintseqreg(seq,multint2regcomplement,nt2complement):
 
 
 def fa2df(alignedfastap,ids2cols=False):
-    dtmp=pd.read_csv(alignedfastap,names=["c"])
+    dtmp=pd.read_csv(alignedfastap,names=["c"],keep_default_na=False)
     dtmp=dtmp.iloc[::2].reset_index(drop=True).join(dtmp.iloc[1::2].reset_index(drop=True),rsuffix='r')
     dtmp.columns=['id','sequence']
     dtmp=dtmp.set_index('id')

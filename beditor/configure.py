@@ -263,7 +263,7 @@ def validcfg(cfg,outcfg=False):
     if outcfg:
         #save run specific debepams
         cfg['dbepamsp']=f"{cfg[0]}/dbepams.tsv"
-        dbepams=pd.read_table(f"{dirname(realpath(__file__))}/data/dbepams.tsv")
+        dbepams=pd.read_table(f"{dirname(realpath(__file__))}/data/dbepams.tsv",keep_default_na=False)
         # check if gui added custom be pam. add that to the prj table 
         if cfg['gui']:
             # there is only one pair of be and pam added by gui at a time

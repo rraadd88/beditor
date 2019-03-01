@@ -231,7 +231,7 @@ def get_seq_nucleotide(cfg,din):
             dbedntmuts['genome coordinate']=dbedntmuts.apply(lambda x : x['id'].split('(')[0] ,axis=1)
             dbedntmuts.to_csv(dbedntmutsp,sep='\t')
         else:
-            dbedntmuts=pd.read_table(dbedntmutsp)
+            dbedntmuts=pd.read_table(dbedntmutsp,keep_default_na=False)
     dsequences=pd.merge(din,dbedntmuts,
             on=['genome coordinate'],suffixes=('', ': dbedntmuts'))
     dsequences=del_Unnamed(dsequences)
@@ -273,7 +273,7 @@ def din2dseq(cfg):
     cfg['dsequencesp']=dsequencesp
     if not exists(dsequencesp) or cfg['force']:
         cfg['dinp']=f"{cfg[cfg['step']-1]}/dinput.tsv"
-        din=pd.read_table(cfg['dinp'])
+        din=pd.read_table(cfg['dinp'],keep_default_na=False)
         din=del_Unnamed(din)
         if cfg['mutation_format']=='aminoacid':        
             cols_dseq=stepi2cols[cfg['step']]
