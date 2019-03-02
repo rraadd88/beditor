@@ -595,7 +595,8 @@ def gui(test=False):
             win.FindElement('cfgp').Update(vals1['cfgp'])            
             win=resetwinvals(win,vals1)        
         elif ev1 == 'run beditor':      
-            win.FindElement('guiload').UpdateAnimation(source=f'{dirname(abspath(__file__))}/../docs/_static/guiload.gif',time_between_frames=0)
+            win.FindElement('guiload').UpdateAnimation(source=f'{dirname(abspath(__file__))}/data/gui/guiload.gif',
+                                                       time_between_frames=0)
             win.FindElement('run beditor error').Update(f"running!",text_color='green')
             try:
                 runbashcmd(f"source activate beditor; beditor --cfg {vals1['cfgp']}")
