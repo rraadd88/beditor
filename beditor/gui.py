@@ -342,7 +342,7 @@ def get_layout(test=False):
         sg.Text('', key='save cfgp error',text_color='red',size=(25, 1))
         ],
         [sg.Button('Run beditor'+' '*52, key='run beditor',**kws_button_big,disabled=True)],
-        [sg.Image(f'{dirname(abspath(__file__))}/../docs/_static/guiload.gif',visible=True,key='guiload')],
+        [sg.Image(f'{dirname(abspath(__file__))}/data/gui/guiload.gif',visible=True,key='guiload')],
         [sg.Text('', key='run beditor error',text_color='green',size=(50, 1))],    
 
         ]
