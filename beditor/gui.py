@@ -312,7 +312,7 @@ def get_layout(test=False):
          sg.Radio('nucleotide', "mutation_format",key='mutation_format nucleotide',),
          sg.Radio('amino acid', "mutation_format",key='mutation_format aminoacid',)],
         [h2('assign # of cpus',width=24,kws={'tooltip':'number of cores/cpus to be used. higher is faster.'}),
-         sg.Slider(range=(1, multiprocessing.cpu_count()-1), orientation='h', size=(25, 5), default_value=int(multiprocessing.cpu_count()*0.5),key='cores'),
+         sg.Slider(range=(1, multiprocessing.cpu_count()-1 if multiprocessing.cpu_count()-1 !=0 else 1), orientation='h', size=(25, 5), default_value=int(multiprocessing.cpu_count()*0.5),key='cores'),
          sg.Checkbox('', key="calculate beditor scores", default=False),
          normal('beditor scores',size=15,width=30,kws={'tooltip':'celculate editability of gRNAs.'}),],
         [sg.Button('go to next step  '+' '*52, key='configuretorun',**kws_button_big),
