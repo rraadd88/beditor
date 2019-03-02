@@ -198,11 +198,11 @@ def get_submap_mimetic(cfg):
     else:
         host=cfg['host']
     try:
-        dsubmap=pd.read_csv(f'{dirname(realpath(__file__))}/../data/dsubmap_{host}.csv',keep_default_na=False).set_index('AA1')
+        dsubmap=pd.read_csv(f'{dirname(realpath(__file__))}/../data/dsubmap_{host}.csv').set_index('AA1')
     except:
         if cfg['test']:
             print(f"{dirname(realpath(__file__))}/data/dsubmap_{host}.csv")
-        dsubmap=pd.read_csv(f'data/dsubmap_{host}.csv',keep_default_na=False).set_index('AA1')
+        dsubmap=pd.read_csv(f'data/dsubmap_{host}.csv').set_index('AA1')
         
     dsubmap=dsubmap.T
     dsubmap.columns.name='amino acid'
@@ -217,6 +217,7 @@ def get_submap_mimetic(cfg):
 
     dsubmaptop_=dsubmaptop.copy()
     for c in dsubmap:
+        dsubmap[c]=dsubmap[c].apply(float)
         dsubmaptop.loc[dsubmap.nlargest(mimetism_levels[cfg['mimetism_level']],c).index,c]=True
 
     dsubmaptop=df2unstack(dsubmaptop,col='mimetic',coln='amino acid',idxn='amino acid mutation')

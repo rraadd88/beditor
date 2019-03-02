@@ -345,6 +345,7 @@ def dannotsagg2dannots2dalignbedannot(cfg):
                                 ),axis=1) 
         dalignbedannot['CFD score']=dalignbedannot.apply(lambda x : get_cfdscore(x['guide+PAM sequence'].upper(), 
                                                                                  x['aligned sequence'].upper()), axis=1)
+        dalignbedannot['CFD score']=dalignbedannot['CFD score'].fillna(0)
         dalignbedannot.to_csv(dalignbedannotp,sep='\t')
     return cfg
 
@@ -387,6 +388,7 @@ def dalignbedannot2daggbyguide(cfg):
            dBEs=dBEs
 #                                        test=cfg['test']
           )
+                
                 daggbyguide.loc[guideid,'CFD score']=dalignbedannotguide['CFD score'].mean() #FIXME if mean is not appropriate
             daggbyguide['beditor score (log10)']=daggbyguide['beditor score'].apply(np.log10)
             dalignbedannot['alternate alignments count']=1

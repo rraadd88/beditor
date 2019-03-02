@@ -59,6 +59,8 @@ step1: input the configuration settings.
 
 ![](docs/_static/gui1.png)
 
+Note: genomes listed in the gui correspond to ensembl release=95. 
+
 step2: save the configuration settings and run `beditor`.  
 
 ![](docs/_static/gui2.png)
@@ -123,7 +125,10 @@ Example:
 | YAL042C-A      | 65                  | A                   |
 | YAL042W        | 3                   | C                   |
 | YAL043C        | 14                  | C                   |
-
+   
+Note: genomes listed in the gui correspond to ensembl release=95.   
+  
+  
 ### [for command line usage] Configuration file. It contains all the options and paths to files needed by the analysis. 
 This YAML formatted file contains the all the analysis specific parameters.
 

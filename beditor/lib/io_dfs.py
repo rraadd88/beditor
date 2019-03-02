@@ -175,7 +175,7 @@ def fhs2data_combo_appended(fhs, cols=None,labels=None,labels_coln='labels',sep=
         for fhi,fh in enumerate(fhs):
             label=labels[fhi]
             try:
-                data=pd.read_csv(fh,sep=sep)
+                data=pd.read_csv(fh,sep=sep,keep_default_na=False)
             except:
                 raise ValueError(f"something wrong with file pd.read_csv({fh},sep={sep},keep_default_na=False)")
             if len(data)!=0:

@@ -103,7 +103,8 @@ def guival2cfg(val,vals2):
 #     cfg['non_intermutables']=non_intermutables
     cfg['keep_mutation_nonsense']=True
     cfg['mutation_type']=None 
-
+    cfg['make_control_pos']=val['positive controls']
+    cfg['make_control_neg']=val['negative controls']
     cfg['mutations']='mutations'
 
 #     deps=['samtools','bedtools','bwa',]
@@ -240,8 +241,8 @@ def get_layout(test=False):
 #                           **kws_frame)],
                 [sg.Button('design control gRNAs', key='optional: design control gRNAs_',button_color=('black','white'))],    
                 [sg.Frame('',
-                          [[sg.Checkbox('positive controls', key="mutation_type non-synonymous", default=True),
-                             sg.Checkbox('negative controls', key="mutation_type synonymous", default=True),
+                          [[sg.Checkbox('positive controls', key="positive controls", default=True),
+                             sg.Checkbox('negative controls', key="negative controls", default=True),
                             ]],
             #               tooltip='base editor/s to use.',
                             visible=True if test else False,
