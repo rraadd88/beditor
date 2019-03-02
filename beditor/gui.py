@@ -303,7 +303,7 @@ def get_layout(test=False):
          sg.InputText(default_text='path to the tsv file',key='mutation table',size=(44, 1)), 
          sg.FileBrowse(button_text='Browse',file_types=(('Tab separated values file (tsv)', '*.tsv'),)),
         sg.Button('Load', key='load din'),
-        sg.Text('', key='error din',text_color='red',size=(25, 1)),
+        sg.Text('', key='error din',text_color='green',size=(25, 1)),
         ],    
         [h2('mutation mode',width=24),
          sg.Radio('create mutations', "mutation_do", key='reverse_mutations create'),
@@ -554,7 +554,8 @@ def gui(test=False):
                 vals1['mutation_format aminoacid']=False
                 vals1['mutation_format nucleotide']=False
             vals1['reverse_mutations create']=True
-            vals1['reverse_mutations remove']=False                
+            vals1['reverse_mutations remove']=False   
+            win.FindElement('error din').Update("loaded",text_color='green')
             win.FindElement('mutation table').Update(vals1['mutation table'])
             win=resetwinvals(win,vals1)
         elif ev1 == 'mutation_format nucleotide':
@@ -587,6 +588,7 @@ def gui(test=False):
                 from beditor.pipeline import validcfg
                 if validcfg(cfg):
                     yaml.dump(cfg,open(vals1['cfgp'], 'w'), default_flow_style=False)
+                    win.FindElement('save cfgp error').Update(f"saved",text_color='green')
                 else:
                     win.FindElement('save cfgp error').Update(f"error/s in configuration",text_color='red')
                 win.FindElement('run beditor').Update(disabled=False)        

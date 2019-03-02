@@ -134,7 +134,7 @@ def plot_submap_possibilities(dmutagenesis,plotpf,test=False):
                             ax.set_xticklabels([])
                         ax.text(ticklabely+0.5,ticklabelx+len(muttype12grp.index)+1.5,aa,color=muttype12grp.loc[aa,'c'],fontsize=10,
                             ha='center',va='top',rotation=rotation)
-                    ax.set_title('method={}\n{}'.format(method,muttype))
+                    ax.set_title('method={}\n{}'.format(make_pathable_string(method),muttype))
         #                 plt.savefig('plots/heatmap_{}_{}_{}.svg'.format(muttype1.replace(' ','_'),method,muttype))
         #                 break
         #             break
@@ -401,7 +401,7 @@ def plot_dist_dguides(dguideslin,dpam,plotpf=None):
         if not plotpf is None:
             if not '{method}' in plotpf:
                 plotpf=plotpf+'_{method}.png'
-            plt.savefig(plotpf.format(method=met))
+            plt.savefig(plotpf.format(method=make_pathable_string(met)))
     return dps
 #         break                      
 def plot_dna_features_view(cfg,dsequences,dguides,plotd,more=False,guideids=None):
