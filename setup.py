@@ -29,7 +29,7 @@ setup(
 name='beditor',
 author='Rohan Dandage',
 author_email='rraadd8888@gmail.com, rohan.dandage.1@ulaval.ca',
-version='1.1.6',
+version='1.1.7',
 url='https://github.com/rraadd88/beditor',
 download_url='https://github.com/rraadd88/beditor/archive/master.zip',
 description='A computational workflow for designing libraries of guide RNAs for CRISPR base editing',
