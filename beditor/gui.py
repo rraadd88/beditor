@@ -302,7 +302,8 @@ def get_layout(test=False):
         [h2('mutation table',width=24),
          sg.InputText(default_text='path to the tsv file',key='mutation table',size=(44, 1)), 
          sg.FileBrowse(button_text='Browse',file_types=(('Tab separated values file (tsv)', '*.tsv'),),
-            enable_events=True,key='browse din'),
+#             enable_events=True,key='browse din'
+                      ),
         sg.Button('Load', key='load din',disabled=True),
         sg.Text('', key='error din',text_color='green',size=(25, 1)),
         ],    
@@ -338,7 +339,10 @@ def get_layout(test=False):
     #     [sg.Text('_'  * width)],
         [normal('save configuration file',size=15)],
         [sg.InputText(default_text='path to save configuration file (.yml)',key='cfgp',size=(58,1)),
-        sg.FileSaveAs(button_text='Browse',file_types=(('YAML file', '*.yml'),),size=(10,1),enable_events=True,key='browse cfgp'),
+        sg.FileSaveAs(button_text='Browse',file_types=(('YAML file', '*.yml'),),size=(10,1),
+#                       enable_events=True,
+#                       key='browse cfgp'
+                     ),
         sg.Button('Save', key='save cfgp',size=(10,1),disabled=True),
         sg.Text('', key='save cfgp error',text_color='red',size=(25, 1))
         ],
@@ -396,8 +400,8 @@ layout_addbepam = [
 def gui(test=False):
     layout=get_layout(test=test)
     win = sg.Window('beditor').Layout(layout)  
+        
     win_addbepam_active=False  
-
     bulconfigure_advanced=False
     init=True
     while True:  
@@ -409,6 +413,11 @@ def gui(test=False):
         if test:
             print(ev1)
             print(vals1)
+        if vals1['mutation table']!='':
+            win.FindElement('load din').Update(disabled=False)
+        if vals1['cfgp']!='':
+            win.FindElement('save cfgp').Update(disabled=False)
+            
         if ev1 is None:  
             break  
         if ev1=='BE type and PAM':
@@ -535,8 +544,6 @@ def gui(test=False):
                 win.FindElement('configure error').Update(f"invalid {' and '.join(list(keys[buls]))}",text_color='red')
             win=resetwinvals(win,vals1)        
             ##TODO check columns and rename
-        elif ev1=='browse din':
-            win.FindElement('load din').Update(disabled=False)
         elif ev1=='load din':
     #         try:
             din=del_Unnamed(pd.read_table(vals1['mutation table'],keep_default_na=False))
@@ -580,8 +587,6 @@ def gui(test=False):
         elif ev1=='clear all':
             win=resetwinvals(win,_vals1)
 
-        elif ev1 == 'browse cfgp':
-            win.FindElement('save cfgp').Update(disabled=False)
         elif ev1 == 'save cfgp':
             if vals1['cfgp']!='' or vals1['cfgp']!='path to save configuration file (.yml)':
                 vals1['cfgp']= f"{vals1['cfgp']}.yml" if not vals1['cfgp'].endswith('.yml') else vals1['cfgp']
