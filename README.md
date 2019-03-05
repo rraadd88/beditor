@@ -246,9 +246,15 @@ If parallel processing is used, this folder would store individual parts (chunks
 ```
 
 
-How to install new base editor or PAM
+How to install custom base editor and PAM
 -------------------------------------
+### GUI mode
 
+Custom base editor and PAM sequences can be used incorporated in the workflow by selecting 'Custom' option in the 1st tab of the GUI. Following is the layout of the options to input the information about the base editor and the PAM sequence.
+
+![](docs/_static/gui_custombepam.png)
+
+### Command-line mode
 This information is located in beditor/data (use `which beditor` to locate directory of beditor) directory in tab-separated table format (`dBEs.tsv` and `dpams.tsv`).
 In order to install new base editor or PAM, user would have to simply append the relevant information in the tables.
 
