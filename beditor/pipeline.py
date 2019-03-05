@@ -214,6 +214,10 @@ def make_outputs(cfg,plot=True):
                         del dstep
         if cfg['mutation_format']=='nucleotide':
             doutput=doutput.drop([c for c in doutput if (('codon' in c) or ('amino' in c) or ('transcript' in c))],axis=1)
+        
+        from beditor.lib.io_seqs import get_polyt_length
+        doutput['length of polyT stretch']=doutput['guide+PAM sequence'].apply(lambda x : get_polyt_length(x))            
+        
         makedirs(dirname(doutputp),exist_ok=True)
         doutput.to_csv(doutputp,sep='\t')
     else:

@@ -187,3 +187,21 @@ def translate(dnaseq,host='human',fmtout=str,tax_id=None):
         return str(prtseq)
     else:
         return prtseq
+
+def get_polyt_length(s):
+    """
+    counts the length of the longest polyT stretch (RNA pol3 terminator) in sequence
+    :param s: sequence in string format
+    """
+    if isinstance(s,str):
+        from itertools import groupby
+        groups = groupby(s)
+        result = [(label, sum(1 for _ in group)) for label, group in groups]
+        df=pd.DataFrame(result,columns=['nt','count'])
+        df=df.loc[(df['nt']=='T'),:]
+        if len(df)>0:
+            return df.sort_values(by='count',ascending=False).iloc[0,1]
+        else:
+            return np.nan
+    else:
+        return np.nan        
