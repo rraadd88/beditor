@@ -49,7 +49,7 @@ Usage
 
 ### GUI mode
 
-Open the GUI window.
+Open the GUI window from terminal.
 
 ``` {.sourceCode .text}
 beditor
@@ -64,6 +64,9 @@ Note: genomes listed in the gui correspond to ensembl release=95.
 step2: save the configuration settings and run `beditor`.  
 
 ![](docs/_static/gui2.png)
+
+Note: GUI session need to be restarted between runs.
+Note: see the terminal messages in case of any issue.
 
 ### Command-line mode
 
@@ -105,26 +108,25 @@ According to the mutation_format opted in configuration.yml file and correspondi
 
 #### nucleotide : ['genome coordinate','nucleotide mutation'].
 
-Example:
+Example for *S. cerevisiae* (ensembl genome release=95):
 
 | genome coordinate | nucleotide mutation |
 |-------------------|---------------------|
-| II:711491-711491+ | T                   |
-| II:712904-712904- | T                   |
-| II:714707-714707- | G                   |
-| II:716782-716782- | G                   |
+| I:147494-147494-  | A                   |
+| I:143607-143607+  | A                   |
+| II:369937-369937- | C                   |
+| II:372003-372003- | C                   |
 
 #### aminoacid  : ['transcript: id','aminoacid: position','amino acid mutation'].
 
-Example:
+Example for *S. cerevisiae* (ensembl genome release=95):
 
 | transcript: id | aminoacid: position | amino acid mutation |
 |----------------|---------------------|---------------------|
-| YAL040C        | 6                   | A                   |
-| YAL041W        | 18                  | A                   |
-| YAL042C-A      | 65                  | A                   |
-| YAL042W        | 3                   | C                   |
-| YAL043C        | 14                  | C                   |
+| YAL001C_mRNA   | 18                  | A                   |
+| YAL002W_mRNA   | 24                  | A                   |
+| YAL019W_mRNA   | 24                  | C                   |
+| YAL067W-A_mRNA | 13                  | F                   |
    
 Note: genomes listed in the gui correspond to ensembl release=95.   
   
