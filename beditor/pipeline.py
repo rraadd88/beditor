@@ -201,7 +201,9 @@ def make_outputs(cfg,plot=True):
                             if stepi==0:
                                 continue
                     colsoutput=[col for col in colsoutput if col in dstep] 
-                    dstep=dstep.loc[:,colsoutput].drop_duplicates()
+                    dstep=dstep.loc[:,colsoutput]
+                    if len(dstep)!=0:
+                        dstep=dstep.drop_duplicates()
                     if not 'doutput' in locals():
                         doutput=dstep.copy()
                         del dstep
@@ -211,13 +213,13 @@ def make_outputs(cfg,plot=True):
                             doutput=pd.merge(doutput,dstep,on=cols_on,how='left')
                         else:
                             logging.error(f'output of step {stepi-1} or {stepi} are missing.')
+                            return None
                         del dstep
         if cfg['mutation_format']=='nucleotide':
             doutput=doutput.drop([c for c in doutput if (('codon' in c) or ('amino' in c) or ('transcript' in c))],axis=1)
-        
-        from beditor.lib.io_seqs import get_polyt_length
-        doutput['length of polyT stretch']=doutput['guide+PAM sequence'].apply(lambda x : get_polyt_length(x))            
-        
+        if len(doutput)!=0 and 'guide+PAM sequence' in doutput:
+            from beditor.lib.io_seqs import get_polyt_length
+            doutput['length of polyT stretch']=doutput['guide+PAM sequence'].apply(lambda x : get_polyt_length(x))
         makedirs(dirname(doutputp),exist_ok=True)
         doutput.to_csv(doutputp,sep='\t')
     else:

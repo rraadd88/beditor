@@ -56,7 +56,9 @@ def get_pam_searches(dpam,seq,pos_codon,
     pams=dpam.index.tolist()
     dpamposs=pd.DataFrame(columns=['guide+PAM sequence','guide sequence','PAM sequence'])
     pamposi=0
+#     print(dpam)
     for pam in pams:
+#         print(pam,pams)
         matchesiter=re.finditer(dpam.loc[pam,'rPAM'], seq, overlapped=True)
         for match in matchesiter:
             dpamposs.loc[pamposi,'position of PAM ini'],dpamposs.loc[pamposi,'position of PAM end']=match.span() 
@@ -172,61 +174,64 @@ def make_guides(cfg,dseq,dmutagenesis,
     gierrpamnotfound=[]
     gierrcannotmutate=[]
     for gi in dseq.index:
-        if cfg['mutations']=='mutations':
-            dseqi=pd.DataFrame(dseq.loc[gi,dseq_cols+['amino acid mutation']]).T
-            dmutagenesis_gi=pd.merge(dseqi,
-                dmutagenesis,
-                how='inner',
-                left_on=['aminoacid: wild-type','codon: wild-type','amino acid mutation'],
-                right_on=['amino acid','codon','amino acid mutation'])                    
-        else:
-            dseqi=pd.DataFrame(dseq.loc[gi,dseq_cols]).T
-            dmutagenesis_gi=pd.merge(dseqi,
-                dmutagenesis,
-                how='inner',
-                left_on=['aminoacid: wild-type','codon: wild-type'],
-                right_on=['amino acid','codon'])        
-        if len(dmutagenesis_gi)!=0:
-#             logging.info(f"working on {dseq.loc[gi,'id']}")
-#             codon=dseq.loc[gi,'codon: wild-type']
-            pos_codon=(flankaas)*3    
-            dpam=be2dpam[dmutagenesis_gi['method'].unique()[0]]
-            dpamsearches=get_pam_searches(dpam=dpam,
-                 seq=dseq.loc[gi,'transcript: sequence'],
-                 pos_codon=pos_codon,
-                 test=test)
-            # print(dpamsearches.columns) #RMME
-            if dpamsearches is None:
+        for be in be2dpam:
+            dmutagenesis_be=dmutagenesis.loc[dmutagenesis['method']==be,:]
+            if len(dmutagenesis_be)==0:
                 continue
-            if len(dpamsearches)!=0:
-                # filter by guide length
-                dpamsearchesflt=dpamsearches.loc[dpamsearches['guide length']==dpamsearches['guide sequence length'],:]
-                if len(dpamsearchesflt)!=0:
-                    dpamsearches_strategy=pd.merge(dpamsearchesflt.reset_index(),dmutagenesis_gi.reset_index(),
-                             how='inner',
-                             on=['strand'],suffixes=['',': dmutagenesis_gi'])
-                    if len(dpamsearches_strategy)!=0:                                 
-                        if not 'dguides' in locals():
-                            dguides=dpamsearches_strategy.copy()
-                        else:
-                            dguides=dguides.append(dpamsearches_strategy)
-                        del dpamsearches_strategy
-                    else:
-                        gierrdenan.append(gi)
-                        if dbug:
-                            print('empty after removing nan seqs')
-                else:
-                    gierrfltguidel.append(gi)
-                    if dbug:
-                        print(f"empty after filtering by guide length. {dpamsearches['guide sequence length'].tolist()}")
+            if cfg['mutations']=='mutations':
+                dseqi=pd.DataFrame(dseq.loc[gi,dseq_cols+['amino acid mutation']]).T
+                dmutagenesis_gi=pd.merge(dseqi,
+                    dmutagenesis_be,
+                    how='inner',
+                    left_on=['aminoacid: wild-type','codon: wild-type','amino acid mutation'],
+                    right_on=['amino acid','codon','amino acid mutation'])                    
             else:
-                gierrpamnotfound.append(gi)
+                dseqi=pd.DataFrame(dseq.loc[gi,dseq_cols]).T
+                dmutagenesis_gi=pd.merge(dseqi,
+                    dmutagenesis_be,
+                    how='inner',
+                    left_on=['aminoacid: wild-type','codon: wild-type'],
+                    right_on=['amino acid','codon'])        
+            if len(dmutagenesis_gi)!=0:
+    #             logging.info(f"working on {dseq.loc[gi,'id']}")
+    #             codon=dseq.loc[gi,'codon: wild-type']
+                pos_codon=(flankaas)*3
+                dpam=be2dpam[be]
+                dpamsearches=get_pam_searches(dpam=dpam,
+                     seq=dseq.loc[gi,'transcript: sequence'],
+                     pos_codon=pos_codon,
+                     test=test)
+                if dpamsearches is None:
+                    continue
+                if len(dpamsearches)!=0:
+                    # filter by guide length
+                    dpamsearchesflt=dpamsearches.loc[dpamsearches['guide length']==dpamsearches['guide sequence length'],:]
+                    if len(dpamsearchesflt)!=0:
+                        dpamsearches_strategy=pd.merge(dpamsearchesflt.reset_index(),dmutagenesis_gi.reset_index(),
+                                 how='inner',
+                                 on=['strand'],suffixes=['',': dmutagenesis_gi'])
+                        if len(dpamsearches_strategy)!=0:                                 
+                            if not 'dguides' in locals():
+                                dguides=dpamsearches_strategy.copy()
+                            else:
+                                dguides=dguides.append(dpamsearches_strategy)
+                            del dpamsearches_strategy
+                        else:
+                            gierrdenan.append(gi)
+                            if dbug:
+                                print('empty after removing nan seqs')
+                    else:
+                        gierrfltguidel.append(gi)
+                        if dbug:
+                            print(f"empty after filtering by guide length. {dpamsearches['guide sequence length'].tolist()}")
+                else:
+                    gierrpamnotfound.append(gi)
+                    if dbug:
+                        print(f"no pam among {dpam.index.tolist()} were found {dseq.loc[gi,'transcript: sequence']}")
+            else:
+                gierrcannotmutate.append(gi)
                 if dbug:
-                    print(f"no pam among {dpam.index.tolist()} were found {dseq.loc[gi,'transcript: sequence']}")
-        else:
-            gierrcannotmutate.append(gi)
-            if dbug:
-                print(f"can not mutate {dseqi['codon: wild-type'].tolist()}. its not in {dmutagenesis['codon'].tolist()}")
+                    print(f"can not mutate {dseqi['codon: wild-type'].tolist()}. its not in {dmutagenesis_be['codon'].tolist()}")
 
     gierrfltmutpos=[]
     gierrdenan=[]
