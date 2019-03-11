@@ -61,12 +61,12 @@ step1: input the configuration settings.
 
 Note: genomes listed in the gui correspond to ensembl release=95. 
 
-step2: save the configuration settings and run `beditor`.  
+step2: save the configuration settings and run `beditor`. Output will be stored in the directory as the saved configuration settings file (yml file). 
 
 ![](docs/_static/gui2.png)
 
-Note: GUI session need to be restarted between runs.
-Note: see the terminal messages in case of any issue.
+Note: output directory will have the same basename as the saved configuration file. If `/a/b/gene_ed.yml` is the path of the configuration file, the output directory will be `/a/b/gene_ed/`. See [Output format](#output-format) for structure of the output directory.   
+Note: see the terminal messages in case of any issue.   
 
 ### Command-line mode
 
