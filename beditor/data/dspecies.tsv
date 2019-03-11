@@ -51,7 +51,7 @@
 60	Guppy	Poecilia reticulata	8081.0	Guppy_female_1.0_MT	GCA_000633615.2	Full genebuild	-	-	-	Poecilia reticulata (Guppy_female_1.0_MT)
 61	Hagfish	Eptatretus burgeri	7764.0	Eburgeri_3.2	GCA_900186335.2	Full genebuild	-	-	-	Eptatretus burgeri (Eburgeri_3.2)
 65	Horse	Equus caballus	9796.0	EquCab3.0	GCA_002863925.1	Full genebuild	Y	-	-	Equus caballus (EquCab3.0)
-66	Human	Homo sapiens	9606.0	GRCh38	GCA_000001405.27	Full genebuild	Y	Y	-	Homo sapiens (GRCh38.p12)
+66	Human	Homo sapiens	9606.0	GRCh38	GCA_000001405.27	Full genebuild	Y	Y	-	Homo sapiens (GRCh38)
 68	Indian medaka	Oryzias melastigma	30732.0	Om_v0.7.RACA	GCA_002922805.1	Full genebuild	-	-	-	Oryzias melastigma (Om_v0.7.RACA)
 69	Japanese medaka HNI	Oryzias latipes	8090.0	ASM223471v1	GCA_002234715.1	Full genebuild	-	-	-	Oryzias latipes (ASM223471v1)
 70	Japanese medaka HSOK	Oryzias latipes	8090.0	ASM223469v1	GCA_002234695.1	Full genebuild	-	-	-	Oryzias latipes (ASM223469v1)
