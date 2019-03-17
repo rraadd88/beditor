@@ -158,13 +158,15 @@ mutation_format: aminoacid or nucleotide
 mutation_type: N
 ## keep nonsense mutations
 keep_mutation_nonsense: False
+
 ## Mutations information can be provided in 3 options: 
-## 1. Required Mutations mentioned in input file. 
-## 2. Required Substitutions provided as a file (template: https://github.com/rraadd88/test_beditor/blob/master/common/dsubmap.tsv).
-## 3. Carry out Mimetic substitutions (base on genome wide substitution maps). Only for human and yeast.
+## `mutations`: Required Mutations mentioned in input file. 
+## `substitutions`: Required Substitutions provided as a file (template: https://github.com/rraadd88/test_beditor/blob/master/common/dsubmap.tsv).
+## `mimetic`: Carry out Mimetic substitutions (base on genome wide substitution maps). Only for human and yeast.
 ## input: options 
-## mutations: 1, substitutions: 2, mimetic: 3, [no input: keeps all possible mutations (slow)]
-mutations: 1
+## mutations, substitutions, mimetic, [no input: keeps all possible mutations (slow)]
+mutations: mutations
+
 ## Parameters specific to above options
 ## 2. Substitutions provided as a file
 dsubmap_preferred_path: 
