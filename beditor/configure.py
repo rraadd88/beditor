@@ -309,15 +309,17 @@ def validinput(cfg,din):
     :param cfg: configuration dict
     :param din: dataframe containing input data 
     """
-    from beditor.lib.global_vars import mutation_format2cols
+    from beditor.lib.global_vars import mutation_format2cols    
     opt_validity=[]
     for col in mutation_format2cols[cfg['mutation_format']]:
         if col in din:
             opt_validity.append(True)
         else:
-            
-            opt_validity.append(False)
-            logging.error(f"invalid column name: {col} is not in [{','.join(din.columns.tolist())}]")
+            if cfg['mutations']!='mutations' and col=='amino acid mutation':
+                opt_validity.append(True)
+            else:    
+                opt_validity.append(False)
+                logging.error(f"invalid column name: {col} is not in [{','.join(din.columns.tolist())}]")
     return all(opt_validity)
 
 # related to be and pam
