@@ -190,13 +190,21 @@ def get_seq_aminoacid(cfg,din):
             dseq['codon: mutation']=dseq['codon: wild-type'].copy()
     if cfg['make_control_pos']:
         dseq['pos control']=False
-        dseq_=dseq.copy()
-        dseq_['pos control']=True
-#         if not cfg['reverse_mutations']:
-        dseq_['amino acid mutation']='*'
-#         else:
-#             dseq_['amino acid']='*'
-        dseq=dseq.append(dseq_,sort=True).drop_duplicates()
+        if cfg['mutations']!='mutations':
+            from .global_vars import aminoacids as aas
+            aa2dseq_={}
+            for aa in aas:
+                dseq_=dseq.copy()
+                dseq_['amino acid mutation']=aa
+                aa2dseq_[aa]=dseq_
+            dseq=pd.concat(aa2dseq_,axis=0).reset_index()
+            dseq['pos control']=dseq['amino acid mutation'].apply(lambda x : True if x=='*' else False)
+        else:
+            dseq_=dseq.copy()
+            dseq_['pos control']=True
+            dseq_['amino acid mutation']='*'
+            dseq=dseq.append(dseq_,sort=True)
+        dseq=dseq.drop_duplicates()
         dseq=dseq.sort_values(by='id')
     dseq.to_csv(f"{cfg['dsequencesp']}",sep='\t')
     del ensembl

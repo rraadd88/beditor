@@ -178,20 +178,20 @@ def make_guides(cfg,dseq,dmutagenesis,
             dmutagenesis_be=dmutagenesis.loc[dmutagenesis['method']==be,:]
             if len(dmutagenesis_be)==0:
                 continue
-            if cfg['mutations']=='mutations':
-                dseqi=pd.DataFrame(dseq.loc[gi,dseq_cols+['amino acid mutation']]).T
-                dmutagenesis_gi=pd.merge(dseqi,
-                    dmutagenesis_be,
-                    how='inner',
-                    left_on=['aminoacid: wild-type','codon: wild-type','amino acid mutation'],
-                    right_on=['amino acid','codon','amino acid mutation'])                    
-            else:
-                dseqi=pd.DataFrame(dseq.loc[gi,dseq_cols]).T
-                dmutagenesis_gi=pd.merge(dseqi,
-                    dmutagenesis_be,
-                    how='inner',
-                    left_on=['aminoacid: wild-type','codon: wild-type'],
-                    right_on=['amino acid','codon'])        
+#             if cfg['mutations']=='mutations':
+            dseqi=pd.DataFrame(dseq.loc[gi,dseq_cols+['amino acid mutation']]).T
+            dmutagenesis_gi=pd.merge(dseqi,
+                dmutagenesis_be,
+                how='inner',
+                left_on=['aminoacid: wild-type','codon: wild-type','amino acid mutation'],
+                right_on=['amino acid','codon','amino acid mutation'])                    
+#             else:
+#                 dseqi=pd.DataFrame(dseq.loc[gi,dseq_cols]).T
+#                 dmutagenesis_gi=pd.merge(dseqi,
+#                     dmutagenesis_be,
+#                     how='inner',
+#                     left_on=['aminoacid: wild-type','codon: wild-type'],
+#                     right_on=['amino acid','codon'])        
             if len(dmutagenesis_gi)!=0:
     #             logging.info(f"working on {dseq.loc[gi,'id']}")
     #             codon=dseq.loc[gi,'codon: wild-type']
