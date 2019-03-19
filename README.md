@@ -9,7 +9,7 @@ pandoc --from=markdown --to=rst --output=README.rst R
 EADME.md
 -->
 
-A computational workflow for designing libraries of guide RNAs for CRISPR base editing  
+**A computational workflow for designing libraries of guide RNAs for CRISPR-mediated base editing**  
 Pre-print: https://doi.org/10.1101/426973
 
 Table of Contents
@@ -23,7 +23,7 @@ Table of Contents
 
 Installation
 ------------
-Requirements: [`Anaconda package manager`](https://www.anaconda.com/download/#linux). See [requirements.md](https://github.com/rraadd88/test_beditor/blob/master/requirements.md) for set of bash commands that would install it.
+Basic requirements: [`Anaconda package manager`](https://www.anaconda.com/download/#linux). See [requirements.md](https://github.com/rraadd88/test_beditor/blob/master/requirements.md) for set of bash commands that would install it.
 
 1.  Once all the requirements are satisfied, create a python 3.6 virtual environment.
 
@@ -59,9 +59,9 @@ step1: input the configuration settings.
 
 ![](docs/_static/gui1.png)
 
-Note: genomes listed in the gui correspond to ensembl release=95. 
+Note: genomes listed on the gui correspond to ensembl release=95. 
 
-step2: save the configuration settings and run `beditor`. Output will be stored in the directory as the saved configuration settings file (yml file). 
+step2: save the configuration settings and run `beditor`. Outputs will be stored in the same directory as the saved configuration settings file (yml file) in a folder with the same same name as the basename of the configuration settings file. 
 
 ![](docs/_static/gui2.png)
 
@@ -259,90 +259,8 @@ Custom base editor and PAM sequences can be used incorporated in the workflow by
 ![](docs/_static/gui_custombepam.png)
 
 ### Command-line mode
-This information is located in beditor/data (use `which beditor` to locate directory of beditor) directory in tab-separated table format (`dBEs.tsv` and `dpams.tsv`).
-In order to install new base editor or PAM, user would have to simply append the relevant information in the tables.
-
-How to run `beditor`
------------------------------
-
-Example: designing gRNAs to carry out nucleotide mutations in yeast.  
-Input [1/2]: Configuration file. It contains all the options and paths to files needed by the analysis. 
-
-```
-# Input: Mutation information
-## Path to this tsv (tab-separated values) file
-dinp: input.tsv
-reverse_mutations: false
-
-# Step 1: Extracting sequences flanking mutation site (`01_sequences/`).
-## host information
-host: saccharomyces_cerevisiae
-genomerelease: 92
-# check assembly from http://useast.ensembl.org/index.html
-genomeassembly: R64-1-1
-
-
-# Step 2: Estimating the editable mutations based on base editors chosen. (`02_mutagenesis/`).
-# whether aminoacid or nucleotide mutations
-mutation_format: aminoacid
-##[N nonsyn] S syn else both
-mutation_type: N
-## keep nonsense mutations
-keep_mutation_nonsense: False
-## Mutations information can be provided in 3 options: 
-## 1. Required Mutations mentioned in input file. 
-## 2. Required Substitutions provided as a file (template: https://github.com/rraadd88/test_beditor/blob/master/common/dsubmap.tsv).
-## 3. Carry out Mimetic substitutions (base on genome wide substitution maps). Only for human and yeast.
-## input: options 
-## mutations: 1, substitutions: 2, mimetic: 3, [no input: keeps all possible mutations (slow)]
-mutations: 1
-## Parameters specific to above options
-## 2. Substitutions provided as a file
-dsubmap_preferred_path: 
-## 3. Mimetic substitutions
-## mimetism level (high: only the best one, [medium: best 5], low: best 10)
-mimetism_level: medium
-## can not mutate between these 
-## if ['S','T','K'] is provided all mutations between thsese amino acids are disallowed
-non_intermutables: []
-
-
-# Step 3: Designed guides (`03_guides/`).
-## allowed nucleuotide substitutions per codon
-max_subs_per_codon: 1
-## base editors to use (restriction max_subs_per_codon would override the choice of base editors)
-BEs: ['Target-AID','ABE']
-# Cas9 related options
-## PAM sequence
-pams: ['NGG','NG']
-
-#------------------------------------------------
-# System related options 
-## Number of cpus/threads
-cores: 6
-## Number of lines to process per cpu
-chunksize: 200
-## Dependencies 
-## by default the dependencies are installed from the conda environment.
-## "optionally" paths to the dependencies could be included below.
-bedtools: bedtools
-bwa: bwa
-samtools: samtools
-```
-
-Input [2/2]: Table with mutation information.  
-
-Note: Path to this tsv (tab-separated values) file is provided in configuration file as a value for variable called `dinp`. E.g. `dinp: input.tsv`. For nucleotide level mutagenesis the column names should be `genome coordinate` and `nucleotide mutation`.
-
-Example:
-
-| genome coordinate | nucleotide mutation |
-|-------------------|---------------------|
-| II:711491-711491+ | T                   |
-| II:712904-712904- | T                   |
-| II:714707-714707- | G                   |
-| II:716782-716782- | G                   |
-
+The sets of installed BEs and PAMs are stored in a tab-separated table, located at `beditor/data/dbepams.tsv` directory (use `which beditor` to locate directory of beditor).
+In order to install new base editor or PAM, user would have to simply append the relevant information in the table.
 
 How to analyze test datasets
 ---------------------------
