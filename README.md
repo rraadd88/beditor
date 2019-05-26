@@ -9,10 +9,10 @@ pandoc --from=markdown --to=rst --output=README.rst R
 EADME.md
 -->
 
-**beditor: A Computational Workflow for Designing Libraries of Guide RNAs for CRISPR-Mediated Base Editing**   
+*beditor*: A Computational Workflow for Designing Libraries of Guide RNAs for CRISPR-Mediated Base Editing   
+------------
 
-Rohan Dandage, Philippe C. Després, Nozomu Yachie and Christian R. Landry   
-[GENETICS 2019](https://doi.org/10.1534/genetics.119.302089) [![](https://www.genetics.org/favicon.ico)](https://doi.org/10.1534/genetics.119.302089)
+Rohan Dandage, Philippe C. Després, Nozomu Yachie and Christian R. Landry. [GENETICS 2019](https://doi.org/10.1534/genetics.119.302089) [![](https://www.genetics.org/favicon.ico)](https://doi.org/10.1534/genetics.119.302089)
 
 Table of Contents
 -----------------
