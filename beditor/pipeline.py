@@ -161,7 +161,7 @@ def collect_chunks(cfg,chunkcfgps):
                                     dguides_control=collectchuckfiles(cfg, fpinchunk=f'03_guides/dguides.tsv.{control_type}_control.tsv')
                                     if not dguides_control is None:
                                         dguides_control=dguides_control.loc[:,list(set(dguides_control.columns).intersection(stepi2colsoutput[3]))]    
-                                        to_table(dguides_control,dguides_controlp)                                        
+                                        to_table(dguides_control,dguides_controlp)
                 else:
                     logging.warning(f"no chunks found for step {step}: {stepi2name[step]}")                    
             else:
