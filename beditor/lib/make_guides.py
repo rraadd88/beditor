@@ -282,6 +282,7 @@ def make_guides(cfg,dseq,dmutagenesis,
             if len(dguides_neg_control)==0:
                 dguides_neg_control=None
             dguides=dguides.loc[dguides.apply(lambda x : True if (x['distance of mutation from PAM: minimum']<=abs(x['distance of mutation from PAM'])<=x['distance of mutation from PAM: maximum']) else False,axis=1),:]            
+            logging.info(f"filter by distance of mutation from PAM: dguides len :{len(dguides)}")
             if len(dguides)!=0:
                 logging.info(dguides.shape)
                 dguides_pos_control=dguides.loc[dguides['pos control'],:]

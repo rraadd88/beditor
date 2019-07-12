@@ -239,23 +239,24 @@ def filterdmutagenesis(dmutagenesis,cfg):
                 dmutagenesis=dmutagenesis.loc[(dmutagenesis['amino acid']==dmutagenesis['amino acid mutation'])]
             elif cfg['mutation_type']=='N':
                 dmutagenesis=dmutagenesis.loc[(dmutagenesis['amino acid']!=dmutagenesis['amino acid mutation'])]
-            logging.info('dmutagenesis.shape: '+str(dmutagenesis.shape))    
+    logging.info('filtering by mutation_type: dmutagenesis.shape: '+str(dmutagenesis.shape))
     # filter by nonsense
     if 'keep_mutation_nonsense' in cfg:
         if not cfg['keep_mutation_nonsense'] is None:
             if not cfg['keep_mutation_nonsense']:
                 dmutagenesis=dmutagenesis.loc[(dmutagenesis['amino acid mutation']!='*'),:]
-            logging.info('dmutagenesis.shape: '+str(dmutagenesis.shape))    
+    logging.info('filtering by nonsense: dmutagenesis.shape: '+str(dmutagenesis.shape))
     # filter by mutation per codon
     if 'max_subs_per_codon' in cfg:
         if not cfg['max_subs_per_codon'] is None:
             dmutagenesis=dmutagenesis.loc[(dmutagenesis['nucleotide mutation: count']==cfg['max_subs_per_codon']),:]
-            logging.info('dmutagenesis.shape: '+str(dmutagenesis.shape))    
+    logging.info('filtering by mutation per codon: dmutagenesis.shape: '+str(dmutagenesis.shape))
     # filter by method
     if 'BE names' in cfg:
         if not cfg['BE names'] is None:
             dmutagenesis=dmutagenesis.loc[dmutagenesis['method'].isin(cfg['BE names']),:]
             logging.info('dmutagenesis.shape: '+str(dmutagenesis.shape))    
+    logging.info('filtering by method: dmutagenesis.shape: '+str(dmutagenesis.shape))
     # filter by submap
     if 'mutations' in cfg:
         if (cfg['mutations']=='mimetic') or (cfg['mutations']=='substitutions'):
@@ -275,13 +276,15 @@ def filterdmutagenesis(dmutagenesis,cfg):
 
             logging.info('dmutagenesis.shape: '+str(dmutagenesis.shape))    
 
-    # filter non interchageables
+    logging.info('filtering by submap: dmutagenesis.shape: '+str(dmutagenesis.shape))
+    # filter by non interchageables
     if 'non_intermutables' in cfg:
         if not cfg['non_intermutables'] is None:
             if len(cfg['non_intermutables'])!=0:               
                 dmutagenesis=dmutagenesis.loc[~(dmutagenesis['amino acid'].isin(cfg['non_intermutables']) \
                                                & dmutagenesis['amino acid mutation'].isin(cfg['non_intermutables'])),:]
                 logging.info('dmutagenesis.shape: '+str(dmutagenesis.shape))    
+    logging.info('filtering by non interchageables: dmutagenesis.shape: '+str(dmutagenesis.shape))
     return dmutagenesis
 
 def dseq2dmutagenesis(cfg):
