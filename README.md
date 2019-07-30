@@ -131,7 +131,7 @@ Example for *S. cerevisiae* (ensembl genome release=95):
 | YAL067W-A_mRNA | 13                  | F                   |
    
 Note: genomes listed in the gui correspond to ensembl release=95.   
-  
+Note: `nucleotide mutation` and `amino acid mutation` are the desired mutations (not the wildtype/reference).  
   
 ### [for command line usage] Configuration file. It contains all the options and paths to files needed by the analysis. 
 This YAML formatted file contains the all the analysis specific parameters.
