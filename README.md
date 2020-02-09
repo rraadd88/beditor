@@ -25,7 +25,7 @@ Table of Contents
 
 Installation
 ------------
-Basic requirements: [`Anaconda package manager`](https://www.anaconda.com/download/#linux). See [requirements.md](https://github.com/rraadd88/test_beditor/blob/master/requirements.md) for set of bash commands that would install it.
+Basic requirements: [`Anaconda package manager`](https://www.anaconda.com/download/#linux). See [requirements.md](https://github.com/rraadd88/test_beditor/blob/master/requirements.md) for set of bash commands that would install it. Tested on Ubuntu 16.04 64bit.
 
 1.  Once all the requirements are satisfied, create a python 3.6 virtual environment.
 
