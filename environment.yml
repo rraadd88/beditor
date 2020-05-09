@@ -13,7 +13,7 @@ dependencies:
   - setuptools=39.2.0
   - pyyaml
   - pip:
-    - PySimpleGUI==3.24.0
+    - PySimpleGUI
     - datacache==1.1.4
     - matplotlib==2.2.2
     - pysam==0.14.1
