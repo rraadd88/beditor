@@ -1,0 +1,46 @@
+name: build
+
+on:
+  push:
+    branches: "*"
+  pull_request:
+    branches: "*"
+
+jobs:
+  build-n-test-n-coverage:
+    name: Build, test and code coverage
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.8", "3.9"]
+    env:
+      OS: ubuntu-latest
+      PYTHON: "3.9"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          submodules: true
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --upgrade setuptools          
+          pip install -e .[base,test]
+          pip install tox-gh-actions
+          pip install papermill testbook
+          pip install ipykernel;python -m ipykernel install --user --name beditor
+      - name: Run the tests
+        run: tox
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1
+        with:
+          file: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false

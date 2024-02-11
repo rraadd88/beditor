@@ -1,0 +1,15 @@
+cff-version: 1.2.0
+title: 'beditor: A Computational Workflow for Designing Libraries of sgRNAs for CRISPR-Mediated
+  Base Editing'
+message: If you use this software, please cite it using the metadata from this file.
+type: software
+authors:
+- given-names: Rohan
+  family-names: Dandage
+  orcid: https://orcid.org/0000-0002-6421-2067
+identifiers:
+- type: doi
+  value: 10.1534/genetics.119.302089
+repository-code: https://github.com/rraadd88/beditor
+version: v2.0.0
+date-released: '2024-01-31'

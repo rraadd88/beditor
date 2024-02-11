@@ -1,0 +1,6 @@
+[submodule "bwa"]
+	path = beditor/bwa
+	url = https://github.com/lh3/bwa.git
+[submodule "beditor/bwa"]
+	path = beditor/bwa
+	url = https://github.com/lh3/bwa.git

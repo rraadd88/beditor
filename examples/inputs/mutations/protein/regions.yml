@@ -1,0 +1,17 @@
+run:
+  force: false
+  genome_path: inputs/dna.fa
+  gtf_path: inputs/ann.gtf
+  input_path: inputs/mutations/protein/regions.tsv
+  method: Cas12a-BE
+  not_be: false
+  output_dir_path: outputs/protein/regions/
+  output_path: null
+  protein_path: inputs/Protein.fa
+  release: null
+  search_window: null
+  species_name: null
+  test: false
+  threads: null
+  transcript_path: inputs/RNA.fa
+  verbose: false
