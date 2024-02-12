@@ -258,15 +258,16 @@ Please send the required info using a PR, or an issue.
   title   = {beditor: A Computational Workflow for Designing Libraries of sgRNAs for CRISPR-Mediated Base Editing},
   author  = {Dandage, Rohan},
   year    = {2024},
-  url     = {https://doi.org/10.1534/genetics.119.302089},
-  version = {v2.0.0},
+  url     = {https://doi.org/10.5281/zenodo.10648264},
+  version = {v2.0.1},
   note    = {The URL is a DOI link to the permanent archive of the software.},
 }
 ```
 
-2. DOI link: [![DOI](https://zenodo.org/badge/DOI/10.1534/genetics.119.302089.svg)](https://doi.org/10.1534/genetics.119.302089), or  
+2. DOI link: [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10648264.svg)](https://doi.org/10.5281/zenodo.10648264), or  
 
-3. Using citation information from [CITATION.CFF file](https://github.com/rraadd88/beditor/blob/main/CITATION.cff).  
+3. Using citation information from [CITATION.CFF file](https://github.com/rraadd88/beditor/blob/main/CITATION.cff).
+
 
 <details>
 <summary>v1</summary>

@@ -9,7 +9,7 @@ authors:
   orcid: https://orcid.org/0000-0002-6421-2067
 identifiers:
 - type: doi
-  value: 10.1534/genetics.119.302089
+  value: 10.5281/zenodo.10648264
 repository-code: https://github.com/rraadd88/beditor
-version: v2.0.0
-date-released: '2024-01-31'
+version: v2.0.1
+date-released: '2024-02-11'
