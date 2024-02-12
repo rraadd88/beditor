@@ -115,7 +115,7 @@ class InstallCommand(install):
 setuptools.setup(
     name="beditor",
     author="Rohan Dandage",
-    version="2.0.0",
+    version="2.0.1",
     url="https://github.com/rraadd88/beditor",
     download_url="https://github.com/rraadd88/beditor/archive/master.zip",
     description="A computational workflow for designing libraries of guide RNAs for CRISPR base editing",
