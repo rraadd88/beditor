@@ -1,4 +1,4 @@
-``beditor``([v2](#v2))<a href="#"><img src="https://openmoji.org/data/color/svg/270F.svg" align="right" width="20%"></a>
+``beditor``([v2](#v2))<a href="#"><img src="https://openmoji.org/data/color/svg/E267.svg" align="right" width="20%"></a>
 ====================
 A Computational Workflow for Designing Libraries of sgRNAs for CRISPR-Mediated Base Editing, and much more
 <!-- [![Contributors][contributors-shield]][contributors-url]
