@@ -32,7 +32,7 @@ with open("README.md", "r") as fh:
 requirements = {
     "base": [
         # 'roux'
-        "roux @ git+https://github.com/rraadd88/roux.git@master",
+        "roux==0.1.1",
         ## requirements from roux
         # 'seaborn',
         # 'numpy>=1.17.3',
@@ -62,7 +62,7 @@ requirements = {
     "gui": [
         "mercury==2.3.7",
         "dna_features_viewer==3.1.3",
-        "chrov @ git+https://github.com/rraadd88/chrov.git@main",
+        "chrov==0.0.2",
     ],
     ## development and maintenance
     "dev": [
@@ -133,7 +133,7 @@ setuptools.setup(
     include_package_data=True,
     entry_points={
         "console_scripts": [
-            "roux = beditor.run:parser.dispatch",
+            "beditor = beditor.run:parser.dispatch",
         ],
     },
     cmdclass={"install": InstallCommand},
