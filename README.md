@@ -4,7 +4,7 @@ A Computational Workflow for Designing Libraries of sgRNAs for CRISPR-Mediated B
 <!-- [![Contributors][contributors-shield]][contributors-url]
 [![Forks][forks-shield]][forks-url]
 [![Stargazers][stars-shield]][stars-url] -->
-<a href="">[![PyPI](https://img.shields.io/pypi/v/beditor?style=for-the-badge)![Python](https://img.shields.io/pypi/pyversions/beditor?style=for-the-badge)](https://pypi.org/project/beditor)</a>
+<!-- <a href="">[![PyPI](https://img.shields.io/pypi/v/beditor?style=for-the-badge)![Python](https://img.shields.io/pypi/pyversions/beditor?style=for-the-badge)](https://pypi.org/project/beditor)</a> -->
 <a href="">[![build](https://img.shields.io/github/actions/workflow/status/rraadd88/beditor/build.yml?style=for-the-badge)](https://github.com/rraadd88/beditor/actions/workflows/build.yml)</a>
 <a href="">[![Issues](https://img.shields.io/github/issues/rraadd88/beditor.svg?style=for-the-badge)](https://github.com/rraadd88/beditor/issues)</a>
 <a href="">[![Downloads](https://img.shields.io/pypi/dm/beditor?style=for-the-badge)](https://pepy.tech/project/beditor)</a>
