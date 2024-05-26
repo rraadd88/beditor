@@ -122,6 +122,12 @@ setuptools.setup(
     long_description="https://github.com/rraadd88/beditor/blob/master/README.md",
     keywords=["CRISPR", "genome", "biology"],
     license="General Public License v. 3",
+    classifiers=[
+        'Programming Language :: Python',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
+    ],
     install_requires=requirements["base"],
     extras_require=extras_require,
     platforms="Tested on Ubuntu 22.04 64bit",
