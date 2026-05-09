@@ -162,7 +162,7 @@ pyensembl==2.2.9
     # via beditor (pyproject.toml)
 pyfaidx==0.8.0
     # via beditor (pyproject.toml)
-pygments==2.19.2
+pygments==2.20.0
     # via ipython
 pylint==3.3.8
     # via pyensembl
