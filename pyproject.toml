@@ -1,0 +1,40 @@
+[project]
+name = "beditor"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+        # 'roux'
+        "roux>=0.1.1",
+        ## requirements from roux
+        # 'seaborn',
+        # 'numpy>=1.17.3',
+        # 'pandas>=0.25.3',
+        # 'pyyaml>=5.1',
+        # 'matplotlib>=2.2',
+        "papermill",
+        "biopython",
+        "regex",  # expanded regex package
+        "scipy",
+        "pyensembl>=2.2.9",
+        "pysam>=0.22.0",  # to convert sam to bam
+        ## workflow
+        "papermill",
+        "argh",  # for command line
+        # aes
+        "jinja2",  # for pandas dataframe formatting
+        "ipywidgets",  # for tqdm
+        # 'app':[
+        # "importlib-metadata==4.13.0", # to avoid celery error
+        # ],
+        #     ],
+        # 'viz':[
+        "igv-notebook>=0.5.2",
+        "pyfaidx>=0.8.0",  ## for indexing fasta file
+    ]
+
+[dependency-groups]
+dev = [
+    "ipykernel>=6.29.5",
+]
